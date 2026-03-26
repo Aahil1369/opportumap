@@ -11,6 +11,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
     "@clerk/nextjs": "^7.0.7",
+    "@google/genai": "^1.46.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.100.0",
     "mapbox-gl": "^3.20.0",

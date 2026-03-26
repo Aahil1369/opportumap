@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(request) {
   try {
@@ -29,22 +29,21 @@ You have knowledge of:
 
 Be friendly, concise, and practical. Give actionable advice. Keep responses under 200 words unless asked for detail. Use bullet points where helpful.`;
 
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: systemPrompt,
-    });
-
-    // Convert messages to Gemini format (user/model roles)
     const history = messages.slice(0, -1).map((m) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }));
 
-    const chat = model.startChat({ history });
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessage(lastMessage.content);
+    const chat = ai.chats.create({
+      model: 'gemini-2.0-flash',
+      config: { systemInstruction: systemPrompt },
+      history,
+    });
 
-    return Response.json({ reply: result.response.text() });
+    const lastMessage = messages[messages.length - 1];
+    const result = await chat.sendMessage({ message: lastMessage.content });
+
+    return Response.json({ reply: result.text });
   } catch (err) {
     console.error('Chat error:', err?.message);
     return Response.json({ error: err.message }, { status: 500 });
