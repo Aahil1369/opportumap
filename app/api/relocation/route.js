@@ -17,7 +17,7 @@ export async function POST(request) {
       return Response.json({ ...cached.data, connections });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const result = await model.generateContent(
       `You are an expert relocation consultant who has helped thousands of people move internationally.
