@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/jobs', label: 'Jobs' },
   { href: '/map', label: 'Map' },
+  { href: '/community', label: 'Community' },
   { href: '/contact', label: 'Contact' },
 ];
 
