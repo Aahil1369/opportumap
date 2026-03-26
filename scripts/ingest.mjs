@@ -31,27 +31,104 @@ const REMOTE_COORDS = [
 ];
 
 const QUERIES = [
+  // ── Software & Tech ──────────────────────────────────────────────
   'software engineer', 'frontend developer', 'backend developer', 'full stack developer',
   'react developer', 'node developer', 'python developer', 'java developer',
   'mobile developer', 'ios developer', 'android developer', 'typescript developer',
-  'data scientist', 'machine learning engineer', 'ai engineer', 'data analyst',
-  'data engineer', 'nlp engineer', 'deep learning', 'llm engineer',
-  'devops engineer', 'cloud architect', 'site reliability engineer', 'platform engineer',
-  'kubernetes', 'aws engineer', 'azure engineer', 'security engineer',
-  'product manager', 'ux designer', 'ui designer', 'product designer',
-  'quantitative analyst', 'fintech engineer', 'blockchain developer',
-  'qa engineer', 'test automation', 'solutions architect', 'systems engineer',
   'golang developer', 'rust developer', 'c++ developer', 'php developer',
   'ruby developer', 'scala developer', 'kotlin developer', 'swift developer',
+  'embedded engineer', 'firmware engineer', 'game developer', 'unity developer',
+  'wordpress developer', 'shopify developer', 'web developer',
+  // ── Data / AI / ML ───────────────────────────────────────────────
+  'data scientist', 'machine learning engineer', 'ai engineer', 'data analyst',
+  'data engineer', 'nlp engineer', 'deep learning', 'llm engineer',
+  'business intelligence analyst', 'data architect', 'ai researcher',
+  'computer vision engineer', 'mlops engineer', 'analytics engineer',
+  // ── DevOps / Cloud / Security ────────────────────────────────────
+  'devops engineer', 'cloud architect', 'site reliability engineer', 'platform engineer',
+  'aws engineer', 'azure engineer', 'gcp engineer', 'security engineer',
+  'cybersecurity analyst', 'penetration tester', 'network engineer',
+  'it administrator', 'systems administrator', 'it support',
+  // ── Product / Design ─────────────────────────────────────────────
+  'product manager', 'ux designer', 'ui designer', 'product designer',
+  'ux researcher', 'graphic designer', 'motion designer', 'brand designer',
+  'creative director', 'art director', 'visual designer', 'web designer',
+  'technical writer', 'content strategist',
+  // ── Finance & Business ───────────────────────────────────────────
+  'financial analyst', 'accountant', 'auditor', 'investment banker',
+  'quantitative analyst', 'fintech engineer', 'risk analyst', 'compliance officer',
+  'financial controller', 'chief financial officer', 'tax advisor',
+  'actuary', 'credit analyst', 'portfolio manager', 'wealth manager',
+  'bookkeeper', 'payroll specialist', 'budget analyst', 'treasurer',
+  // ── Healthcare & Medicine ────────────────────────────────────────
+  'doctor', 'physician', 'surgeon', 'nurse', 'registered nurse',
+  'nurse practitioner', 'pharmacist', 'dentist', 'physiotherapist',
+  'occupational therapist', 'radiologist', 'cardiologist', 'pediatrician',
+  'psychiatrist', 'psychologist', 'medical researcher', 'clinical researcher',
+  'healthcare administrator', 'medical director', 'paramedic',
+  'public health specialist', 'epidemiologist', 'nutritionist', 'dietitian',
+  'speech therapist', 'optometrist', 'veterinarian', 'lab technician',
+  'medical writer', 'health informatics',
+  // ── Engineering (Non-tech) ───────────────────────────────────────
+  'mechanical engineer', 'civil engineer', 'electrical engineer',
+  'chemical engineer', 'aerospace engineer', 'structural engineer',
+  'environmental engineer', 'biomedical engineer', 'industrial engineer',
+  'manufacturing engineer', 'process engineer', 'quality engineer',
+  'materials engineer', 'petroleum engineer', 'mining engineer',
+  // ── Construction & Architecture ──────────────────────────────────
+  'architect', 'urban planner', 'construction manager', 'project manager',
+  'quantity surveyor', 'building surveyor', 'interior designer',
+  'site manager', 'estimator', 'drafter',
+  // ── Education & Research ─────────────────────────────────────────
+  'teacher', 'professor', 'lecturer', 'research scientist', 'postdoc researcher',
+  'curriculum developer', 'instructional designer', 'school principal',
+  'education consultant', 'academic advisor', 'librarian', 'tutor',
+  // ── Marketing & Sales ────────────────────────────────────────────
+  'marketing manager', 'digital marketing', 'seo specialist', 'social media manager',
+  'content marketing', 'growth hacker', 'performance marketing',
+  'brand manager', 'sales manager', 'account executive', 'business development',
+  'sales engineer', 'customer success manager', 'copywriter',
+  'public relations', 'communications manager', 'email marketing',
+  // ── Legal ────────────────────────────────────────────────────────
+  'lawyer', 'attorney', 'legal counsel', 'paralegal', 'compliance manager',
+  'contract manager', 'intellectual property lawyer', 'corporate lawyer',
+  // ── HR & People ──────────────────────────────────────────────────
+  'hr manager', 'human resources', 'talent acquisition', 'recruiter',
+  'people operations', 'hr business partner', 'compensation analyst',
+  'learning and development', 'organizational development',
+  // ── Operations & Supply Chain ────────────────────────────────────
+  'operations manager', 'supply chain manager', 'logistics manager',
+  'procurement manager', 'warehouse manager', 'inventory analyst',
+  'operations analyst', 'program manager', 'project coordinator',
+  // ── Science & Research ───────────────────────────────────────────
+  'biologist', 'chemist', 'physicist', 'geologist', 'marine biologist',
+  'environmental scientist', 'climate scientist', 'materials scientist',
+  'biotech researcher', 'pharmaceutical scientist', 'food scientist',
+  // ── Hospitality & Tourism ────────────────────────────────────────
+  'hotel manager', 'restaurant manager', 'chef', 'event coordinator',
+  'travel consultant', 'tourism manager', 'hospitality manager',
+  // ── Media & Entertainment ────────────────────────────────────────
+  'journalist', 'editor', 'video producer', 'film director',
+  'photographer', 'animator', '3d artist', 'game designer',
+  'music producer', 'social media influencer manager',
+  // ── Real Estate ──────────────────────────────────────────────────
+  'real estate agent', 'property manager', 'real estate analyst',
+  'facilities manager', 'asset manager',
+  // ── Government & Non-profit ──────────────────────────────────────
+  'policy analyst', 'government relations', 'ngo program manager',
+  'social worker', 'community manager', 'nonprofit director',
 ];
 
 let totalInserted = 0;
 
 async function upsert(jobs) {
   if (!jobs.length) return;
-  for (let i = 0; i < jobs.length; i += 500) {
-    const chunk = jobs.slice(i, i + 500);
-    const { error } = await supabase.from('jobs').upsert(chunk, { onConflict: 'id' });
+  // Deduplicate by id before upserting
+  const seen = new Set();
+  const deduped = jobs.filter(j => { if (seen.has(j.id)) return false; seen.add(j.id); return true; });
+  for (let i = 0; i < deduped.length; i += 500) {
+    const chunk = deduped.slice(i, i + 500);
+    const { error } = await supabase.from('jobs').upsert(chunk, { onConflict: 'id', ignoreDuplicates: false });
     if (error) console.error('  Upsert error:', error.message);
     else totalInserted += chunk.length;
   }
@@ -73,8 +150,8 @@ async function ingestAdzuna(query, country) {
       location: job.location?.display_name || country.toUpperCase(),
       country,
       salary: job.salary_min ? `$${Math.round(job.salary_min).toLocaleString()} – $${Math.round(job.salary_max || job.salary_min).toLocaleString()}` : 'Salary not listed',
-      salary_min: job.salary_min || null,
-      salary_max: job.salary_max || null,
+      salary_min: job.salary_min ? Math.round(job.salary_min) : null,
+      salary_max: job.salary_max ? Math.round(job.salary_max) : null,
       url: job.redirect_url,
       description: (job.description || '').slice(0, 2000),
       remote: false,

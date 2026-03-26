@@ -13,13 +13,19 @@ import { scoreJob } from '../data/matchJobs';
 import { getVisaStatus } from '../data/visaData';
 
 const JOB_TYPES = [
-  { value: 'all', label: 'All Types' },
-  { value: 'Software Engineering', label: 'Engineering' },
-  { value: 'Data Science / ML', label: 'Data / AI' },
-  { value: 'DevOps / Cloud', label: 'DevOps' },
-  { value: 'Product Management', label: 'Product' },
-  { value: 'Design', label: 'Design' },
-  { value: 'Finance / Fintech', label: 'Finance' },
+  { value: 'all', label: 'All' },
+  { value: 'tech', label: '💻 Tech' },
+  { value: 'healthcare', label: '🏥 Healthcare' },
+  { value: 'finance', label: '💰 Finance' },
+  { value: 'engineering', label: '⚙️ Engineering' },
+  { value: 'marketing', label: '📣 Marketing' },
+  { value: 'design', label: '🎨 Design' },
+  { value: 'education', label: '📚 Education' },
+  { value: 'legal', label: '⚖️ Legal' },
+  { value: 'science', label: '🔬 Science' },
+  { value: 'operations', label: '📦 Operations' },
+  { value: 'hr', label: '🧑‍💼 HR' },
+  { value: 'media', label: '🎬 Media' },
 ];
 
 const VISA_FILTER_OPTIONS = [
@@ -132,16 +138,22 @@ export default function JobsPage() {
 
     if (typeFilter !== 'all') {
       const typeMap = {
-        'Software Engineering': ['engineer', 'developer', 'software', 'frontend', 'backend', 'fullstack', 'web', 'mobile'],
-        'Data Science / ML': ['data', 'machine learning', 'ml', 'ai', 'scientist', 'analytics', 'nlp'],
-        'DevOps / Cloud': ['devops', 'cloud', 'infrastructure', 'sre', 'platform', 'kubernetes', 'terraform'],
-        'Product Management': ['product', 'pm', 'programme manager'],
-        'Design': ['design', 'ux', 'ui', 'figma', 'visual'],
-        'Finance / Fintech': ['finance', 'fintech', 'quant', 'banking', 'analyst', 'trading'],
+        tech: ['software', 'developer', 'engineer', 'frontend', 'backend', 'fullstack', 'devops', 'cloud', 'data', 'ml', 'ai', 'platform', 'sre', 'web', 'mobile', 'ios', 'android', 'python', 'java', 'react', 'node', 'typescript', 'golang', 'rust', 'php', 'ruby', 'scala', 'kotlin', 'swift', 'security', 'cyber', 'network', 'it ', 'systems'],
+        healthcare: ['doctor', 'physician', 'nurse', 'pharmacist', 'dentist', 'surgeon', 'medical', 'health', 'clinical', 'physiotherapist', 'therapist', 'radiologist', 'cardiologist', 'pediatr', 'psychiatr', 'psycholog', 'paramedic', 'optometrist', 'veterinar', 'healthcare', 'hospital', 'care'],
+        finance: ['finance', 'financial', 'accountant', 'auditor', 'banker', 'quant', 'fintech', 'risk', 'compliance', 'actuar', 'credit', 'portfolio', 'wealth', 'payroll', 'budget', 'tax', 'treasury', 'investment', 'trading'],
+        engineering: ['mechanical', 'civil', 'electrical', 'chemical', 'aerospace', 'structural', 'environmental', 'biomedical', 'industrial', 'manufacturing', 'process', 'quality engineer', 'materials', 'petroleum', 'mining', 'construction', 'architect', 'surveyor'],
+        marketing: ['marketing', 'seo', 'social media', 'content', 'growth', 'brand', 'sales', 'account executive', 'business development', 'copywriter', 'public relations', 'communications', 'email marketing', 'customer success'],
+        design: ['design', 'ux', 'ui ', 'figma', 'visual', 'creative director', 'art director', 'motion', 'graphic', 'illustrat', 'animator', '3d artist'],
+        education: ['teacher', 'professor', 'lecturer', 'researcher', 'curriculum', 'instructional', 'principal', 'education', 'academic', 'librarian', 'tutor', 'school', 'university'],
+        legal: ['lawyer', 'attorney', 'legal', 'paralegal', 'compliance', 'contract', 'intellectual property', 'corporate law'],
+        science: ['scientist', 'biolog', 'chemist', 'physicist', 'geolog', 'marine', 'environmental science', 'climate', 'materials science', 'biotech', 'pharmaceutical', 'food science', 'research scientist'],
+        operations: ['operations', 'supply chain', 'logistics', 'procurement', 'warehouse', 'inventory', 'program manager', 'project manager', 'coordinator', 'facilities', 'real estate', 'property'],
+        hr: ['hr ', 'human resources', 'talent', 'recruiter', 'people ops', 'hr business', 'compensation', 'learning and development', 'organisational'],
+        media: ['journalist', 'editor', 'video', 'film', 'photograph', 'animator', 'game designer', 'music', 'media', 'broadcast', 'reporter'],
       };
       const keywords = typeMap[typeFilter] || [];
       list = list.filter((j) => {
-        const t = `${j.title} ${j.company}`.toLowerCase();
+        const t = `${j.title} ${j.company} ${j.description || ''}`.toLowerCase();
         return keywords.some((k) => t.includes(k));
       });
     }
