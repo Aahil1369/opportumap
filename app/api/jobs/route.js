@@ -159,6 +159,102 @@ async function fetchRemotiveJobs(query) {
   }
 }
 
+async function fetchArbeitnowJobs(query) {
+  try {
+    // Arbeitnow is a free European tech jobs API - no auth needed
+    const pages = [1, 2, 3, 4];
+    const results = await Promise.allSettled(
+      pages.map((p) =>
+        fetch(`https://arbeitnow.com/api/job-board-api?page=${p}`, {
+          headers: { 'Accept': 'application/json' },
+          next: { revalidate: 600 },
+        }).then((r) => r.ok ? r.json() : { data: [] })
+      )
+    );
+
+    const allJobs = results.flatMap((r) => r.status === 'fulfilled' ? (r.value.data || []) : []);
+    const q = query.toLowerCase();
+    const keywords = q.split(' ').filter((k) => k.length > 2);
+
+    return allJobs
+      .filter((job) => {
+        if (!job.title || !job.company_name) return false;
+        const text = `${job.title} ${job.company_name} ${(job.tags || []).join(' ')}`.toLowerCase();
+        return keywords.length === 0 || keywords.some((k) => text.includes(k));
+      })
+      .slice(0, 200)
+      .map((job, i) => {
+        // Arbeitnow jobs are primarily Germany/EU
+        const euCoords = [
+          { lng: 13.4, lat: 52.5, country: 'de' },
+          { lng: 2.35, lat: 48.85, country: 'fr' },
+          { lng: 4.9, lat: 52.37, country: 'nl' },
+          { lng: 18.07, lat: 59.33, country: 'se' },
+          { lng: 16.37, lat: 48.2, country: 'at' },
+          { lng: 4.35, lat: 50.85, country: 'be' },
+          { lng: 21.0, lat: 52.2, country: 'pl' },
+        ];
+        const coords = euCoords[i % euCoords.length];
+        return {
+          id: `arbeitnow_${job.slug || i}`,
+          title: job.title,
+          company: job.company_name,
+          location: job.location || 'Europe',
+          salary: 'Salary not listed',
+          url: job.url,
+          lng: coords.lng + (Math.random() - 0.5) * 2,
+          lat: coords.lat + (Math.random() - 0.5) * 2,
+          country: job.remote ? 'de' : coords.country,
+          remote: job.remote || false,
+          source: 'arbeitnow',
+          description: job.description || '',
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
+async function fetchHimalayasJobs(query) {
+  try {
+    const res = await fetch('https://himalayas.app/jobs/api?limit=100', {
+      headers: { 'Accept': 'application/json' },
+      next: { revalidate: 600 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const allJobs = data.jobs || [];
+    const q = query.toLowerCase();
+    const keywords = q.split(' ').filter((k) => k.length > 2);
+
+    return allJobs
+      .filter((job) => {
+        if (!job.title || !job.company) return false;
+        const text = `${job.title} ${job.company} ${(job.skills || []).join(' ')}`.toLowerCase();
+        return keywords.length === 0 || keywords.some((k) => text.includes(k));
+      })
+      .map((job, i) => {
+        const coords = REMOTE_COORDS[i % REMOTE_COORDS.length];
+        return {
+          id: `himalayas_${job.id || i}`,
+          title: job.title,
+          company: job.company,
+          location: job.location || 'Remote',
+          salary: job.salary || 'Salary not listed',
+          url: job.applicationLink || job.url || `https://himalayas.app/jobs/${job.slug}`,
+          lng: coords.lng + (Math.random() - 0.5) * 2,
+          lat: coords.lat + (Math.random() - 0.5) * 2,
+          country: coords.country,
+          remote: true,
+          source: 'himalayas',
+          description: job.description || '',
+        };
+      });
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || 'software engineer';
@@ -168,16 +264,20 @@ export async function GET(request) {
     : ALL_COUNTRIES;
 
   try {
-    const [adzunaJobs, remoteOKJobs, remotiveJobs] = await Promise.allSettled([
+    const [adzunaJobs, remoteOKJobs, remotiveJobs, arbeitnowJobs, himalayasJobs] = await Promise.allSettled([
       fetchAdzunaJobs(query, COUNTRIES),
       fetchRemoteOKJobs(query),
       fetchRemotiveJobs(query),
+      fetchArbeitnowJobs(query),
+      fetchHimalayasJobs(query),
     ]);
 
     const jobs = [
       ...(adzunaJobs.status === 'fulfilled' ? adzunaJobs.value : []),
       ...(remoteOKJobs.status === 'fulfilled' ? remoteOKJobs.value : []),
       ...(remotiveJobs.status === 'fulfilled' ? remotiveJobs.value : []),
+      ...(arbeitnowJobs.status === 'fulfilled' ? arbeitnowJobs.value : []),
+      ...(himalayasJobs.status === 'fulfilled' ? himalayasJobs.value : []),
     ];
 
     // Deduplicate by title+company
