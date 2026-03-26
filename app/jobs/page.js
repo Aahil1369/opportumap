@@ -69,7 +69,7 @@ export default function JobsPage() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [visaFilter, setVisaFilter] = useState('all');
   const [remoteFilter, setRemoteFilter] = useState('all'); // 'all' | 'remote' | 'onsite'
-  const [sortBy, setSortBy] = useState('opportunity');
+  const [sortBy, setSortBy] = useState('default');
   const [predictedSalaries, setPredictedSalaries] = useState({});
   const [selectedJob, setSelectedJob] = useState(null);
   const [savedOnly, setSavedOnly] = useState(false);

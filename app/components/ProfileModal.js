@@ -95,7 +95,7 @@ export default function ProfileModal({ onSave, dark, initialProfile, onClose }) 
               <div>
                 <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Your name</label>
                 <input value={profile.name} onChange={(e) => set('name', e.target.value)}
-                  placeholder="e.g. Aahil" className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                  placeholder="e.g. Alex" className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
               </div>
               <div>
                 <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Your nationality (passport)</label>
