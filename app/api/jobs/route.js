@@ -255,6 +255,39 @@ async function fetchHimalayasJobs(query) {
   }
 }
 
+async function fetchFromSupabase(query, countries) {
+  try {
+    const { supabase, hasSupabase } = await import('../../../lib/supabase.js');
+    if (!hasSupabase) return null;
+
+    // Check if DB has any jobs
+    const { count } = await supabase.from('jobs').select('*', { count: 'exact', head: true });
+    if (!count || count === 0) return null;
+
+    // Build query
+    let q = supabase
+      .from('jobs')
+      .select('id, title, company, location, country, salary, url, remote, source, lng, lat, description')
+      .limit(2000);
+
+    // Full-text search
+    if (query && query.trim()) {
+      q = q.textSearch('fts', query.trim().split(/\s+/).join(' & '), { type: 'plain', config: 'english' });
+    }
+
+    // Country filter
+    if (countries && countries.length < ALL_COUNTRIES.length) {
+      q = q.in('country', countries);
+    }
+
+    const { data, error } = await q;
+    if (error || !data) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get('q') || 'software engineer';
@@ -264,6 +297,13 @@ export async function GET(request) {
     : ALL_COUNTRIES;
 
   try {
+    // Try Supabase first (fast, 100K+ jobs)
+    const dbJobs = await fetchFromSupabase(query, COUNTRIES);
+    if (dbJobs && dbJobs.length > 0) {
+      return Response.json({ jobs: dbJobs, total: dbJobs.length, source: 'db' });
+    }
+
+    // Fall back to live APIs
     const [adzunaJobs, remoteOKJobs, remotiveJobs, arbeitnowJobs, himalayasJobs] = await Promise.allSettled([
       fetchAdzunaJobs(query, COUNTRIES),
       fetchRemoteOKJobs(query),
@@ -289,7 +329,7 @@ export async function GET(request) {
       return true;
     });
 
-    return Response.json({ jobs: deduped, total: deduped.length });
+    return Response.json({ jobs: deduped, total: deduped.length, source: 'live' });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
   }
