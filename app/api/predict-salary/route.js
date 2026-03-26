@@ -9,7 +9,7 @@ export async function POST(request) {
     const key = `${title}|${country}`;
     if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const result = await model.generateContent(
       `Estimate the salary range for this job. Return only a JSON object, no markdown, no code blocks:

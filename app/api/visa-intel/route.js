@@ -16,7 +16,7 @@ export async function POST(request) {
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < 3600000) return Response.json(cached.data);
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const result = await model.generateContent(
       `You are a world-class immigration lawyer and visa expert. Provide comprehensive, accurate visa information.
