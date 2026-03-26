@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Job markers */
+.job-marker {
+  border-radius: 50%;
+  background: #6366f1;
+  border: 2px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  animation: markerPop 0.4s ease backwards, pulse 2.5s ease-in-out infinite;
+  transition: transform 0.2s ease;
+}
+
+.job-marker:hover {
+  transform: scale(1.4);
+}
+
+@keyframes markerPop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.5); }
+  50%       { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+}
+
+/* Popups */
+.mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;
+}
+
+.popup-dark .mapboxgl-popup-content {
+  background: #18181b;
+  border: 1px solid #3f3f46;
+}
+
+.popup-light .mapboxgl-popup-content {
+  background: #ffffff;
+  border: 1px solid #e4e4e7;
+}
+
+.popup-dark .mapboxgl-popup-tip { border-top-color: #1a1a1d !important; }
+.popup-light .mapboxgl-popup-tip { border-top-color: #ffffff !important; }
+
+.popup-dark .mapboxgl-popup-content { background: #1a1a1d !important; border: 1px solid #2a2a2e !important; }
+.popup-light .mapboxgl-popup-content { background: #ffffff !important; border: 1px solid #e4e4e7 !important; }
+
+.popup-inner {
+  padding: 14px 16px;
+}
+
+.popup-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: inherit;
+}
+
+.popup-dark .popup-title { color: #f4f4f5; }
+.popup-light .popup-title { color: #18181b; }
+
+.popup-company {
+  font-size: 13px;
+  margin: 0 0 2px;
+}
+
+.popup-dark .popup-company { color: #a1a1aa; }
+.popup-light .popup-company { color: #52525b; }
+
+.popup-location {
+  font-size: 11px;
+  margin: 0 0 8px;
+}
+
+.popup-dark .popup-location { color: #71717a; }
+.popup-light .popup-location { color: #a1a1aa; }
+
+.popup-salary {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #6366f1;
+}
+
+.popup-visa {
+  font-size: 11px;
+  margin: 0 0 6px;
+  color: #a1a1aa;
+}
+
+.popup-link {
+  font-size: 12px;
+  color: #6366f1;
+  text-decoration: none;
+  opacity: 0.8;
+}
+.popup-link:hover { opacity: 1; }
