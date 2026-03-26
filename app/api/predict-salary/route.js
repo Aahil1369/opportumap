@@ -1,7 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const CACHE = new Map();
 
 export async function POST(request) {
@@ -10,12 +9,10 @@ export async function POST(request) {
     const key = `${title}|${country}`;
     if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 256,
-      messages: [{
-        role: 'user',
-        content: `Estimate the salary range for this job. Return only a JSON object, no markdown:
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const result = await model.generateContent(
+      `Estimate the salary range for this job. Return only a JSON object, no markdown, no code blocks:
 {
   "min": number (annual, in local currency),
   "max": number (annual, in local currency),
@@ -28,11 +25,11 @@ Company: ${company}
 Location: ${location}
 Country: ${country}
 
-Base on real market data for this role/location. Be realistic.`,
-      }],
-    });
+Base on real market data for this role/location. Be realistic.`
+    );
 
-    const data = JSON.parse(message.content[0].text.trim());
+    const text = result.response.text().trim().replace(/```json|```/g, '').trim();
+    const data = JSON.parse(text);
     CACHE.set(key, data);
     return Response.json(data);
   } catch (err) {

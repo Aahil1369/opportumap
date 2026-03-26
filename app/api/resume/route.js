@@ -1,6 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request) {
   try {
@@ -11,31 +11,24 @@ export async function POST(request) {
     const buffer = await file.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'document',
-            source: { type: 'base64', media_type: 'application/pdf', data: base64 },
-          },
-          {
-            type: 'text',
-            text: `Analyze this resume and return a JSON object with these exact fields:
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: 'application/pdf',
+          data: base64,
+        },
+      },
+      `Analyze this resume and return a JSON object with these exact fields (no markdown, no code blocks, just raw JSON):
 {
   "skills": "comma-separated list of technical and professional skills",
   "experience": one of: "student", "0-2", "3-5", "5-10", "10+",
   "summary": "2-sentence professional summary of this person"
-}
-Return only valid JSON, no markdown.`,
-          },
-        ],
-      }],
-    });
+}`,
+    ]);
 
-    const text = message.content[0].text.trim();
+    const text = result.response.text().trim().replace(/```json|```/g, '').trim();
     const data = JSON.parse(text);
     return Response.json(data);
   } catch (err) {

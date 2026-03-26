@@ -1,8 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { VISA_INFO, SETTLEMENT_INFO } from '../../data/visaData';
-import { COUNTRY_NAMES } from '../../data/countries';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request) {
   try {
@@ -28,21 +26,27 @@ You have knowledge of:
 - Legal first steps when relocating (registering, bank accounts, healthcare)
 - Salary ranges by role and country
 - Job search strategies for international applicants
-- Community building and roommate finding when relocating
 
-Be friendly, concise, and practical. Give actionable advice. If you don't know something specific, say so honestly.
-Keep responses under 200 words unless asked for detail. Use bullet points where helpful.`;
+Be friendly, concise, and practical. Give actionable advice. Keep responses under 200 words unless asked for detail. Use bullet points where helpful.`;
 
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      systemInstruction: systemPrompt,
     });
 
-    return Response.json({ reply: response.content[0].text });
+    // Convert messages to Gemini format (user/model roles)
+    const history = messages.slice(0, -1).map((m) => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    const chat = model.startChat({ history });
+    const lastMessage = messages[messages.length - 1];
+    const result = await chat.sendMessage(lastMessage.content);
+
+    return Response.json({ reply: result.response.text() });
   } catch (err) {
-    console.error('Chat error:', err?.message, err?.status, err?.error);
-    return Response.json({ error: err.message, detail: err?.error }, { status: 500 });
+    console.error('Chat error:', err?.message);
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
