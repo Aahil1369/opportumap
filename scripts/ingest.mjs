@@ -15,20 +15,41 @@ const ADZUNA_KEY = vars['ADZUNA_APP_KEY'];
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const COUNTRIES = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'in', 'it', 'nl', 'sg', 'br', 'mx', 'nz', 'za', 'pl', 'at', 'be', 'es', 'se', 'ch'];
+// Adzuna-supported countries only
+const COUNTRIES = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'in', 'it', 'nl', 'sg', 'br', 'mx', 'nz', 'za', 'pl', 'at', 'be', 'es', 'se', 'ch', 'ru'];
+
+// All 100 countries for remote job scatter
+const ALL_COUNTRIES = [
+  'us','ca','mx','br','ar','co','cl','pe','ve','ec','bo','uy','cr','pa','gt','do','cu','jm','tt','bs',
+  'gb','de','fr','it','es','nl','se','ch','pl','at','be','pt','no','dk','fi','ie','gr','hu','ro','cz','ru','ua','hr','sk','bg','lt','lv','ee','si','rs',
+  'in','cn','jp','kr','sg','ae','sa','il','tr','id','my','ph','th','vn','pk','bd','lk','np','kz','uz','qa','kw','om','jo','lb',
+  'za','ng','ke','eg','et','gh','tz','ug','ma','dz','tn','cm','ci','sn','rw',
+  'au','nz','pg','fj',
+];
 
 const COUNTRY_COORDS = {
-  us: [-98, 38], gb: [-1.5, 52], ca: [-96, 56], au: [134, -25], de: [10, 51],
-  fr: [2.3, 46], in: [78, 20], it: [12, 42], nl: [5.3, 52.1], sg: [103.8, 1.35],
-  br: [-51, -10], mx: [-102, 23], nz: [174, -41], za: [25, -29], pl: [19, 52],
-  at: [14, 47], be: [4.5, 50.5], es: [-3.7, 40], se: [18, 60], ch: [8.2, 46.8],
+  us:[-98,38],    ca:[-96,56],    mx:[-102,23],  br:[-51,-10],  ar:[-64,-34],  co:[-74,4],
+  cl:[-71,-30],   pe:[-76,-9],    ve:[-66,8],    ec:[-78,-2],   bo:[-65,-17],  uy:[-56,-33],
+  cr:[-84,10],    pa:[-80,9],     gt:[-90,15],   do:[-70,19],   cu:[-80,22],   jm:[-77,18],
+  tt:[-61,11],    bs:[-77,25],    gb:[-1.5,52],  de:[10,51],    fr:[2.3,46],   it:[12,42],
+  es:[-3.7,40],   nl:[5.3,52.1],  se:[18,60],    ch:[8.2,46.8], pl:[19,52],    at:[14,47],
+  be:[4.5,50.5],  pt:[-8,39.5],   no:[10,62],    dk:[10,56],    fi:[26,64],    ie:[-8,53],
+  gr:[22,39],     hu:[19,47],     ro:[25,46],    cz:[15.5,50],  ru:[60,55],    ua:[32,49],
+  hr:[15.5,45],   sk:[19.5,48.7], bg:[25,43],    lt:[24,56],    lv:[25,57],    ee:[25,59],
+  si:[14.8,46.1], rs:[21,44],     in:[78,20],    cn:[105,35],   jp:[138,36],   kr:[128,37],
+  sg:[103.8,1.35],ae:[54,24],     sa:[45,24],    il:[35,31.5],  tr:[35,39],    id:[118,-5],
+  my:[109,4],     ph:[122,12],    th:[101,15],   vn:[108,16],   pk:[70,30],    bd:[90,23.7],
+  lk:[80.7,7.9],  np:[84,28],     kz:[68,48],    uz:[64,41],    qa:[51.5,25.3],kw:[47.5,29.3],
+  om:[57,22],     jo:[37,31],     lb:[35.9,33.9],za:[25,-29],   ng:[8,9],      ke:[37.9,-1],
+  eg:[30,27],     et:[40,9],      gh:[-1,8],     tz:[35,-6],    ug:[32,1],     ma:[-7,32],
+  dz:[3,28],      tn:[9,34],      cm:[12,4],     ci:[-5.5,7.5], sn:[-14,14],   rw:[30,-2],
+  au:[134,-25],   nz:[174,-41],   pg:[145,-6],   fj:[178,-18],
 };
 
-const REMOTE_COORDS = [
-  [-122.4, 37.7, 'us'], [-73.9, 40.7, 'us'], [-0.1, 51.5, 'gb'], [13.4, 52.5, 'de'],
-  [2.35, 48.85, 'fr'], [4.9, 52.37, 'nl'], [18.07, 59.33, 'se'], [103.8, 1.35, 'sg'],
-  [151.2, -33.8, 'au'], [-79.4, 43.7, 'ca'], [72.88, 19.07, 'in'],
-];
+const REMOTE_COORDS = ALL_COUNTRIES.map(code => {
+  const [lng, lat] = COUNTRY_COORDS[code] || [0, 0];
+  return [lng, lat, code];
+});
 
 const QUERIES = [
   // ── Software & Tech ──────────────────────────────────────────────
