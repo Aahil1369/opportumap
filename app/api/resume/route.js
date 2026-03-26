@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(request) {
   try {
@@ -11,24 +11,27 @@ export async function POST(request) {
     const buffer = await file.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: 'application/pdf',
-          data: base64,
-        },
-      },
-      `Analyze this resume and return a JSON object with these exact fields (no markdown, no code blocks, just raw JSON):
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType: 'application/pdf', data: base64 } },
+            {
+              text: `Analyze this resume and return a JSON object with these exact fields (no markdown, no code blocks, just raw JSON):
 {
   "skills": "comma-separated list of technical and professional skills",
   "experience": one of: "student", "0-2", "3-5", "5-10", "10+",
   "summary": "2-sentence professional summary of this person"
 }`,
-    ]);
+            },
+          ],
+        },
+      ],
+    });
 
-    const text = result.response.text().trim().replace(/```json|```/g, '').trim();
+    const text = response.text.trim().replace(/```json|```/g, '').trim();
     const data = JSON.parse(text);
     return Response.json(data);
   } catch (err) {

@@ -1,8 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Simple in-memory cache (nationality+country → result, 1hr TTL)
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const cache = new Map();
 
 export async function POST(request) {
@@ -16,10 +14,9 @@ export async function POST(request) {
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < 3600000) return Response.json(cached.data);
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-    const result = await model.generateContent(
-      `You are a world-class immigration lawyer and visa expert. Provide comprehensive, accurate visa information.
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: `You are a world-class immigration lawyer and visa expert. Provide comprehensive, accurate visa information.
 
 Passport country: ${nationality.toUpperCase()}
 Destination country: ${targetCountry.toUpperCase()}
@@ -55,10 +52,10 @@ Return ONLY valid JSON (no markdown) with this exact structure:
   "importantNotes": ["<note 1>", "<note 2>"],
   "officialWebsite": "<official immigration website URL>"
 }
-Include at least 3 visa types, 5 application steps, 5 guarantee tips, and 3 rejection reasons.`
-    );
+Include at least 3 visa types, 5 application steps, 5 guarantee tips, and 3 rejection reasons.`,
+    });
 
-    let text = result.response.text().trim().replace(/```json|```/g, '').trim();
+    let text = response.text.trim().replace(/```json|```/g, '').trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
 

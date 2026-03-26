@@ -1,7 +1,7 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { supabase, hasSupabase } from '../../../lib/supabase.js';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const cache = new Map();
 
 export async function POST(request) {
@@ -12,15 +12,13 @@ export async function POST(request) {
     const cacheKey = `${destination}:${origin || 'unknown'}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < 3600000) {
-      // Still fetch fresh community connections
       const connections = await getCommunityConnections(destination, field);
       return Response.json({ ...cached.data, connections });
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-    const result = await model.generateContent(
-      `You are an expert relocation consultant who has helped thousands of people move internationally.
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: `You are an expert relocation consultant who has helped thousands of people move internationally.
 
 Destination: ${destination}
 ${origin ? `Origin: ${origin}` : ''}
@@ -72,10 +70,10 @@ Return ONLY valid JSON (no markdown) with this exact structure:
   "taxInfo": "<brief note on income tax for expats>",
   "healthcareInfo": "<brief note on healthcare system and expat access>"
 }
-Include at least 4 neighborhoods, 3 expat communities, and 5 before-you-move actions.`
-    );
+Include at least 4 neighborhoods, 3 expat communities, and 5 before-you-move actions.`,
+    });
 
-    let text = result.response.text().trim().replace(/```json|```/g, '').trim();
+    let text = response.text.trim().replace(/```json|```/g, '').trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
 
@@ -94,23 +92,12 @@ async function getCommunityConnections(destination, field) {
   if (!hasSupabase) return [];
   try {
     const dest = destination.toLowerCase();
-    let q = supabase
+    const { data } = await supabase
       .from('posts')
       .select('id, user_name, user_avatar, title, content, post_type, created_at, like_count')
       .or(`content.ilike.%${dest}%,title.ilike.%${dest}%`)
       .order('like_count', { ascending: false })
       .limit(6);
-
-    if (field) {
-      q = supabase
-        .from('posts')
-        .select('id, user_name, user_avatar, title, content, post_type, created_at, like_count')
-        .or(`content.ilike.%${dest}%,title.ilike.%${dest}%,content.ilike.%${field.toLowerCase()}%`)
-        .order('like_count', { ascending: false })
-        .limit(6);
-    }
-
-    const { data } = await q;
     return data || [];
   } catch {
     return [];

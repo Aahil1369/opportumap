@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const CACHE = new Map();
 
 export async function POST(request) {
@@ -9,10 +9,9 @@ export async function POST(request) {
     const key = `${title}|${country}`;
     if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-
-    const result = await model.generateContent(
-      `Estimate the salary range for this job. Return only a JSON object, no markdown, no code blocks:
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: `Estimate the salary range for this job. Return only a JSON object, no markdown, no code blocks:
 {
   "min": number (annual, in local currency),
   "max": number (annual, in local currency),
@@ -25,10 +24,10 @@ Company: ${company}
 Location: ${location}
 Country: ${country}
 
-Base on real market data for this role/location. Be realistic.`
-    );
+Base on real market data for this role/location. Be realistic.`,
+    });
 
-    const text = result.response.text().trim().replace(/```json|```/g, '').trim();
+    const text = response.text.trim().replace(/```json|```/g, '').trim();
     const data = JSON.parse(text);
     CACHE.set(key, data);
     return Response.json(data);
