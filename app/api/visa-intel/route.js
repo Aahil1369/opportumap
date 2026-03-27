@@ -1,6 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const cache = new Map();
 
 export async function POST(request) {
@@ -14,9 +14,12 @@ export async function POST(request) {
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.ts < 3600000) return Response.json(cached.data);
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
-      contents: `You are a world-class immigration lawyer and visa expert. Provide comprehensive, accurate visa information.
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'user',
+          content: `You are a world-class immigration lawyer and visa expert. Provide comprehensive, accurate visa information.
 
 Passport country: ${nationality.toUpperCase()}
 Destination country: ${targetCountry.toUpperCase()}
@@ -53,9 +56,12 @@ Return ONLY valid JSON (no markdown) with this exact structure:
   "officialWebsite": "<official immigration website URL>"
 }
 Include at least 3 visa types, 5 application steps, 5 guarantee tips, and 3 rejection reasons.`,
+        },
+      ],
+      max_tokens: 2048,
     });
 
-    let text = response.text.trim().replace(/```json|```/g, '').trim();
+    let text = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
 

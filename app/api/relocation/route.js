@@ -1,7 +1,7 @@
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 import { supabase, hasSupabase } from '../../../lib/supabase.js';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const cache = new Map();
 
 export async function POST(request) {
@@ -16,9 +16,12 @@ export async function POST(request) {
       return Response.json({ ...cached.data, connections });
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
-      contents: `You are an expert relocation consultant who has helped thousands of people move internationally.
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'user',
+          content: `You are an expert relocation consultant who has helped thousands of people move internationally.
 
 Destination: ${destination}
 ${origin ? `Origin: ${origin}` : ''}
@@ -71,9 +74,12 @@ Return ONLY valid JSON (no markdown) with this exact structure:
   "healthcareInfo": "<brief note on healthcare system and expat access>"
 }
 Include at least 4 neighborhoods, 3 expat communities, and 5 before-you-move actions.`,
+        },
+      ],
+      max_tokens: 2048,
     });
 
-    let text = response.text.trim().replace(/```json|```/g, '').trim();
+    let text = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
 

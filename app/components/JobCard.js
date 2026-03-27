@@ -168,10 +168,23 @@ export default function JobCard({ job, profile, dark, selected, onClick, predict
         </div>
       )}
 
-      {/* Source tag */}
-      {job.source && job.source !== 'adzuna' && (
-        <p className={`text-xs mt-2 ${dark ? 'text-zinc-600' : 'text-zinc-300'}`}>via {job.source}</p>
-      )}
+      {/* Apply + Source row */}
+      <div className="flex items-center justify-between mt-2">
+        {job.url ? (
+          <a
+            href={job.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
+          >
+            Apply →
+          </a>
+        ) : <span />}
+        {job.source && job.source !== 'adzuna' && (
+          <p className={`text-xs ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>via {job.source}</p>
+        )}
+      </div>
     </div>
   );
 }

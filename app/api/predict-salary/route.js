@@ -1,6 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const CACHE = new Map();
 
 export async function POST(request) {
@@ -9,26 +9,28 @@ export async function POST(request) {
     const key = `${title}|${country}`;
     if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
-      contents: `Estimate the salary range for this job. Return only a JSON object, no markdown, no code blocks:
-{
-  "min": number (annual, in local currency),
-  "max": number (annual, in local currency),
-  "currency": "USD" | "GBP" | "CAD" | "AUD" | "EUR" | "INR" | "SGD",
-  "display": "formatted string e.g. $80,000 – $120,000"
-}
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        {
+          role: 'user',
+          content: `Estimate the salary range for this job. Return ONLY a JSON object, no markdown, no code blocks, no explanation:
+{"min":number,"max":number,"currency":"USD"|"GBP"|"CAD"|"AUD"|"EUR"|"INR"|"SGD","display":"formatted string e.g. $80,000 – $120,000"}
 
 Job: ${title}
 Company: ${company}
 Location: ${location}
 Country: ${country}
 
-Base on real market data for this role/location. Be realistic.`,
+Base on real market data. Be realistic.`,
+        },
+      ],
+      max_tokens: 100,
     });
 
-    const text = response.text.trim().replace(/```json|```/g, '').trim();
-    const data = JSON.parse(text);
+    const text = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const data = JSON.parse(jsonMatch ? jsonMatch[0] : text);
     CACHE.set(key, data);
     return Response.json(data);
   } catch (err) {

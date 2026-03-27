@@ -23,6 +23,7 @@ export default function ProfileModal({ onSave, dark, initialProfile, onClose }) 
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeScanning, setResumeScanning] = useState(false);
   const [resumeSummary, setResumeSummary] = useState(initialProfile?.resumeSummary || '');
+  const [rememberOnDevice, setRememberOnDevice] = useState(initialProfile?.rememberOnDevice ?? false);
 
   const ui = {
     bg: dark ? 'bg-[#1a1a1d]' : 'bg-white',
@@ -59,7 +60,7 @@ export default function ProfileModal({ onSave, dark, initialProfile, onClose }) 
   };
 
   const handleSave = () => {
-    onSave({ ...profile, resumeSummary });
+    onSave({ ...profile, resumeSummary, rememberOnDevice });
   };
 
   return (
@@ -211,6 +212,15 @@ export default function ProfileModal({ onSave, dark, initialProfile, onClose }) 
                 <p className={`text-xs mt-1 ${ui.sub}`}>{profile.experience || '—'} experience · {profile.jobTypes.join(', ') || '—'}</p>
                 {profile.skills && <p className={`text-xs mt-1 ${ui.sub}`}>Skills: {profile.skills}</p>}
               </div>
+              <label className="flex items-center gap-2.5 cursor-pointer mt-1">
+                <input
+                  type="checkbox"
+                  checked={rememberOnDevice}
+                  onChange={(e) => setRememberOnDevice(e.target.checked)}
+                  className="w-4 h-4 rounded accent-indigo-600"
+                />
+                <span className={`text-xs ${ui.sub}`}>Remember my profile on this device</span>
+              </label>
             </>
           )}
         </div>

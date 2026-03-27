@@ -11,6 +11,7 @@ import { useTheme } from '../hooks/useTheme';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 import { scoreJob } from '../data/matchJobs';
 import { getVisaStatus } from '../data/visaData';
+import { createClient } from '../../lib/supabase-browser';
 
 const JOB_TYPES = [
   { value: 'all', label: 'All' },
@@ -75,21 +76,53 @@ export default function JobsPage() {
   const [savedOnly, setSavedOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
   const PER_PAGE = 24;
+  const supabase = createClient();
 
-  // Load profile
+  // Load profile — from Supabase if logged in, else localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('opportumap_profile');
-    if (saved) {
-      const p = JSON.parse(saved);
-      setProfile(p);
-      const autoQ = buildQueryFromProfile(p);
-      setQuery(autoQ);
-      setInput(autoQ);
-    } else {
+    async function loadProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setAuthUser(user);
+
+      if (user) {
+        // Try Supabase profile first
+        try {
+          const res = await fetch('/api/user-profile');
+          const { profile: remoteProfile } = await res.json();
+          if (remoteProfile) {
+            setProfile(remoteProfile);
+            setQuery(buildQueryFromProfile(remoteProfile));
+            setInput(buildQueryFromProfile(remoteProfile));
+            return;
+          }
+        } catch {}
+        // Pre-fill name from Google if no saved profile
+        const name = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+        const localRaw = localStorage.getItem('opportumap_profile');
+        if (localRaw) {
+          const p = { ...JSON.parse(localRaw), name: JSON.parse(localRaw).name || name };
+          setProfile(p);
+          setQuery(buildQueryFromProfile(p));
+          setInput(buildQueryFromProfile(p));
+          return;
+        }
+        setProfile({ name, nationality: '', currentCountry: '', experience: '', jobTypes: [], skills: '', preferredCountries: [] });
+      } else {
+        const localRaw = localStorage.getItem('opportumap_profile');
+        if (localRaw) {
+          const p = JSON.parse(localRaw);
+          setProfile(p);
+          setQuery(buildQueryFromProfile(p));
+          setInput(buildQueryFromProfile(p));
+          return;
+        }
+      }
       setQuery('software engineer');
       setInput('software engineer');
     }
+    loadProfile();
   }, []);
 
   // Fetch jobs
@@ -207,7 +240,16 @@ export default function JobsPage() {
 
   const handleSaveProfile = (p) => {
     setProfile(p);
-    localStorage.setItem('opportumap_profile', JSON.stringify(p));
+    // Save to Supabase if logged in
+    if (authUser) {
+      fetch('/api/user-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: p }) }).catch(() => {});
+    }
+    // Save to localStorage only if user opted in
+    if (p.rememberOnDevice) {
+      localStorage.setItem('opportumap_profile', JSON.stringify(p));
+    } else {
+      localStorage.removeItem('opportumap_profile');
+    }
     setShowProfile(false);
     const autoQ = buildQueryFromProfile(p);
     setQuery(autoQ);
