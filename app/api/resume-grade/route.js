@@ -1,6 +1,7 @@
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
@@ -8,18 +9,15 @@ export async function POST(request) {
     const file = formData.get('resume');
     if (!file) return Response.json({ error: 'No file uploaded' }, { status: 400 });
 
-    const buffer = await file.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const { text: resumeText } = await pdfParse(buffer);
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
-      contents: [
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
         {
           role: 'user',
-          parts: [
-            { inlineData: { mimeType: 'application/pdf', data: base64 } },
-            {
-              text: `You are an expert resume coach and recruiter. Analyze this resume thoroughly and return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
+          content: `You are an expert resume coach and recruiter. Analyze this resume thoroughly and return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {
   "score": <integer 1-100, be honest and strict>,
   "grade": "<A+|A|A-|B+|B|B-|C+|C|C-|D|F>",
@@ -42,14 +40,16 @@ export async function POST(request) {
   "keywords_missing": ["<keyword 1>", "<keyword 2>"],
   "name": "<candidate's name if visible, else null>"
 }
-Provide at least 3 strengths, 4 improvements, and 8 job matches. Be specific, not generic.`,
-            },
-          ],
+Provide at least 3 strengths, 4 improvements, and 8 job matches. Be specific, not generic.
+
+RESUME TEXT:
+${resumeText.slice(0, 6000)}`,
         },
       ],
+      max_tokens: 2048,
     });
 
-    let text = response.text.trim().replace(/```json|```/g, '').trim();
+    let text = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
 

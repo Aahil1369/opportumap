@@ -1,6 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request) {
   try {
@@ -29,21 +29,18 @@ You have knowledge of:
 
 Be friendly, concise, and practical. Give actionable advice. Keep responses under 200 words unless asked for detail. Use bullet points where helpful.`;
 
-    const history = messages.slice(0, -1).map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
+    const groqMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
+    ];
 
-    const chat = ai.chats.create({
-      model: 'gemini-2.0-flash-lite',
-      config: { systemInstruction: systemPrompt },
-      history,
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: groqMessages,
+      max_tokens: 512,
     });
 
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessage({ message: lastMessage.content });
-
-    return Response.json({ reply: result.text });
+    return Response.json({ reply: completion.choices[0].message.content });
   } catch (err) {
     console.error('Chat error:', err?.message);
     return Response.json({ error: err.message }, { status: 500 });
