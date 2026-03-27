@@ -35,7 +35,7 @@ Be friendly, concise, and practical. Give actionable advice. Keep responses unde
     }));
 
     const chat = ai.chats.create({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-lite',
       config: { systemInstruction: systemPrompt },
       history,
     });
