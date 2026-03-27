@@ -11,7 +11,7 @@ export async function POST(request) {
     if (!file) return Response.json({ error: 'No file uploaded' }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const pdfParseModule = await import('pdf-parse');
+    const pdfParseModule = await import('pdf-parse/lib/pdf-parse.js');
     const pdfParse = pdfParseModule.default ?? pdfParseModule;
     const { text: resumeText } = await pdfParse(buffer);
 
