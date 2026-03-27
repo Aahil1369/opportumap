@@ -1,6 +1,4 @@
 import Groq from 'groq-sdk';
-import pdfParse from 'pdf-parse';
-
 export const runtime = 'nodejs';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -12,6 +10,8 @@ export async function POST(request) {
     if (!file) return Response.json({ error: 'No file uploaded' }, { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    const pdfParseModule = await import('pdf-parse');
+    const pdfParse = pdfParseModule.default ?? pdfParseModule;
     const { text: resumeText } = await pdfParse(buffer);
 
     const completion = await groq.chat.completions.create({
