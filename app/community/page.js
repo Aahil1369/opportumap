@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useUser, SignInButton } from '@clerk/nextjs';
 import Navbar from '../components/Navbar';
+import AuthModal from '../components/AuthModal';
 import { useTheme } from '../hooks/useTheme';
+import { createClient } from '../../lib/supabase-browser';
 
 const POST_TYPES = [
   { value: 'story', label: '📖 Story', color: 'text-purple-400' },
@@ -77,7 +78,7 @@ function FollowButton({ targetUserId, targetName, currentUser, dark }) {
   );
 }
 
-function CommentSection({ postId, dark, currentUser }) {
+function CommentSection({ postId, dark, currentUser, onSignIn }) {
   const [comments, setComments] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [input, setInput] = useState('');
@@ -161,15 +162,13 @@ function CommentSection({ postId, dark, currentUser }) {
           </div>
         </div>
       ) : (
-        <SignInButton mode="modal">
-          <button className={`text-xs ${ui.sub} hover:text-indigo-400 transition-colors`}>Sign in to comment</button>
-        </SignInButton>
+        <button onClick={() => onSignIn?.()} className={`text-xs ${ui.sub} hover:text-indigo-400 transition-colors`}>Sign in to comment</button>
       )}
     </div>
   );
 }
 
-function PostCard({ post, dark, currentUser, likedIds, onLike }) {
+function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [localLikeCount, setLocalLikeCount] = useState(post.like_count || 0);
@@ -273,6 +272,7 @@ function PostCard({ post, dark, currentUser, likedIds, onLike }) {
           postId={post.id}
           dark={dark}
           currentUser={currentUser}
+          onSignIn={onSignIn}
         />
       )}
     </div>
@@ -322,11 +322,9 @@ function CreatePost({ dark, currentUser, onPost }) {
     return (
       <div className={`rounded-2xl border p-4 flex items-center gap-3 ${ui.card}`}>
         <div className="w-9 h-9 rounded-full bg-zinc-300 dark:bg-zinc-700 flex-shrink-0" />
-        <SignInButton mode="modal">
-          <button className={`flex-1 text-left text-sm px-4 py-2.5 rounded-xl border transition-all ${ui.input}`}>
-            Share your story, post a job, ask a question...
-          </button>
-        </SignInButton>
+        <button onClick={() => onSignIn?.()} className={`flex-1 text-left text-sm px-4 py-2.5 rounded-xl border transition-all ${ui.input}`}>
+          Share your story, post a job, ask a question...
+        </button>
       </div>
     );
   }
@@ -392,7 +390,8 @@ function CreatePost({ dark, currentUser, onPost }) {
 
 export default function CommunityPage() {
   const { dark, toggleDark } = useTheme();
-  const { user, isLoaded } = useUser();
+  const [user, setUser] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [likedIds, setLikedIds] = useState(new Set());
@@ -406,6 +405,13 @@ export default function CommunityPage() {
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
   };
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    return () => subscription.unsubscribe();
+  }, []);
 
   const loadPosts = useCallback(async (offset = 0) => {
     setLoading(true);
@@ -449,6 +455,7 @@ export default function CommunityPage() {
 
   return (
     <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
+      {showAuth && <AuthModal dark={dark} onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
       <Navbar dark={dark} onToggleDark={toggleDark} />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
@@ -462,9 +469,7 @@ export default function CommunityPage() {
           {/* Main feed */}
           <div className="flex-1 min-w-0 space-y-4">
             {/* Create post */}
-            {isLoaded && (
-              <CreatePost dark={dark} currentUser={user} onPost={handlePost} />
-            )}
+            <CreatePost dark={dark} currentUser={user} onPost={handlePost} onSignIn={() => setShowAuth(true)} />
 
             {/* Post feed */}
             {loading && posts.length === 0 ? (
@@ -501,6 +506,7 @@ export default function CommunityPage() {
                     currentUser={user}
                     likedIds={likedIds}
                     onLike={handleLike}
+                    onSignIn={() => setShowAuth(true)}
                   />
                 ))}
                 {hasMore && (
@@ -534,22 +540,17 @@ export default function CommunityPage() {
             </div>
 
             {/* User stats */}
-            {isLoaded && user && (
-              <UserStats user={user} dark={dark} ui={ui} />
-            )}
-
-            {!isLoaded || !user ? (
+            {user && <UserStats user={user} dark={dark} ui={ui} />}
+            {!user && (
               <div className={`rounded-2xl border p-4 text-center ${ui.card}`}>
                 <p className="text-2xl mb-2">✨</p>
                 <p className={`text-xs font-semibold mb-3 ${ui.text}`}>Join the community</p>
                 <p className={`text-xs mb-3 ${ui.sub}`}>Sign in to post, comment, like, and follow others.</p>
-                <SignInButton mode="modal">
-                  <button className="w-full px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
-                    Sign in / Sign up
-                  </button>
-                </SignInButton>
+                <button onClick={() => setShowAuth(true)} className="w-full px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
+                  Sign in / Sign up
+                </button>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

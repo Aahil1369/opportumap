@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { createClient } from '../../../../lib/supabase-server.js';
 import { supabase, hasSupabase } from '../../../../lib/supabase.js';
 
 export async function GET(request) {
@@ -19,18 +19,20 @@ export async function GET(request) {
 
 export async function POST(request) {
   if (!hasSupabase) return Response.json({ error: 'Database unavailable' }, { status: 503 });
-  const { userId } = await auth();
-  if (!userId) return Response.json({ error: 'Sign in to post' }, { status: 401 });
 
-  const { title, content, post_type, tags, user_name, user_avatar } = await request.json();
+  const authClient = await createClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return Response.json({ error: 'Sign in to post' }, { status: 401 });
+
+  const { title, content, post_type, tags } = await request.json();
   if (!content?.trim()) return Response.json({ error: 'Content required' }, { status: 400 });
 
   const { data, error } = await supabase
     .from('posts')
     .insert({
-      user_id: userId,
-      user_name: user_name || 'Anonymous',
-      user_avatar: user_avatar || '',
+      user_id: user.id,
+      user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+      user_avatar: user.user_metadata?.avatar_url || '',
       title: title?.trim() || null,
       content: content.trim(),
       post_type: post_type || 'story',

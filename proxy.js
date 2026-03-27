@@ -1,21 +1,34 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
 
-// Everything is public by default — only these routes require sign-in
-const isProtectedRoute = createRouteMatcher([
-  '/api/community/likes(.*)',
-  '/api/community/follows(.*)',
-]);
+async function middleware(request) {
+  let supabaseResponse = NextResponse.next({ request });
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isProtectedRoute(req)) {
-    await auth.protect();
-  }
-});
+  // Refresh Supabase auth session on every request
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Refresh session — required for Supabase SSR
+  await supabase.auth.getUser();
+  return supabaseResponse;
+}
+
+export default middleware;
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static files entirely
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?|ttf)).*)',
-    '/(api|trpc)(.*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|woff2?|ttf)).*)',
   ],
 };
