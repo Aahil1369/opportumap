@@ -10,7 +10,7 @@ export async function POST(request) {
     if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-lite',
       contents: `Estimate the salary range for this job. Return only a JSON object, no markdown, no code blocks:
 {
   "min": number (annual, in local currency),

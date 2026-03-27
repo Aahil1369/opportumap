@@ -15,7 +15,7 @@ export async function POST(request) {
     if (cached && Date.now() - cached.ts < 3600000) return Response.json(cached.data);
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-lite',
       contents: `You are a world-class immigration lawyer and visa expert. Provide comprehensive, accurate visa information.
 
 Passport country: ${nationality.toUpperCase()}
