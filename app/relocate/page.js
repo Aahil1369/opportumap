@@ -119,7 +119,7 @@ export default function RelocatePage() {
                 className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
             </div>
             <div>
-              <label className={`text-xs font-medium block mb-1.5 ${ui.sub}`}>Where you're from (optional)</label>
+              <label className={`text-xs font-medium block mb-1.5 ${ui.sub}`}>Where you&apos;re from (optional)</label>
               <input value={origin} onChange={(e) => setOrigin(e.target.value)}
                 placeholder="e.g. Lagos, Nigeria"
                 className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
@@ -365,7 +365,7 @@ export default function RelocatePage() {
             {result.connections?.length > 0 && (
               <div className={`rounded-2xl border p-5 ${ui.card}`}>
                 <h3 className={`text-sm font-bold mb-1 ${ui.text}`}>💬 People Talking About {result.destination}</h3>
-                <p className={`text-xs mb-4 ${ui.sub}`}>From the OpportuMap community — connect with people who've been there:</p>
+                <p className={`text-xs mb-4 ${ui.sub}`}>From the OpportuMap community — connect with people who&apos;ve been there:</p>
                 <div className="space-y-3">
                   {result.connections.map((post) => (
                     <a key={post.id} href="/community"

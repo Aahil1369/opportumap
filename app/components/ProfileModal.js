@@ -146,7 +146,7 @@ export default function ProfileModal({ onSave, dark, initialProfile, onClose }) 
           {/* Step 3: Preferred countries */}
           {step === 3 && (
             <>
-              <p className={`text-sm ${ui.sub}`}>Which countries are you open to working in? We'll fetch jobs from these countries.</p>
+              <p className={`text-sm ${ui.sub}`}>Which countries are you open to working in? We&apos;ll fetch jobs from these countries.</p>
               <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
                 {ADZUNA_COUNTRIES.map((c) => (
                   <button key={c.code} onClick={() => toggleCountry(c.code)}

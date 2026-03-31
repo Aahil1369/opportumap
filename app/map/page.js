@@ -35,30 +35,31 @@ function buildQueryFromProfile(profile) {
 
 export default function MapPage() {
   const { dark, toggleDark } = useTheme();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    const saved = localStorage.getItem('opportumap_profile');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [showProfile, setShowProfile] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
-  const [input, setInput] = useState('');
+  const [query, setQuery] = useState(() => {
+    if (typeof window === 'undefined') return 'software engineer';
+    const saved = localStorage.getItem('opportumap_profile');
+    if (saved) return buildQueryFromProfile(JSON.parse(saved));
+    return 'software engineer';
+  });
+  const [input, setInput] = useState(() => {
+    if (typeof window === 'undefined') return 'software engineer';
+    const saved = localStorage.getItem('opportumap_profile');
+    if (saved) return buildQueryFromProfile(JSON.parse(saved));
+    return 'software engineer';
+  });
   const mapRef = useRef(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('opportumap_profile');
-    if (saved) {
-      const p = JSON.parse(saved);
-      setProfile(p);
-      const q = buildQueryFromProfile(p);
-      setQuery(q);
-      setInput(q);
-    } else {
-      setQuery('software engineer');
-      setInput('software engineer');
-    }
-  }, []);
-
-  useEffect(() => {
     if (!query) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const preferred = profile?.preferredCountries;
     const countriesParam = preferred?.length ? `&countries=${preferred.join(',')}` : '';
