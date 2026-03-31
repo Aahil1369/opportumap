@@ -42,22 +42,28 @@ async function fetchAdzunaJobs(query, countries) {
       const res = await fetch(url, { next: { revalidate: 300 } });
       if (!res.ok) return [];
       const data = await res.json();
-      return (data.results || []).map((job) => ({
-        id: `adzuna_${job.id}`,
-        title: job.title,
-        company: job.company?.display_name || 'Unknown',
-        location: job.location?.display_name || country.toUpperCase(),
-        salary: job.salary_min
-          ? `$${Math.round(job.salary_min).toLocaleString()} – $${Math.round(job.salary_max || job.salary_min).toLocaleString()}`
-          : 'Salary not listed',
-        url: job.redirect_url,
-        lng: job.longitude ?? COUNTRY_COORDS[country].lng + (Math.random() - 0.5) * 8,
-        lat: job.latitude ?? COUNTRY_COORDS[country].lat + (Math.random() - 0.5) * 8,
-        country,
-        remote: false,
-        source: 'adzuna',
-        description: job.description || '',
-      }));
+      return (data.results || []).map((job) => {
+        const postedAt = job.created || null;
+        const expiresAt = postedAt ? new Date(new Date(postedAt).getTime() + 60 * 24 * 60 * 60 * 1000).toISOString() : null;
+        return {
+          id: `adzuna_${job.id}`,
+          title: job.title,
+          company: job.company?.display_name || 'Unknown',
+          location: job.location?.display_name || country.toUpperCase(),
+          salary: job.salary_min
+            ? `$${Math.round(job.salary_min).toLocaleString()} – $${Math.round(job.salary_max || job.salary_min).toLocaleString()}`
+            : 'Salary not listed',
+          url: job.redirect_url,
+          lng: job.longitude ?? COUNTRY_COORDS[country].lng + (Math.random() - 0.5) * 8,
+          lat: job.latitude ?? COUNTRY_COORDS[country].lat + (Math.random() - 0.5) * 8,
+          country,
+          remote: false,
+          source: 'adzuna',
+          description: job.description || '',
+          posted_at: postedAt,
+          expires_at: expiresAt,
+        };
+      });
     })
   );
   return results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
@@ -259,9 +265,11 @@ async function fetchFromSupabase(query, countries) {
     if (!count || count === 0) return null;
 
     // Build query
+    const now = new Date().toISOString();
     let q = supabase
       .from('jobs')
-      .select('id, title, company, location, country, salary, url, remote, source, lng, lat, description')
+      .select('id, title, company, location, country, salary, url, remote, source, lng, lat, description, posted_at, expires_at, last_seen')
+      .or(`expires_at.gt.${now},expires_at.is.null`)
       .limit(2000);
 
     // Full-text search
