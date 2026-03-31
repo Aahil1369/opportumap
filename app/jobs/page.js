@@ -257,18 +257,18 @@ export default function JobsPage() {
   };
 
   const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    sidebar: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
+    sidebar: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-200',
-    input: dark ? 'bg-[#1a1a1d] border-[#3a3a3e] text-zinc-100 placeholder-zinc-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400',
-    select: dark ? 'bg-[#2a2a2e] border-[#3a3a3e] text-zinc-300' : 'bg-white border-zinc-200 text-zinc-600',
+    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-200',
+    input: dark ? 'bg-[#0e0e18] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400',
+    select: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-300' : 'bg-white border-zinc-200 text-zinc-600',
     pill: (a) => a
       ? 'bg-indigo-600 text-white border-indigo-600'
-      : dark ? 'bg-[#2a2a2e] text-zinc-400 border-[#2a2a2e] hover:border-indigo-500/40' : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400',
-    toggle: dark ? 'bg-[#2a2a2e] text-zinc-300 hover:bg-[#333]' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300',
+      : dark ? 'bg-[#1a1a2e] text-zinc-400 border-[#1e1e2e] hover:border-indigo-500/40' : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400',
+    toggle: dark ? 'bg-[#1a1a2e] text-zinc-300 hover:bg-[#222235]' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300',
   };
 
   const FilterSidebar = () => (
@@ -375,8 +375,19 @@ export default function JobsPage() {
       <Navbar dark={dark} onToggleDark={toggleDark} />
 
       {/* Search header */}
-      <div className={`border-b ${ui.divider} px-4 sm:px-8 py-4`}>
-        <div className="max-w-7xl mx-auto space-y-3">
+      <div className={`relative border-b ${ui.divider} px-4 sm:px-8 py-5 overflow-hidden`}>
+        {dark && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/40 via-[#080810] to-violet-950/30 pointer-events-none" />
+            <div className="absolute -top-10 -left-10 w-64 h-64 bg-indigo-600/8 rounded-full blur-3xl pointer-events-none" />
+          </>
+        )}
+        <div className="relative max-w-7xl mx-auto space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-lg">🌐</span>
+            <h1 className={`text-lg font-bold ${dark ? 'gradient-text' : 'text-zinc-900'}`}>Global Jobs</h1>
+            {profile?.name && <span className={`text-xs px-2 py-0.5 rounded-full border ${dark ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' : 'border-indigo-200 text-indigo-600 bg-indigo-50'}`}>for {profile.name}</span>}
+          </div>
           <form onSubmit={(e) => { e.preventDefault(); setQuery(input); setPage(1); }}
             className="flex gap-2">
             <div className="relative flex-1">
@@ -386,11 +397,11 @@ export default function JobsPage() {
                 className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all ${ui.input}`} />
             </div>
             <button type="submit"
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20">
               Search
             </button>
             <button type="button" onClick={() => setShowProfile(true)}
-              className={`px-3 py-2.5 rounded-xl border text-sm transition-all hidden sm:flex items-center gap-1.5 ${dark ? 'border-[#2a2a2e] text-zinc-300 hover:bg-[#1a1a1d]' : 'border-zinc-200 text-zinc-600 hover:bg-white'}`}>
+              className={`px-3 py-2.5 rounded-xl border text-sm transition-all hidden sm:flex items-center gap-1.5 ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-600 hover:bg-white'}`}>
               👤 {profile?.name || 'Profile'}
             </button>
           </form>
@@ -403,7 +414,7 @@ export default function JobsPage() {
                 {t.label}
               </button>
             ))}
-            <div className={`ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 ${dark ? 'border-[#2a2a2e]' : 'border-zinc-200'}`}>
+            <div className={`ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 ${dark ? 'border-[#1e1e2e]' : 'border-zinc-200'}`}>
               {['all', 'remote', 'onsite'].map((r) => (
                 <button key={r} onClick={() => setRemoteFilter(r)}
                   className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all capitalize ${remoteFilter === r ? 'bg-indigo-600 text-white' : ui.sub}`}>
@@ -434,7 +445,7 @@ export default function JobsPage() {
               ✈️ I got the job
             </button>
             <button onClick={() => setShowFilters(!showFilters)}
-              className={`lg:hidden px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${dark ? 'border-[#2a2a2e] text-zinc-300' : 'border-zinc-200 text-zinc-600'}`}>
+              className={`lg:hidden px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300' : 'border-zinc-200 text-zinc-600'}`}>
               ⚙️ Filters
             </button>
           </div>
@@ -511,7 +522,7 @@ export default function JobsPage() {
                 {paginated.length < filtered.length && (
                   <div className="text-center pt-5">
                     <button onClick={() => setPage((p) => p + 1)}
-                      className={`px-6 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#2a2a2e] text-zinc-300 hover:bg-[#1a1a1d]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
+                      className={`px-6 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
                       Load more · {filtered.length - paginated.length} remaining
                     </button>
                   </div>
