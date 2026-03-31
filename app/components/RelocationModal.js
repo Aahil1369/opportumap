@@ -60,7 +60,7 @@ export default function RelocationModal({ onClose, dark }) {
           {!submitted ? (
             <>
               <p className={`text-sm ${ui.sub}`}>
-                Tell us about the job — even if it's not on OpportuMap. We'll build your complete relocation plan.
+                Tell us about the job — even if it&apos;s not on OpportuMap. We&apos;ll build your complete relocation plan.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>

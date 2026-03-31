@@ -55,7 +55,7 @@ function FollowButton({ targetUserId, targetName, currentUser, dark }) {
       body: JSON.stringify({
         following_id: targetUserId,
         following_name: targetName,
-        follower_name: currentUser.fullName || currentUser.username || '',
+        follower_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '',
       }),
     });
     const data = await res.json();
@@ -99,8 +99,8 @@ function CommentSection({ postId, dark, currentUser, onSignIn }) {
       body: JSON.stringify({
         post_id: postId,
         content: input.trim(),
-        user_name: currentUser.fullName || currentUser.username || 'Anonymous',
-        user_avatar: currentUser.imageUrl || '',
+        user_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Anonymous',
+        user_avatar: currentUser.user_metadata?.avatar_url || '',
       }),
     });
     const data = await res.json();
@@ -143,7 +143,7 @@ function CommentSection({ postId, dark, currentUser, onSignIn }) {
 
       {currentUser ? (
         <div className="flex gap-2">
-          <Avatar name={currentUser.fullName || currentUser.username} avatar={currentUser.imageUrl} size="sm" />
+          <Avatar name={currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]} avatar={currentUser.user_metadata?.avatar_url} size="sm" />
           <div className="flex-1 flex gap-2">
             <input
               value={input}
@@ -279,7 +279,7 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
   );
 }
 
-function CreatePost({ dark, currentUser, onPost }) {
+function CreatePost({ dark, currentUser, onPost, onSignIn }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -306,8 +306,8 @@ function CreatePost({ dark, currentUser, onPost }) {
         content: content.trim(),
         post_type: postType,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-        user_name: currentUser.fullName || currentUser.username || 'Anonymous',
-        user_avatar: currentUser.imageUrl || '',
+        user_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Anonymous',
+        user_avatar: currentUser.user_metadata?.avatar_url || '',
       }),
     });
     const data = await res.json();
@@ -332,7 +332,7 @@ function CreatePost({ dark, currentUser, onPost }) {
   return (
     <div className={`rounded-2xl border ${ui.card}`}>
       <div className="p-4 flex items-center gap-3">
-        <Avatar name={currentUser.fullName || currentUser.username} avatar={currentUser.imageUrl} />
+        <Avatar name={currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]} avatar={currentUser.user_metadata?.avatar_url} />
         <button
           onClick={() => setOpen(true)}
           className={`flex-1 text-left text-sm px-4 py-2.5 rounded-xl border transition-all ${ui.input}`}
@@ -424,6 +424,7 @@ export default function CommunityPage() {
     setLoading(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadPosts(0); }, [loadPosts]);
 
   // Load liked post IDs for current user
@@ -571,10 +572,10 @@ function UserStats({ user, dark, ui }) {
   return (
     <div className={`rounded-2xl border p-4 ${ui.card}`}>
       <div className="flex items-center gap-2.5 mb-3">
-        <Avatar name={user.fullName || user.username} avatar={user.imageUrl} />
+        <Avatar name={user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]} avatar={user.user_metadata?.avatar_url} />
         <div>
-          <p className={`text-sm font-semibold ${ui.text}`}>{user.fullName || user.username}</p>
-          <p className={`text-xs ${ui.sub}`}>{user.primaryEmailAddress?.emailAddress}</p>
+          <p className={`text-sm font-semibold ${ui.text}`}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}</p>
+          <p className={`text-xs ${ui.sub}`}>{user.email}</p>
         </div>
       </div>
       <div className={`flex gap-4 pt-3 border-t ${dark ? 'border-[#2a2a2e]' : 'border-zinc-100'}`}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 
 const SEED_POSTS = [
@@ -15,7 +15,11 @@ const SEED_POSTS = [
 ];
 
 export default function CommunityModal({ onClose, dark, profile }) {
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState(() => {
+    if (typeof window === 'undefined') return [...SEED_POSTS];
+    const saved = JSON.parse(localStorage.getItem('opportumap_community') || '[]');
+    return [...saved, ...SEED_POSTS];
+  });
   const [filter, setFilter] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -29,12 +33,7 @@ export default function CommunityModal({ onClose, dark, profile }) {
   });
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('opportumap_community') || '[]');
-    setPosts([...saved, ...SEED_POSTS]);
-  }, []);
-
-  const filtered = filter === 'all' ? posts : posts.filter(p => p.country === filter);
+const filtered = filter === 'all' ? posts : posts.filter(p => p.country === filter);
   const activeCountries = [...new Set(posts.map(p => p.country))];
 
   const handlePost = () => {
@@ -127,7 +126,7 @@ export default function CommunityModal({ onClose, dark, profile }) {
                 </div>
               </div>
               <div>
-                <label className={`text-xs mb-1 block ${ui.sub}`}>About you / what you're looking for</label>
+                <label className={`text-xs mb-1 block ${ui.sub}`}>About you / what you&apos;re looking for</label>
                 <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} rows={2}
                   placeholder="e.g. Looking for a roommate in Neukölln, budget €900/mo. Non-smoker, into tech and coffee."
                   className={`w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none ${ui.input}`} />

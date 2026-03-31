@@ -1,12 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function useTheme() {
-  const [dark, setDark] = useState(true);
-  useEffect(() => {
+  const [dark, setDark] = useState(() => {
+    if (typeof window === 'undefined') return true;
     const saved = localStorage.getItem('opportumap_theme');
-    if (saved !== null) setDark(saved === 'dark');
-  }, []);
+    return saved !== null ? saved === 'dark' : true;
+  });
   const toggleDark = () => {
     setDark((d) => {
       const next = !d;

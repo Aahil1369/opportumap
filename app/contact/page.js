@@ -39,7 +39,7 @@ export default function ContactPage() {
         <div className="text-center mb-10">
           <h1 className={`text-3xl sm:text-4xl font-bold tracking-tight mb-3 ${ui.text}`}>Get in touch</h1>
           <p className={`text-sm sm:text-base ${ui.sub}`}>
-            Have a question, feature idea, or want to partner with us? We'd love to hear from you.
+            Have a question, feature idea, or want to partner with us? We&apos;d love to hear from you.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export default function ContactPage() {
           <div className={`rounded-2xl border p-8 text-center ${ui.card}`}>
             <p className="text-4xl mb-4">✅</p>
             <h2 className={`text-lg font-semibold mb-2 ${ui.text}`}>Message sent!</h2>
-            <p className={`text-sm ${ui.sub}`}>Thanks for reaching out. We'll get back to you within 1–2 business days.</p>
+            <p className={`text-sm ${ui.sub}`}>Thanks for reaching out. We&apos;ll get back to you within 1–2 business days.</p>
             <button onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }); }}
               className="mt-6 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all">
               Send another message

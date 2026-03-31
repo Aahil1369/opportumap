@@ -203,7 +203,7 @@ export default function ResumePage() {
               {/* Strengths */}
               <div className={`rounded-2xl border p-5 ${ui.card}`}>
                 <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${ui.text}`}>
-                  <span className="text-green-400">✓</span> What's Working
+                  <span className="text-green-400">✓</span> What&apos;s Working
                 </h3>
                 <ul className="space-y-2">
                   {result.strengths?.map((s, i) => (

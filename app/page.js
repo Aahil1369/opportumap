@@ -150,7 +150,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/jobs"
               className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/20">
-              Get Started — It's Free
+              Get Started — It&apos;s Free
             </Link>
             <Link href="/contact"
               className={`px-6 py-3 rounded-xl border font-semibold text-sm transition-all ${dark ? 'border-[#2a2a2e] text-zinc-300 hover:bg-[#1a1a1d]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
