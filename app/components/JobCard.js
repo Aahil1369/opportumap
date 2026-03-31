@@ -6,22 +6,28 @@ import { ADZUNA_COUNTRIES } from '../data/countries';
 import { matchColor } from '../data/matchJobs';
 
 const VISA_EASE = {
-  citizen: 100,
-  free: 90,
-  e_visa: 60,
-  on_arrival: 50,
-  required: 20,
-  unknown: 40,
+  citizen: 100, free: 90, e_visa: 60, on_arrival: 50, required: 20, unknown: 40,
 };
 
 const VISA_BADGE = {
-  citizen: { label: 'Citizen', color: 'text-sky-400 bg-sky-400/10 border-sky-400/20' },
-  free: { label: 'No Visa', color: 'text-green-400 bg-green-400/10 border-green-400/20' },
-  e_visa: { label: 'E-Visa', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' },
+  citizen:    { label: 'Citizen',    color: 'text-sky-400 bg-sky-400/10 border-sky-400/20' },
+  free:       { label: 'No Visa',    color: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' },
+  e_visa:     { label: 'E-Visa',     color: 'text-amber-400 bg-amber-400/10 border-amber-400/20' },
   on_arrival: { label: 'On Arrival', color: 'text-orange-400 bg-orange-400/10 border-orange-400/20' },
-  required: { label: 'Visa Required', color: 'text-red-400 bg-red-400/10 border-red-400/20' },
-  unknown: { label: 'Remote', color: 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20' },
+  required:   { label: 'Visa Req.',  color: 'text-red-400 bg-red-400/10 border-red-400/20' },
+  unknown:    { label: 'Remote',     color: 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20' },
 };
+
+const COMPANY_GRADIENTS = [
+  'from-indigo-500 to-violet-600',
+  'from-violet-500 to-purple-600',
+  'from-blue-500 to-indigo-600',
+  'from-emerald-500 to-teal-600',
+  'from-rose-500 to-pink-600',
+  'from-amber-500 to-orange-600',
+  'from-cyan-500 to-blue-600',
+  'from-pink-500 to-rose-600',
+];
 
 export function opportunityScore(matchScore, nationality, jobCountry) {
   const visaStatus = nationality ? getVisaStatus(nationality, jobCountry) : 'unknown';
@@ -30,30 +36,19 @@ export function opportunityScore(matchScore, nationality, jobCountry) {
 }
 
 export function oppScoreColor(score) {
-  if (score >= 70) return { ring: 'text-green-400', label: 'Excellent', bg: 'bg-green-400' };
-  if (score >= 50) return { ring: 'text-yellow-400', label: 'Good', bg: 'bg-yellow-400' };
-  if (score >= 30) return { ring: 'text-orange-400', label: 'Fair', bg: 'bg-orange-400' };
-  return { ring: 'text-red-400', label: 'Hard', bg: 'bg-red-400' };
+  if (score >= 70) return { text: 'text-emerald-400', bar: 'from-emerald-500 to-teal-500', label: 'Excellent' };
+  if (score >= 50) return { text: 'text-amber-400',   bar: 'from-amber-500 to-orange-400', label: 'Good' };
+  if (score >= 30) return { text: 'text-orange-400',  bar: 'from-orange-500 to-red-400',   label: 'Fair' };
+  return             { text: 'text-red-400',           bar: 'from-red-500 to-rose-600',     label: 'Hard' };
 }
 
-function CompanyInitials({ company, size = 40 }) {
-  const initials = (company || '?')
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-
-  const colors = [
-    'bg-indigo-500', 'bg-violet-500', 'bg-blue-500', 'bg-emerald-500',
-    'bg-rose-500', 'bg-amber-500', 'bg-cyan-500', 'bg-pink-500',
-  ];
-  const color = colors[(company || '').charCodeAt(0) % colors.length];
-
+function CompanyLogo({ company, size = 44 }) {
+  const initials = (company || '?').split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  const gradient = COMPANY_GRADIENTS[(company || '').charCodeAt(0) % COMPANY_GRADIENTS.length];
   return (
     <div
-      className={`${color} rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0`}
-      style={{ width: size, height: size, fontSize: size * 0.35 }}
+      className={`bg-gradient-to-br ${gradient} rounded-xl flex items-center justify-center text-white font-black flex-shrink-0 shadow-lg`}
+      style={{ width: size, height: size, fontSize: size * 0.32 }}
     >
       {initials}
     </div>
@@ -71,11 +66,11 @@ export default function JobCard({ job, profile, dark, selected, onClick, predict
   const countryInfo = ADZUNA_COUNTRIES.find((c) => c.code === job.country);
   const visaStatus = profile?.nationality ? getVisaStatus(profile.nationality, job.country) : 'unknown';
   const visaBadge = VISA_BADGE[job.remote ? 'unknown' : (visaStatus || 'unknown')];
-  const mc = profile?.skills && job.matchScore > 0 ? matchColor(job.matchScore) : null;
-  const oppScore = profile ? opportunityScore(job.matchScore, profile.nationality, job.country) : null;
+  const oppScore = profile ? opportunityScore(job.matchScore || 0, profile.nationality, job.country) : null;
   const oppColor = oppScore !== null ? oppScoreColor(oppScore) : null;
   const salary = job.salary !== 'Salary not listed' ? job.salary
     : predictedSalary ? `~${predictedSalary}` : null;
+  const isEstimated = predictedSalary && job.salary === 'Salary not listed';
 
   const handleSave = (e) => {
     e.stopPropagation();
@@ -88,102 +83,108 @@ export default function JobCard({ job, profile, dark, selected, onClick, predict
     } catch {}
   };
 
-  const ui = {
-    card: selected
-      ? dark ? 'bg-[#1e1e24] border-indigo-500/60 shadow-lg shadow-indigo-500/10' : 'bg-indigo-50 border-indigo-400'
-      : dark ? 'bg-[#1a1a1d] border-[#2a2a2e] hover:border-[#3a3a3e]' : 'bg-white border-zinc-200 hover:border-zinc-300',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-  };
+  const cardBase = `rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden group`;
+  const cardStyle = selected
+    ? dark
+      ? 'bg-[#12121e] border-indigo-500/60 shadow-xl shadow-indigo-500/15 ring-1 ring-indigo-500/30'
+      : 'bg-indigo-50/80 border-indigo-400 shadow-lg shadow-indigo-500/10'
+    : dark
+      ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/10 hover:-translate-y-0.5'
+      : 'bg-white border-zinc-200 hover:border-indigo-300/60 hover:shadow-xl hover:shadow-indigo-500/8 hover:-translate-y-0.5';
+
+  const text = dark ? 'text-zinc-100' : 'text-zinc-900';
+  const sub  = dark ? 'text-zinc-400' : 'text-zinc-500';
 
   return (
-    <div
-      onClick={onClick}
-      className={`rounded-2xl border p-4 cursor-pointer transition-all group ${ui.card}`}
-    >
-      {/* Top row: logo + company + save */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <CompanyInitials company={job.company} size={42} />
-          <div className="min-w-0">
-            <p className={`text-xs font-medium truncate ${ui.sub}`}>{job.company}</p>
-            <p className={`text-sm font-semibold leading-tight truncate group-hover:text-indigo-400 transition-colors ${ui.text}`}>
-              {job.title}
-            </p>
+    <div onClick={onClick} className={`${cardBase} ${cardStyle}`}>
+      {/* Top accent line on selected */}
+      {selected && <div className="h-0.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-500" />}
+
+      <div className="p-4">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <CompanyLogo company={job.company} size={42} />
+            <div className="min-w-0">
+              <p className={`text-xs font-medium truncate ${sub}`}>{job.company}</p>
+              <p className={`text-sm font-bold leading-snug truncate transition-colors group-hover:text-indigo-400 ${text}`}>
+                {job.title}
+              </p>
+            </div>
           </div>
+          <button
+            onClick={handleSave}
+            className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+              saved
+                ? 'text-indigo-400 bg-indigo-500/10'
+                : dark ? 'text-zinc-600 hover:text-zinc-300 hover:bg-white/5' : 'text-zinc-300 hover:text-zinc-500 hover:bg-zinc-50'
+            }`}>
+            <span className="text-sm">{saved ? '♥' : '♡'}</span>
+          </button>
         </div>
-        <button
-          onClick={handleSave}
-          className={`flex-shrink-0 text-base transition-colors ${saved ? 'text-indigo-400' : dark ? 'text-zinc-600 hover:text-zinc-300' : 'text-zinc-300 hover:text-zinc-500'}`}
-          title={saved ? 'Unsave' : 'Save job'}
-        >
-          {saved ? '♥' : '♡'}
-        </button>
-      </div>
 
-      {/* Location row */}
-      <p className={`text-xs mb-3 truncate ${ui.sub}`}>
-        {countryInfo?.flag} {job.location}
-        {job.remote && <span className="ml-1 text-emerald-400 font-medium">· Remote</span>}
-      </p>
-
-      {/* Badges row */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
-        {/* Visa badge - only show if user has a nationality set */}
-        {profile?.nationality && !job.remote && (
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${visaBadge.color}`}>
-            🛂 {visaBadge.label}
+        {/* Location */}
+        <div className="flex items-center gap-1.5 mb-3">
+          <span className={`text-xs truncate ${sub}`}>
+            {countryInfo?.flag} {job.location}
           </span>
-        )}
-        {job.remote && (
-          <span className="text-xs px-2 py-0.5 rounded-full border text-emerald-400 bg-emerald-400/10 border-emerald-400/20 font-medium">
-            🌐 Remote
-          </span>
-        )}
-        {salary && (
-          <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
-            predictedSalary && job.salary === 'Salary not listed'
-              ? dark ? 'text-zinc-400 bg-zinc-800/50 border-zinc-700' : 'text-zinc-500 bg-zinc-100 border-zinc-200'
-              : dark ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' : 'text-indigo-600 bg-indigo-50 border-indigo-100'
-          }`}>
-            💰 {salary}
-            {predictedSalary && job.salary === 'Salary not listed' && <span className="opacity-60 ml-1">est.</span>}
-          </span>
-        )}
-      </div>
-
-      {/* Opportunity Score bar */}
-      {oppScore !== null && (
-        <div className="mt-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className={`text-xs font-medium ${ui.sub}`}>Opportunity Score</span>
-            <span className={`text-xs font-bold ${oppColor.ring}`}>{oppScore} · {oppColor.label}</span>
-          </div>
-          <div className={`h-1.5 rounded-full ${dark ? 'bg-[#2a2a2e]' : 'bg-zinc-100'}`}>
-            <div
-              className={`h-1.5 rounded-full transition-all ${oppColor.bg}`}
-              style={{ width: `${oppScore}%` }}
-            />
-          </div>
+          {job.remote && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex-shrink-0">
+              Remote
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Apply + Source row */}
-      <div className="flex items-center justify-between mt-2">
-        {job.url ? (
-          <a
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors"
-          >
-            Apply →
-          </a>
-        ) : <span />}
-        {job.source && job.source !== 'adzuna' && (
-          <p className={`text-xs ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>via {job.source}</p>
+        {/* Badges */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {profile?.nationality && !job.remote && (
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${visaBadge.color}`}>
+              🛂 {visaBadge.label}
+            </span>
+          )}
+          {salary && (
+            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
+              isEstimated
+                ? dark ? 'text-zinc-400 border-zinc-700 bg-zinc-800/50' : 'text-zinc-500 border-zinc-200 bg-zinc-50'
+                : 'text-indigo-400 border-indigo-500/30 bg-indigo-500/10'
+            }`}>
+              💰 {salary}{isEstimated && <span className="opacity-60 text-xs ml-0.5">est.</span>}
+            </span>
+          )}
+        </div>
+
+        {/* Opportunity Score */}
+        {oppScore !== null && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className={`text-xs ${sub}`}>Opportunity Score</span>
+              <span className={`text-xs font-bold ${oppColor.text}`}>{oppScore}% · {oppColor.label}</span>
+            </div>
+            <div className={`h-1.5 rounded-full overflow-hidden ${dark ? 'bg-white/6' : 'bg-zinc-100'}`}>
+              <div
+                className={`h-1.5 rounded-full bg-gradient-to-r ${oppColor.bar} transition-all duration-700`}
+                style={{ width: `${oppScore}%` }}
+              />
+            </div>
+          </div>
         )}
+
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-1 pt-3 border-t" style={{ borderColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}>
+          {job.url ? (
+            <a
+              href={job.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold transition-all hover:scale-105 shadow-md shadow-indigo-500/20">
+              Apply →
+            </a>
+          ) : <span />}
+          {job.source && job.source !== 'adzuna' && (
+            <p className={`text-xs ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>via {job.source}</p>
+          )}
+        </div>
       </div>
     </div>
   );

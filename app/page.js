@@ -167,24 +167,73 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── FEATURES ─── */}
+      {/* ─── FEATURES — Bento Grid ─── */}
       <section className="px-4 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
         <div className="text-center mb-14 reveal">
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">Features</p>
           <h2 className={`text-3xl sm:text-4xl font-black mb-4 ${text}`}>Everything to go global</h2>
           <p className={`text-base max-w-xl mx-auto ${sub}`}>From discovery to relocation — OpportuMap handles every step of your international career journey.</p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map((f, i) => (
-            <div key={f.title}
-              className={`reveal reveal-delay-${(i % 3) + 1} gradient-border rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-indigo-500/10' : 'hover:shadow-indigo-500/5'} ${card}`}>
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center text-lg mb-4 shadow-lg`}>
-                {f.icon}
+
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
+
+          {/* Large card — spans 2 cols */}
+          <div className={`reveal reveal-delay-1 lg:col-span-2 gradient-border rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${dark ? 'hover:shadow-indigo-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-indigo-500/5'} overflow-hidden relative`}>
+            <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10 blur-3xl bg-indigo-500 pointer-events-none" />
+            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${FEATURES[0].color} flex items-center justify-center text-2xl mb-5 shadow-xl`}>{FEATURES[0].icon}</div>
+            <h3 className={`text-xl font-black mb-3 ${text}`}>{FEATURES[0].title}</h3>
+            <p className={`text-sm leading-relaxed max-w-md ${sub}`}>{FEATURES[0].desc}</p>
+            <div className="mt-6 flex items-center gap-2">
+              <div className="flex -space-x-1.5">
+                {['🇩🇪','🇯🇵','🇸🇬','🇨🇦','🇧🇷'].map((f,i) => (
+                  <div key={i} className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-sm ${dark ? 'border-[#0e0e18] bg-[#1e1e2e]' : 'border-white bg-zinc-100'}`}>{f}</div>
+                ))}
               </div>
-              <h3 className={`text-sm font-bold mb-2 ${text}`}>{f.title}</h3>
-              <p className={`text-xs leading-relaxed ${sub}`}>{f.desc}</p>
+              <span className={`text-xs ${sub}`}>100+ countries mapped</span>
             </div>
-          ))}
+          </div>
+
+          {/* Regular card */}
+          <div className={`reveal reveal-delay-2 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-purple-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[1].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[1].icon}</div>
+            <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[1].title}</h3>
+            <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[1].desc}</p>
+          </div>
+
+          {/* Regular card */}
+          <div className={`reveal reveal-delay-3 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-cyan-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[2].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[2].icon}</div>
+            <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[2].title}</h3>
+            <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[2].desc}</p>
+          </div>
+
+          {/* Large card — spans 2 cols on the right */}
+          <div className={`reveal reveal-delay-1 lg:col-span-2 gradient-border rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${dark ? 'hover:shadow-amber-500/8 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'} overflow-hidden relative`}>
+            <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-10 blur-3xl bg-amber-500 pointer-events-none" />
+            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${FEATURES[3].color} flex items-center justify-center text-2xl mb-5 shadow-xl`}>{FEATURES[3].icon}</div>
+            <h3 className={`text-xl font-black mb-3 ${text}`}>{FEATURES[3].title}</h3>
+            <p className={`text-sm leading-relaxed max-w-md ${sub}`}>{FEATURES[3].desc}</p>
+            <div className="mt-6 flex items-center gap-3">
+              {['Senior Engineer · $142k', 'Data Scientist · $118k', 'PM · $95k'].map((ex, i) => (
+                <div key={i} className={`text-xs px-3 py-1.5 rounded-full border font-medium ${dark ? 'border-amber-500/20 bg-amber-500/8 text-amber-400' : 'border-amber-200 bg-amber-50 text-amber-600'}`}>{ex}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Regular card */}
+          <div className={`reveal reveal-delay-2 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-green-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[4].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[4].icon}</div>
+            <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[4].title}</h3>
+            <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[4].desc}</p>
+          </div>
+
+          {/* Regular card */}
+          <div className={`reveal reveal-delay-3 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-rose-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
+            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[5].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[5].icon}</div>
+            <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[5].title}</h3>
+            <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[5].desc}</p>
+          </div>
         </div>
       </section>
 
