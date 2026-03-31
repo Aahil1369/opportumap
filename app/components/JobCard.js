@@ -55,6 +55,24 @@ function CompanyLogo({ company, size = 44 }) {
   );
 }
 
+function getJobFreshness(job) {
+  const now = Date.now();
+  // Check expires_at first (most reliable)
+  if (job.expires_at) {
+    const exp = new Date(job.expires_at).getTime();
+    if (exp < now) return 'expired';
+    if (exp - now < 7 * 24 * 60 * 60 * 1000) return 'expiring'; // <7 days left
+  }
+  // Fall back to posted_at age
+  if (job.posted_at) {
+    const posted = new Date(job.posted_at).getTime();
+    const ageDays = (now - posted) / (24 * 60 * 60 * 1000);
+    if (ageDays > 60) return 'expired';
+    if (ageDays > 45) return 'expiring';
+  }
+  return 'fresh';
+}
+
 export default function JobCard({ job, profile, dark, selected, onClick, predictedSalary }) {
   const [saved, setSaved] = useState(() => {
     try {
@@ -71,6 +89,7 @@ export default function JobCard({ job, profile, dark, selected, onClick, predict
   const salary = job.salary !== 'Salary not listed' ? job.salary
     : predictedSalary ? `~${predictedSalary}` : null;
   const isEstimated = predictedSalary && job.salary === 'Salary not listed';
+  const freshness = getJobFreshness(job);
 
   const handleSave = (e) => {
     e.stopPropagation();
@@ -83,7 +102,7 @@ export default function JobCard({ job, profile, dark, selected, onClick, predict
     } catch {}
   };
 
-  const cardBase = `rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden group`;
+  const cardBase = `rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden group ${freshness === 'expired' ? 'opacity-50' : ''}`;
   const cardStyle = selected
     ? dark
       ? 'bg-[#12121e] border-indigo-500/60 shadow-xl shadow-indigo-500/15 ring-1 ring-indigo-500/30'
@@ -99,6 +118,18 @@ export default function JobCard({ job, profile, dark, selected, onClick, predict
     <div onClick={onClick} className={`${cardBase} ${cardStyle}`}>
       {/* Top accent line on selected */}
       {selected && <div className="h-0.5 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-500" />}
+      {/* Expired banner */}
+      {freshness === 'expired' && (
+        <div className="px-4 py-1.5 bg-red-500/10 border-b border-red-500/20 flex items-center gap-1.5">
+          <span className="text-red-400 text-xs font-semibold">⏰ Deadline Passed</span>
+          <span className="text-xs text-red-400/60">· This listing may no longer be active</span>
+        </div>
+      )}
+      {freshness === 'expiring' && (
+        <div className="px-4 py-1.5 bg-amber-500/8 border-b border-amber-500/20 flex items-center gap-1.5">
+          <span className="text-amber-400 text-xs font-semibold">⚡ Closing Soon</span>
+        </div>
+      )}
 
       <div className="p-4">
         {/* Header row */}

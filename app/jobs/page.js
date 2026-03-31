@@ -10,6 +10,19 @@ import JobDetailPanel from '../components/JobDetailPanel';
 import { useTheme } from '../hooks/useTheme';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 import { scoreJob } from '../data/matchJobs';
+
+function jobFreshness(job) {
+  const now = Date.now();
+  if (job.expires_at) {
+    const exp = new Date(job.expires_at).getTime();
+    if (exp < now) return 'expired';
+  }
+  if (job.posted_at) {
+    const ageDays = (now - new Date(job.posted_at).getTime()) / 86400000;
+    if (ageDays > 60) return 'expired';
+  }
+  return 'fresh';
+}
 import { getVisaStatus } from '../data/visaData';
 import { createClient } from '../../lib/supabase-browser';
 
@@ -76,6 +89,7 @@ export default function JobsPage() {
   const [savedOnly, setSavedOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [hideExpired, setHideExpired] = useState(true);
   const [authUser, setAuthUser] = useState(null);
   const PER_PAGE = 24;
   const supabase = createClient();
@@ -162,9 +176,15 @@ export default function JobsPage() {
     [jobs, profile]
   );
 
+  const expiredCount = useMemo(
+    () => scoredJobs.filter((j) => jobFreshness(j) === 'expired').length,
+    [scoredJobs]
+  );
+
   const filtered = useMemo(() => {
     let list = [...scoredJobs];
 
+    if (hideExpired) list = list.filter((j) => jobFreshness(j) !== 'expired');
     if (countryFilter !== 'all') list = list.filter((j) => j.country === countryFilter);
     if (remoteFilter === 'remote') list = list.filter((j) => j.remote);
     if (remoteFilter === 'onsite') list = list.filter((j) => !j.remote);
@@ -226,7 +246,7 @@ export default function JobsPage() {
     }
 
     return list;
-  }, [scoredJobs, countryFilter, remoteFilter, typeFilter, visaFilter, sortBy, savedOnly, profile]);
+  }, [scoredJobs, countryFilter, remoteFilter, typeFilter, visaFilter, sortBy, savedOnly, hideExpired, profile]);
 
   function getVisaEase(nationality, job) {
     const EASE = { citizen: 100, free: 90, e_visa: 60, on_arrival: 50, required: 20, unknown: 40 };
@@ -362,6 +382,12 @@ export default function JobsPage() {
         <button onClick={() => setSavedOnly((s) => !s)}
           className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(savedOnly)}`}>
           ♥ Saved jobs only
+        </button>
+
+        {/* Expired jobs */}
+        <button onClick={() => setHideExpired((s) => !s)}
+          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(!hideExpired)}`}>
+          ⏰ Show expired{expiredCount > 0 ? ` (${expiredCount})` : ''}
         </button>
       </div>
     </div>
