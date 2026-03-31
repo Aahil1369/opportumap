@@ -1,185 +1,351 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import { useTheme } from './hooks/useTheme';
 
 const FEATURES = [
-  {
-    icon: '🗺️',
-    title: 'Interactive Global Map',
-    desc: 'Explore 1,500+ live jobs pinned across 21 countries on an interactive 3D globe.',
-  },
-  {
-    icon: '🤖',
-    title: 'AI Resume Matching',
-    desc: 'Upload your resume and our AI extracts your skills to rank jobs by how well they match you.',
-  },
-  {
-    icon: '🛂',
-    title: 'Visa Intelligence',
-    desc: 'Pin colors show your visa status for every country based on your nationality — instantly.',
-  },
-  {
-    icon: '💰',
-    title: 'Salary Prediction',
-    desc: "When a job doesn't list salary, our AI estimates what it pays based on role, company, and location.",
-  },
-  {
-    icon: '📄',
-    title: 'Resume Parsing',
-    desc: 'Claude AI scans your PDF resume to extract skills, experience level, and a professional summary.',
-  },
-  {
-    icon: '✈️',
-    title: 'Relocation Guide',
-    desc: 'Got the job? Get a step-by-step relocation plan: housing, legal steps, work visa, and community.',
-  },
+  { icon: '🗺️', color: 'from-indigo-500 to-blue-500', title: 'Interactive Global Map', desc: 'Explore 33,000+ live jobs pinned across 100 countries on an interactive world map — filtered by your visa eligibility.' },
+  { icon: '🤖', color: 'from-purple-500 to-pink-500', title: 'AI Resume Matching', desc: 'Upload your resume and our AI extracts your skills, scores every job for fit, and surfaces the best matches instantly.' },
+  { icon: '🛂', color: 'from-cyan-500 to-teal-500', title: 'Visa Intelligence', desc: 'Enter your nationality once. Every job on the map instantly shows your visa status — no more manual research.' },
+  { icon: '💰', color: 'from-amber-500 to-orange-500', title: 'AI Salary Prediction', desc: "Job doesn't show salary? Our AI estimates compensation based on role, seniority, company size, and country." },
+  { icon: '📄', color: 'from-green-500 to-emerald-500', title: 'Resume Analyzer', desc: 'Get a detailed AI grade on your resume — section-by-section scores, what to fix, and which jobs match your profile.' },
+  { icon: '✈️', color: 'from-rose-500 to-purple-500', title: 'Relocation Guide', desc: 'Got an offer? Get a full relocation plan: cost of living, visa steps, neighborhoods, expat communities, and more.' },
 ];
 
 const STATS = [
-  { value: '1,500+', label: 'Live Jobs' },
-  { value: '21', label: 'Countries' },
-  { value: '30+', label: 'Nationalities' },
-  { value: 'AI', label: 'Powered' },
+  { value: '33,664', label: 'Live Jobs', suffix: '+' },
+  { value: '100', label: 'Countries', suffix: '' },
+  { value: '6', label: 'AI Tools', suffix: '' },
+  { value: '100%', label: 'Free to Start', suffix: '' },
 ];
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Create your profile', desc: 'Tell us your nationality, experience, and what kind of role you want.' },
-  { step: '02', title: 'Upload your resume', desc: 'AI extracts your skills and matches you to the most relevant opportunities.' },
-  { step: '03', title: 'Explore & filter', desc: 'Browse the map or job list. Filter by country, sort by match score or salary.' },
-  { step: '04', title: 'Apply with confidence', desc: 'See visa requirements, salary estimates, and relocation info before you apply.' },
+  { step: '01', icon: '👤', title: 'Build your profile', desc: 'Tell us your nationality, skills, and target role. Takes 60 seconds.' },
+  { step: '02', icon: '📄', title: 'Upload your resume', desc: 'AI extracts your experience and matches you to the best global opportunities.' },
+  { step: '03', icon: '🌍', title: 'Explore the map', desc: 'Browse jobs on an interactive globe. Filter by country, visa, salary, and more.' },
+  { step: '04', icon: '🚀', title: 'Apply with confidence', desc: 'See visa info, salary estimates, and relocation guides before you apply.' },
 ];
+
+const FLOAT_CARDS = [
+  { role: 'Senior Engineer', company: 'Spotify', location: 'Stockholm 🇸🇪', salary: '$120k', match: 94 },
+  { role: 'Data Scientist', company: 'DeepMind', location: 'London 🇬🇧', salary: '$140k', match: 88 },
+  { role: 'Product Manager', company: 'Grab', location: 'Singapore 🇸🇬', salary: '$110k', match: 91 },
+];
+
+const TESTIMONIALS = [
+  { quote: "OpportuMap helped me land a role in Berlin I never would have found on LinkedIn. The visa tool saved me hours of research.", name: 'Priya S.', role: 'Data Engineer', country: '🇮🇳 India → 🇩🇪 Germany' },
+  { quote: "The AI resume matching is insane. It told me exactly which jobs fit my background and which ones to skip.", name: 'Marcus W.', role: 'Software Engineer', country: '🇧🇷 Brazil → 🇳🇱 Netherlands' },
+  { quote: "I relocated from Lagos to Toronto using the relocation guide. Step-by-step, everything I needed was there.", name: 'Amara O.', role: 'ML Engineer', country: '🇳🇬 Nigeria → 🇨🇦 Canada' },
+];
+
+function useScrollReveal() {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('revealed'); observer.unobserve(e.target); }
+      }),
+      { threshold: 0.12 }
+    );
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+}
 
 export default function Home() {
   const { dark, toggleDark } = useTheme();
+  useScrollReveal();
 
-  const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-200',
-  };
+  const bg = dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]';
+  const text = dark ? 'text-zinc-100' : 'text-zinc-900';
+  const sub = dark ? 'text-zinc-400' : 'text-zinc-500';
+  const card = dark ? 'bg-[#12121a] border-[#1e1e2e]' : 'bg-white border-zinc-200';
+  const divider = dark ? 'border-[#1e1e2e]' : 'border-zinc-200';
 
   return (
-    <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
+    <div className={`min-h-screen ${bg} transition-colors duration-300 overflow-x-hidden`}>
       <Navbar dark={dark} onToggleDark={toggleDark} />
 
-      {/* Hero */}
-      <section className="px-4 sm:px-8 pt-20 pb-16 sm:pt-28 sm:pb-24 max-w-5xl mx-auto text-center">
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium mb-6 ${dark ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400' : 'border-indigo-200 bg-indigo-50 text-indigo-600'}`}>
-          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-          AI-Powered Global Job Discovery
-        </div>
-        <h1 className={`text-4xl sm:text-6xl font-bold tracking-tight leading-tight mb-6 ${ui.text}`}>
-          Find your next role{' '}
-          <span className="text-indigo-500">anywhere in the world</span>
-        </h1>
-        <p className={`text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed ${ui.sub}`}>
-          OpportuMap aggregates thousands of jobs across 21 countries, matches them to your resume with AI,
-          and shows you visa requirements, salary estimates, and relocation guides — all in one place.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/jobs"
-            className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/20">
-            Browse Jobs
-          </Link>
-          <Link href="/map"
-            className={`px-6 py-3 rounded-xl border font-semibold text-sm transition-all ${dark ? 'border-[#2a2a2e] text-zinc-300 hover:bg-[#1a1a1d]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
-            Explore Map
-          </Link>
-        </div>
-      </section>
+      {/* ─── HERO ─── */}
+      <section className="relative min-h-[92vh] flex flex-col items-center justify-center px-4 sm:px-8 pt-16 pb-24 overflow-hidden">
 
-      {/* Stats */}
-      <section className={`border-y ${ui.divider}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <p className={`text-3xl sm:text-4xl font-bold text-indigo-500 mb-1`}>{s.value}</p>
-              <p className={`text-sm ${ui.sub}`}>{s.label}</p>
-            </div>
-          ))}
+        {/* Animated blobs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="animate-blob absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-[0.15] bg-indigo-600 blur-[120px]" />
+          <div className="animate-blob-alt absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full opacity-[0.12] bg-purple-600 blur-[100px]" />
+          <div className="animate-blob absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-[0.08] bg-cyan-500 blur-[100px]" />
         </div>
-      </section>
 
-      {/* Features */}
-      <section className="px-4 sm:px-8 py-16 sm:py-24 max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className={`text-2xl sm:text-3xl font-bold mb-3 ${ui.text}`}>Everything you need to go global</h2>
-          <p className={`text-sm sm:text-base ${ui.sub}`}>From discovery to relocation — OpportuMap has you covered.</p>
-        </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {FEATURES.map((f) => (
-            <div key={f.title} className={`rounded-2xl border p-6 transition-all hover:border-indigo-500/40 ${ui.card}`}>
-              <div className="text-2xl mb-3">{f.icon}</div>
-              <h3 className={`text-sm font-semibold mb-2 ${ui.text}`}>{f.title}</h3>
-              <p className={`text-xs leading-relaxed ${ui.sub}`}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+        {/* Grid overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: dark
+            ? 'linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)'
+            : 'linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+        }} />
 
-      {/* How it works */}
-      <section className={`border-t ${ui.divider} px-4 sm:px-8 py-16 sm:py-24`}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className={`text-2xl sm:text-3xl font-bold mb-3 ${ui.text}`}>How it works</h2>
-            <p className={`text-sm sm:text-base ${ui.sub}`}>Set up in minutes, get matched instantly.</p>
+        <div className="relative z-10 max-w-5xl mx-auto text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium mb-8 animate-fade-scale"
+            style={{ borderColor: 'rgba(99,102,241,0.35)', background: 'rgba(99,102,241,0.08)', color: '#818cf8' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse inline-block" />
+            AI-Powered Global Job Discovery · 33,664+ Live Jobs
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {HOW_IT_WORKS.map((step) => (
-              <div key={step.step} className="text-center">
-                <div className={`text-4xl font-bold text-indigo-500/20 mb-3`}>{step.step}</div>
-                <h3 className={`text-sm font-semibold mb-2 ${ui.text}`}>{step.title}</h3>
-                <p className={`text-xs leading-relaxed ${ui.sub}`}>{step.desc}</p>
+
+          {/* Headline */}
+          <h1 className={`text-5xl sm:text-7xl font-black tracking-tight leading-[1.05] mb-6 animate-fade-scale ${text}`}
+            style={{ animationDelay: '0.1s' }}>
+            Find your next role<br />
+            <span className="gradient-text">anywhere in the world</span>
+          </h1>
+
+          {/* Sub */}
+          <p className={`text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-scale ${sub}`}
+            style={{ animationDelay: '0.2s' }}>
+            OpportuMap aggregates thousands of global jobs, matches them to your resume with AI,
+            and shows you visa requirements, salary estimates, and relocation guides — all in one place.
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-scale"
+            style={{ animationDelay: '0.3s' }}>
+            <Link href="/jobs"
+              className="group px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105 active:scale-95">
+              Browse Jobs →
+            </Link>
+            <Link href="/map"
+              className={`px-8 py-3.5 rounded-2xl border font-semibold text-sm transition-all hover:scale-105 active:scale-95 ${dark ? 'border-[#2a2a3e] text-zinc-300 hover:bg-[#1a1a2e]' : 'border-zinc-300 text-zinc-700 hover:bg-white hover:shadow-md'}`}>
+              Explore Map 🌍
+            </Link>
+          </div>
+
+          {/* Floating job cards */}
+          <div className="relative mt-16 h-48 hidden lg:block">
+            {FLOAT_CARDS.map((c, i) => (
+              <div key={i}
+                className={`absolute rounded-2xl p-4 shadow-2xl w-56 ${dark ? 'glass-dark' : 'glass-light'} animate-float`}
+                style={{
+                  left: i === 0 ? '2%' : i === 1 ? '38%' : '68%',
+                  top: i === 1 ? '-20px' : '10px',
+                  animationDelay: `${i * 1.5}s`,
+                  animationDuration: `${6 + i}s`,
+                }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center text-sm">💼</div>
+                  <div>
+                    <p className={`text-xs font-bold ${text}`}>{c.role}</p>
+                    <p className={`text-xs ${sub}`}>{c.company}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs ${sub}`}>{c.location}</span>
+                  <span className="text-xs font-semibold text-green-400">{c.salary}</span>
+                </div>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <div className="flex-1 h-1 rounded-full bg-indigo-500/20">
+                    <div className="h-1 rounded-full bg-indigo-500" style={{ width: `${c.match}%` }} />
+                  </div>
+                  <span className="text-xs text-indigo-400 font-semibold">{c.match}%</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className={`border-t ${ui.divider} px-4 sm:px-8 py-16 sm:py-24`}>
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className={`text-2xl sm:text-3xl font-bold mb-4 ${ui.text}`}>Ready to explore global opportunities?</h2>
-          <p className={`text-sm sm:text-base mb-8 ${ui.sub}`}>
-            No account required. Start as a guest, upload your resume, and get matched in seconds.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/jobs"
-              className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/20">
-              Get Started — It&apos;s Free
-            </Link>
-            <Link href="/contact"
-              className={`px-6 py-3 rounded-xl border font-semibold text-sm transition-all ${dark ? 'border-[#2a2a2e] text-zinc-300 hover:bg-[#1a1a1d]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
-              Contact Us
-            </Link>
+      {/* ─── STATS ─── */}
+      <section className={`border-y ${divider} relative overflow-hidden`}>
+        <div className="absolute inset-0 pointer-events-none" style={{ background: dark ? 'rgba(99,102,241,0.03)' : 'rgba(99,102,241,0.02)' }} />
+        <div className="max-w-4xl mx-auto px-4 sm:px-8 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+          {STATS.map((s, i) => (
+            <div key={s.label} className={`reveal reveal-delay-${i + 1}`}>
+              <p className="text-4xl sm:text-5xl font-black gradient-text mb-1">{s.value}{s.suffix}</p>
+              <p className={`text-sm font-medium ${sub}`}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── FEATURES ─── */}
+      <section className="px-4 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
+        <div className="text-center mb-14 reveal">
+          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">Features</p>
+          <h2 className={`text-3xl sm:text-4xl font-black mb-4 ${text}`}>Everything to go global</h2>
+          <p className={`text-base max-w-xl mx-auto ${sub}`}>From discovery to relocation — OpportuMap handles every step of your international career journey.</p>
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {FEATURES.map((f, i) => (
+            <div key={f.title}
+              className={`reveal reveal-delay-${(i % 3) + 1} gradient-border rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-indigo-500/10' : 'hover:shadow-indigo-500/5'} ${card}`}>
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center text-lg mb-4 shadow-lg`}>
+                {f.icon}
+              </div>
+              <h3 className={`text-sm font-bold mb-2 ${text}`}>{f.title}</h3>
+              <p className={`text-xs leading-relaxed ${sub}`}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── HOW IT WORKS ─── */}
+      <section className={`border-t ${divider} px-4 sm:px-8 py-20 sm:py-28 relative overflow-hidden`}>
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full opacity-[0.06] bg-purple-600 blur-[100px]" />
+        </div>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14 reveal">
+            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">How It Works</p>
+            <h2 className={`text-3xl sm:text-4xl font-black mb-4 ${text}`}>Set up in 2 minutes</h2>
+            <p className={`text-base ${sub}`}>No credit card. No setup fee. Start finding global jobs immediately.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
+            {/* Connecting line */}
+            <div className="absolute top-8 left-[12%] right-[12%] h-px hidden lg:block"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.4), rgba(167,139,250,0.4), transparent)' }} />
+            {HOW_IT_WORKS.map((s, i) => (
+              <div key={s.step} className={`reveal reveal-delay-${i + 1} text-center relative`}>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+                  {s.icon}
+                </div>
+                <span className="text-xs font-bold text-indigo-400 tracking-widest">{s.step}</span>
+                <h3 className={`text-sm font-bold mt-1 mb-2 ${text}`}>{s.title}</h3>
+                <p className={`text-xs leading-relaxed ${sub}`}>{s.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className={`border-t ${ui.divider} px-4 sm:px-8 py-8`}>
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-indigo-500" />
-            <span className={`text-sm font-semibold ${ui.text}`}>OpportuMap</span>
+      {/* ─── TESTIMONIALS ─── */}
+      <section className={`border-t ${divider} px-4 sm:px-8 py-20 sm:py-28`}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14 reveal">
+            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">Community</p>
+            <h2 className={`text-3xl sm:text-4xl font-black mb-4 ${text}`}>Real people, real moves</h2>
+            <p className={`text-base ${sub}`}>Join thousands discovering global opportunities with OpportuMap.</p>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="grid sm:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((t, i) => (
+              <div key={i}
+                className={`reveal reveal-delay-${i + 1} rounded-2xl border p-6 transition-all hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30' : 'bg-white border-zinc-200 hover:border-indigo-300 hover:shadow-lg'}`}>
+                <div className="flex gap-0.5 mb-4">
+                  {[1,2,3,4,5].map((s) => <span key={s} className="text-amber-400 text-sm">★</span>)}
+                </div>
+                <p className={`text-sm leading-relaxed mb-5 ${sub}`}>&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                    {t.name.split(' ').map((w) => w[0]).join('')}
+                  </div>
+                  <div>
+                    <p className={`text-xs font-semibold ${text}`}>{t.name} · {t.role}</p>
+                    <p className={`text-xs ${sub}`}>{t.country}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TOOLS SHOWCASE ─── */}
+      <section className={`border-t ${divider} px-4 sm:px-8 py-20 sm:py-28`}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14 reveal">
+            <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">AI Tools</p>
+            <h2 className={`text-3xl sm:text-4xl font-black mb-4 ${text}`}>Powerful tools at your fingertips</h2>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { href: '/', label: 'Home' },
-              { href: '/jobs', label: 'Jobs' },
-              { href: '/map', label: 'Map' },
-              { href: '/contact', label: 'Contact' },
-            ].map((l) => (
-              <Link key={l.href} href={l.href} className={`text-xs hover:text-indigo-400 transition-colors ${ui.sub}`}>
-                {l.label}
+              { href: '/resume', icon: '📄', label: 'Resume Analyzer', desc: 'Grade your resume with AI', color: 'from-green-500 to-emerald-600' },
+              { href: '/visa', icon: '🛂', label: 'Visa Intelligence', desc: 'Know your visa status instantly', color: 'from-cyan-500 to-blue-600' },
+              { href: '/relocate', icon: '✈️', label: 'Relocation Guide', desc: 'Full city-by-city relocation plan', color: 'from-rose-500 to-pink-600' },
+            ].map((tool, i) => (
+              <Link key={tool.href} href={tool.href}
+                className={`reveal reveal-delay-${i + 1} group block rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30 hover:shadow-indigo-500/10' : 'bg-white border-zinc-200 hover:border-indigo-300 hover:shadow-indigo-500/10'}`}>
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                  {tool.icon}
+                </div>
+                <h3 className={`text-sm font-bold mb-1 ${text}`}>{tool.label}</h3>
+                <p className={`text-xs ${sub}`}>{tool.desc}</p>
+                <div className="mt-4 text-indigo-400 text-xs font-semibold group-hover:translate-x-1 transition-transform inline-block">Try it →</div>
               </Link>
             ))}
           </div>
-          <p className={`text-xs ${ui.sub}`}>© {new Date().getFullYear()} OpportuMap</p>
+        </div>
+      </section>
+
+      {/* ─── CTA ─── */}
+      <section className="px-4 sm:px-8 py-20 sm:py-28">
+        <div className="max-w-3xl mx-auto reveal">
+          <div className="relative rounded-3xl overflow-hidden p-10 sm:p-16 text-center"
+            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #0891b2 100%)' }}>
+            {/* Noise texture overlay */}
+            <div className="absolute inset-0 opacity-[0.15]"
+              style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }} />
+            <div className="relative z-10">
+              <p className="text-xs font-semibold uppercase tracking-widest text-indigo-200 mb-4">Start for free</p>
+              <h2 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-tight">
+                Your global career<br />starts here
+              </h2>
+              <p className="text-indigo-100 text-base mb-8 max-w-md mx-auto">
+                No account needed to start. Upload your resume, explore 33,664 jobs across 100 countries, and move anywhere.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link href="/jobs"
+                  className="px-8 py-3.5 rounded-2xl bg-white text-indigo-700 font-bold text-sm hover:bg-indigo-50 transition-all hover:scale-105 shadow-xl">
+                  Get Started — It&apos;s Free
+                </Link>
+                <Link href="/map"
+                  className="px-8 py-3.5 rounded-2xl border border-white/30 text-white font-semibold text-sm hover:bg-white/10 transition-all hover:scale-105">
+                  Explore the Map
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FOOTER ─── */}
+      <footer className={`border-t ${divider} px-4 sm:px-8 py-10`}>
+        <div className="max-w-5xl mx-auto">
+          <div className="grid sm:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                <span className={`text-sm font-bold ${text}`}>OpportuMap</span>
+              </div>
+              <p className={`text-xs leading-relaxed ${sub}`}>AI-powered global job discovery for the modern career seeker.</p>
+            </div>
+            <div>
+              <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${sub}`}>Discover</p>
+              <div className="space-y-2">
+                {[{ href: '/jobs', l: 'Browse Jobs' }, { href: '/map', l: 'Global Map' }, { href: '/community', l: 'Community' }].map((i) => (
+                  <Link key={i.href} href={i.href} className={`block text-xs hover:text-indigo-400 transition-colors ${sub}`}>{i.l}</Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${sub}`}>Tools</p>
+              <div className="space-y-2">
+                {[{ href: '/resume', l: 'Resume Analyzer' }, { href: '/visa', l: 'Visa Intelligence' }, { href: '/relocate', l: 'Relocation Guide' }].map((i) => (
+                  <Link key={i.href} href={i.href} className={`block text-xs hover:text-indigo-400 transition-colors ${sub}`}>{i.l}</Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${sub}`}>Company</p>
+              <div className="space-y-2">
+                {[{ href: '/contact', l: 'Contact' }, { href: '/profile', l: 'My Profile' }].map((i) => (
+                  <Link key={i.href} href={i.href} className={`block text-xs hover:text-indigo-400 transition-colors ${sub}`}>{i.l}</Link>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className={`border-t ${divider} pt-6 flex flex-col sm:flex-row items-center justify-between gap-2`}>
+            <p className={`text-xs ${sub}`}>© {new Date().getFullYear()} OpportuMap · Built with AI for global job seekers</p>
+            <p className={`text-xs ${sub}`}>33,664 jobs · 100 countries · 6 AI tools</p>
+          </div>
         </div>
       </footer>
     </div>
