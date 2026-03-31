@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../hooks/useTheme';
 import { NATIONALITIES } from '../data/countries';
@@ -111,15 +111,33 @@ export default function VisaPage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  // Pre-fill nationality from saved profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await fetch('/api/user-profile');
+        const { profile } = await res.json();
+        if (profile?.nationality) { setNationality(profile.nationality); setProfileLoaded(true); return; }
+      } catch {}
+      const saved = localStorage.getItem('opportumap_profile');
+      if (saved) {
+        const p = JSON.parse(saved);
+        if (p.nationality) { setNationality(p.nationality); setProfileLoaded(true); }
+      }
+    };
+    loadProfile();
+  }, []);
 
   const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    bg: dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-100',
-    input: dark ? 'bg-[#2a2a2e] border-[#3a3a3e] text-zinc-100' : 'bg-white border-zinc-300 text-zinc-900',
-    pill: (a) => a ? 'bg-indigo-600 text-white border-indigo-600' : dark ? 'bg-[#2a2a2e] text-zinc-400 border-[#3a3a3e]' : 'bg-white text-zinc-500 border-zinc-200',
+    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
+    input: dark ? 'bg-[#12121e] border-[#2a2a3e] text-zinc-100' : 'bg-white border-zinc-300 text-zinc-900',
+    pill: (a) => a ? 'bg-indigo-600 text-white border-indigo-600' : dark ? 'bg-[#12121e] text-zinc-400 border-[#2a2a3e]' : 'bg-white text-zinc-500 border-zinc-200',
   };
 
   const handleSearch = async () => {
@@ -148,15 +166,25 @@ export default function VisaPage() {
     <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
       <Navbar dark={dark} onToggleDark={toggleDark} />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">🛂</span>
-            <h1 className={`text-2xl font-bold ${ui.text}`}>Visa Intelligence</h1>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+        <div className="mb-10 relative">
+          <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-[0.06] bg-cyan-500 blur-[80px] pointer-events-none" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/30">🛂</div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400 mb-0.5">AI Tool</p>
+              <h1 className={`text-3xl font-black gradient-text`}>Visa Intelligence</h1>
+            </div>
           </div>
-          <p className={`text-sm ${ui.sub}`}>
-            Find out exactly what visa you need, how to apply, and how to guarantee approval — for any country in the world.
+          <p className={`text-sm max-w-lg ${ui.sub}`}>
+            Enter your nationality and destination — get an instant AI-powered visa guide with requirements, costs, and approval tips.
           </p>
+          {profileLoaded && (
+            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+              Nationality pre-filled from your profile
+            </div>
+          )}
         </div>
 
         {/* Search form */}

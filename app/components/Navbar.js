@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '../../lib/supabase-browser';
 import AuthModal from './AuthModal';
+import ProfileModal from './ProfileModal';
 
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs', icon: '💼' },
@@ -42,15 +43,38 @@ export default function Navbar({ dark, onToggleDark }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [profileSetupData, setProfileSetupData] = useState(null);
   const [user, setUser] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const prevUserRef = useRef(null);
   const dropdownRef = useRef(null);
   const userMenuRef = useRef(null);
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user ?? null));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      prevUserRef.current = data.user;
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, session) => {
+      const newUser = session?.user ?? null;
+      const prevUser = prevUserRef.current;
+      prevUserRef.current = newUser;
+      setUser(newUser);
+      // Just signed in — check if they have a profile
+      if (newUser && !prevUser) {
+        try {
+          const res = await fetch('/api/user-profile');
+          const { profile } = await res.json();
+          if (!profile) {
+            const name = newUser.user_metadata?.full_name || newUser.user_metadata?.name || '';
+            setProfileSetupData({ name, nationality: '', currentCountry: '', experience: '', jobTypes: [], skills: '', preferredCountries: [] });
+            setShowProfileSetup(true);
+          }
+        } catch {}
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -92,6 +116,25 @@ export default function Navbar({ dark, onToggleDark }) {
   return (
     <>
       {showAuth && <AuthModal dark={dark} onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
+      {showProfileSetup && (
+        <ProfileModal
+          dark={dark}
+          initialProfile={profileSetupData}
+          onClose={() => setShowProfileSetup(false)}
+          onSave={async (profile, rememberOnDevice) => {
+            try {
+              await fetch('/api/user-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profile_data: profile }),
+              });
+            } catch {}
+            if (rememberOnDevice) localStorage.setItem('opportumap_profile', JSON.stringify(profile));
+            else localStorage.removeItem('opportumap_profile');
+            setShowProfileSetup(false);
+          }}
+        />
+      )}
 
       {/* Mobile drawer overlay */}
       {mobileOpen && (

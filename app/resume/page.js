@@ -57,13 +57,13 @@ export default function ResumePage() {
   const fileRef = useRef(null);
 
   const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    bg: dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-100',
+    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
     upload: dark
-      ? `border-[#3a3a3e] bg-[#1a1a1d] hover:border-indigo-500/60 ${dragOver ? 'border-indigo-500 bg-indigo-500/5' : ''}`
+      ? `border-[#2a2a3e] bg-[#0e0e18] hover:border-indigo-500/60 ${dragOver ? 'border-indigo-500/80 bg-indigo-500/5' : ''}`
       : `border-zinc-300 bg-zinc-50 hover:border-indigo-400 ${dragOver ? 'border-indigo-400 bg-indigo-50' : ''}`,
   };
 
@@ -102,13 +102,17 @@ export default function ResumePage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">📄</span>
-            <h1 className={`text-2xl font-bold ${ui.text}`}>Resume Analyzer</h1>
+        <div className="mb-10 relative">
+          <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-[0.06] bg-green-500 blur-[80px] pointer-events-none" />
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-2xl shadow-lg shadow-green-500/30">📄</div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-green-400 mb-0.5">AI Tool</p>
+              <h1 className="text-3xl font-black gradient-text">Resume Analyzer</h1>
+            </div>
           </div>
-          <p className={`text-sm ${ui.sub}`}>
-            Upload your resume and get an AI-powered grade, specific improvement tips, and a list of jobs you qualify for.
+          <p className={`text-sm max-w-lg ${ui.sub}`}>
+            Upload your resume and get an AI grade, section-by-section scores, what to fix, and matched job recommendations.
           </p>
         </div>
 
@@ -124,23 +128,28 @@ export default function ResumePage() {
             <input ref={fileRef} type="file" accept="application/pdf" className="hidden"
               onChange={(e) => analyze(e.target.files?.[0])} />
             {loading ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                <p className={`text-sm font-medium ${ui.text}`}>Analyzing your resume with AI...</p>
-                <p className={`text-xs ${ui.sub}`}>This takes about 10–15 seconds</p>
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative w-16 h-16">
+                  <div className="w-16 h-16 border-2 border-indigo-500/20 rounded-full" />
+                  <div className="absolute inset-0 w-16 h-16 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="absolute inset-3 w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+                </div>
+                <p className={`text-sm font-bold ${ui.text}`}>Analyzing with AI...</p>
+                <p className={`text-xs ${ui.sub}`}>Reading sections, scoring, matching jobs · ~15 seconds</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3">
-                <p className="text-4xl">{fileName ? '📄' : '📎'}</p>
-                <p className={`text-base font-semibold ${ui.text}`}>
-                  {fileName || 'Drop your resume here or click to upload'}
-                </p>
-                <p className={`text-sm ${ui.sub}`}>PDF only · Max 10MB</p>
-                {!fileName && (
-                  <button className="mt-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all">
-                    Choose File
-                  </button>
-                )}
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-600/20 border border-green-500/20 flex items-center justify-center text-3xl">
+                  📎
+                </div>
+                <div className="text-center">
+                  <p className={`text-base font-bold ${ui.text}`}>Drop your resume here</p>
+                  <p className={`text-sm ${ui.sub}`}>or click to browse</p>
+                </div>
+                <p className={`text-xs ${ui.sub}`}>PDF only · Max 10MB</p>
+                <button className="mt-1 px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-bold transition-all hover:scale-105 shadow-lg shadow-green-500/25">
+                  Choose File →
+                </button>
               </div>
             )}
           </div>
@@ -155,13 +164,19 @@ export default function ResumePage() {
         {/* Results */}
         {result && (
           <div className="space-y-5">
-            {/* Re-analyze button */}
-            <div className="flex items-center justify-between">
-              <p className={`text-xs ${ui.sub}`}>Analyzed: <span className="font-medium">{fileName}</span></p>
+            {/* Re-upload bar */}
+            <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${ui.card}`}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-sm">📄</div>
+                <div>
+                  <p className={`text-xs font-semibold ${ui.text}`}>{fileName}</p>
+                  <p className={`text-xs ${ui.sub}`}>Resume analyzed</p>
+                </div>
+              </div>
               <button
-                onClick={() => { setResult(null); setFileName(''); }}
-                className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${dark ? 'border-[#3a3a3e] text-zinc-400 hover:bg-[#2a2a2e]' : 'border-zinc-200 text-zinc-500 hover:bg-white'}`}>
-                Analyze another resume
+                onClick={() => { setResult(null); setFileName(''); setError(''); }}
+                className="text-xs px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold transition-all hover:scale-105">
+                ↑ Upload New Resume
               </button>
             </div>
 
