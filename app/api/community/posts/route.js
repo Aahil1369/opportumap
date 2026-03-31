@@ -6,12 +6,17 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
   const offset = parseInt(searchParams.get('offset') || '0');
+  const userId = searchParams.get('userId');
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('posts')
     .select('*')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
+
+  if (userId) query = query.eq('user_id', userId);
+
+  const { data, error } = await query;
 
   if (error) return Response.json({ posts: [] });
   return Response.json({ posts: data || [] });

@@ -132,9 +132,18 @@ export default function Navbar({ dark, onToggleDark }) {
               {userMenuOpen && (
                 <div className={`absolute right-0 top-full mt-2 w-48 rounded-xl border shadow-xl overflow-hidden z-50 ${ui.dropdown}`}>
                   <div className={`px-4 py-3 border-b ${dark ? 'border-[#2a2a2e]' : 'border-zinc-100'}`}>
-                    <p className={`text-xs font-semibold truncate ${ui.text}`}>{user.user_metadata?.full_name || 'User'}</p>
+                    <p className={`text-xs font-semibold truncate ${ui.text}`}>{user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}</p>
                     <p className={`text-xs truncate ${ui.sub}`}>{user.email}</p>
                   </div>
+                  <Link href="/profile" onClick={() => setUserMenuOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${ui.dropItem}`}>
+                    👤 View Profile
+                  </Link>
+                  <Link href="/community" onClick={() => setUserMenuOpen(false)}
+                    className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${ui.dropItem}`}>
+                    💬 Community
+                  </Link>
+                  <div className={`border-t ${dark ? 'border-[#2a2a2e]' : 'border-zinc-100'}`} />
                   <button onClick={handleSignOut}
                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors text-red-400 hover:bg-red-500/5`}>
                     Sign out
