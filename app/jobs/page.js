@@ -506,7 +506,7 @@ export default function JobsPage() {
             </div>
           </div>
 
-          {/* Job list */}
+          {/* Job list — always full width now (no right panel) */}
           <div className="flex-1 min-w-0">
             {loading ? (
               <div className="grid sm:grid-cols-2 gap-3">
@@ -556,36 +556,17 @@ export default function JobsPage() {
               </>
             )}
           </div>
-
-          {/* Right: job detail panel */}
-          {selectedJob && (
-            <div className={`hidden xl:block w-80 flex-shrink-0`}>
-              <div className={`sticky top-20 rounded-2xl border overflow-hidden ${ui.sidebar}`} style={{ maxHeight: 'calc(100vh - 6rem)' }}>
-                <JobDetailPanel
-                  job={selectedJob}
-                  profile={profile}
-                  dark={dark}
-                  predictedSalary={predictedSalaries[selectedJob?.id]}
-                  onClose={() => setSelectedJob(null)}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Mobile job detail modal */}
+        {/* Full-screen job detail modal (all screen sizes) */}
         {selectedJob && (
-          <div className="xl:hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className={`w-full max-w-lg max-h-[85vh] rounded-2xl border overflow-hidden ${ui.sidebar}`}>
-              <JobDetailPanel
-                job={selectedJob}
-                profile={profile}
-                dark={dark}
-                predictedSalary={predictedSalaries[selectedJob?.id]}
-                onClose={() => setSelectedJob(null)}
-              />
-            </div>
-          </div>
+          <JobDetailPanel
+            job={selectedJob}
+            profile={profile}
+            dark={dark}
+            predictedSalary={predictedSalaries[selectedJob?.id]}
+            onClose={() => setSelectedJob(null)}
+          />
         )}
       </div>
     </div>
