@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../hooks/useTheme';
 
@@ -21,7 +21,7 @@ const POPULAR_DESTINATIONS = [
 
 function CostCard({ label, item, dark }) {
   const ui = {
-    card: dark ? 'bg-[#111113] border-[#2a2a2e]' : 'bg-zinc-50 border-zinc-200',
+    card: dark ? 'bg-[#0a0a14] border-[#1e1e2e]' : 'bg-zinc-50 border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
   };
@@ -58,14 +58,32 @@ export default function RelocatePage() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [profilePrefilled, setProfilePrefilled] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('opportumap_profile');
+      if (raw) {
+        const p = JSON.parse(raw);
+        if (p.currentCountry && !origin) {
+          setOrigin(p.currentCountry);
+          setProfilePrefilled(true);
+        }
+        if (p.jobTypes?.length && !field) {
+          setField(p.jobTypes[0].replace('Software Engineering', 'Software Engineering').replace('Data Science / ML', 'Data Science'));
+        }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-100',
-    input: dark ? 'bg-[#2a2a2e] border-[#3a3a3e] text-zinc-100 placeholder-zinc-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400',
+    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
+    input: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400',
   };
 
   const handleSearch = async (dest) => {
@@ -97,16 +115,29 @@ export default function RelocatePage() {
     <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
       <Navbar dark={dark} onToggleDark={toggleDark} />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">✈️</span>
-            <h1 className={`text-2xl font-bold ${ui.text}`}>Relocation Guide</h1>
+      {/* Gradient header */}
+      <div className={`relative overflow-hidden border-b ${ui.divider}`}>
+        {dark && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-950/50 via-[#080810] to-indigo-950/40 pointer-events-none" />
+            <div className="absolute -top-12 right-0 w-72 h-72 bg-violet-600/8 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-8 left-20 w-48 h-48 bg-indigo-600/6 rounded-full blur-3xl pointer-events-none" />
+          </>
+        )}
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10">
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4 text-xs font-medium ${dark ? 'border-violet-500/30 bg-violet-500/10 text-violet-400' : 'border-violet-200 bg-violet-50 text-violet-600'}`}>
+            ✈️ Relocation Intelligence
           </div>
-          <p className={`text-sm ${ui.sub}`}>
+          <h1 className={`text-3xl font-black mb-2 ${dark ? 'gradient-text' : 'text-zinc-900'}`}>
+            Relocation Guide
+          </h1>
+          <p className={`text-sm max-w-xl ${ui.sub}`}>
             Get a full cost breakdown, neighborhood guide, job market overview, and connect with people in your field already living there.
           </p>
         </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Search form */}
         <div className={`rounded-2xl border p-6 mb-6 ${ui.card}`}>
@@ -119,7 +150,10 @@ export default function RelocatePage() {
                 className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
             </div>
             <div>
-              <label className={`text-xs font-medium block mb-1.5 ${ui.sub}`}>Where you&apos;re from (optional)</label>
+              <label className={`text-xs font-medium block mb-1.5 ${ui.sub}`}>
+                Where you&apos;re from (optional)
+                {profilePrefilled && <span className="ml-1.5 text-emerald-400 text-xs">· from profile</span>}
+              </label>
               <input value={origin} onChange={(e) => setOrigin(e.target.value)}
                 placeholder="e.g. Lagos, Nigeria"
                 className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
@@ -138,7 +172,7 @@ export default function RelocatePage() {
             <div className="flex flex-wrap gap-2">
               {POPULAR_DESTINATIONS.map((d) => (
                 <button key={d.name} onClick={() => { setDestination(d.name); handleSearch(d.name); }}
-                  className={`px-3 py-1 rounded-full text-xs border font-medium transition-all ${dark ? 'border-[#3a3a3e] text-zinc-400 hover:border-indigo-500/50 hover:text-indigo-400' : 'border-zinc-200 text-zinc-500 hover:border-indigo-300 hover:text-indigo-600'}`}>
+                  className={`px-3 py-1 rounded-full text-xs border font-medium transition-all ${dark ? 'border-[#2a2a3e] text-zinc-400 hover:border-indigo-500/50 hover:text-indigo-400' : 'border-zinc-200 text-zinc-500 hover:border-indigo-300 hover:text-indigo-600'}`}>
                   {d.icon} {d.name}
                 </button>
               ))}
@@ -167,7 +201,7 @@ export default function RelocatePage() {
                   <h2 className={`text-xl font-bold mb-2 ${ui.text}`}>{result.destination}</h2>
                   <p className={`text-sm leading-relaxed ${ui.sub}`}>{result.overview}</p>
                   {result.comparedToUS && (
-                    <p className={`text-xs mt-2 px-3 py-1.5 rounded-lg inline-block ${dark ? 'bg-[#2a2a2e] text-zinc-300' : 'bg-zinc-100 text-zinc-600'}`}>
+                    <p className={`text-xs mt-2 px-3 py-1.5 rounded-lg inline-block ${dark ? 'bg-[#1a1a2e] text-zinc-300' : 'bg-zinc-100 text-zinc-600'}`}>
                       vs. US: {result.comparedToUS}
                     </p>
                   )}
@@ -282,11 +316,11 @@ export default function RelocatePage() {
                 <h3 className={`text-sm font-bold mb-4 ${ui.text}`}>🏘 Neighborhoods to Know</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {result.neighborhoods.map((n, i) => (
-                    <div key={i} className={`rounded-xl p-4 border ${dark ? 'border-[#2a2a2e] bg-[#111113]' : 'border-zinc-100 bg-zinc-50'}`}>
+                    <div key={i} className={`rounded-xl p-4 border ${dark ? 'border-[#1e1e2e] bg-[#0a0a14]' : 'border-zinc-100 bg-zinc-50'}`}>
                       <div className="flex justify-between items-start">
                         <p className={`text-xs font-semibold ${ui.text}`}>{n.name}</p>
                         {n.safetyRating && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${dark ? 'bg-[#2a2a2e] text-zinc-400' : 'bg-zinc-200 text-zinc-600'}`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-200 text-zinc-600'}`}>
                             Safety: {n.safetyRating}/5
                           </span>
                         )}
@@ -349,10 +383,10 @@ export default function RelocatePage() {
                 <h3 className={`text-sm font-bold mb-4 ${ui.text}`}>🌐 Expat Communities & Resources</h3>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {result.expatCommunities.map((c, i) => (
-                    <div key={i} className={`rounded-xl p-3 border ${dark ? 'border-[#2a2a2e] bg-[#111113]' : 'border-zinc-100 bg-zinc-50'}`}>
+                    <div key={i} className={`rounded-xl p-3 border ${dark ? 'border-[#1e1e2e] bg-[#0a0a14]' : 'border-zinc-100 bg-zinc-50'}`}>
                       <div className="flex items-start justify-between gap-2">
                         <p className={`text-xs font-semibold ${ui.text}`}>{c.name}</p>
-                        <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${dark ? 'bg-[#2a2a2e] text-zinc-500' : 'bg-zinc-200 text-zinc-500'}`}>{c.type}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${dark ? 'bg-[#1a1a2e] text-zinc-500' : 'bg-zinc-200 text-zinc-500'}`}>{c.type}</span>
                       </div>
                       {c.description && <p className={`text-xs mt-1 ${ui.sub}`}>{c.description}</p>}
                     </div>
@@ -369,7 +403,7 @@ export default function RelocatePage() {
                 <div className="space-y-3">
                   {result.connections.map((post) => (
                     <a key={post.id} href="/community"
-                      className={`flex gap-3 p-3 rounded-xl border transition-all cursor-pointer ${dark ? 'border-[#2a2a2e] bg-[#111113] hover:border-indigo-500/30' : 'border-zinc-100 bg-zinc-50 hover:border-indigo-200'}`}>
+                      className={`flex gap-3 p-3 rounded-xl border transition-all cursor-pointer ${dark ? 'border-[#1e1e2e] bg-[#0a0a14] hover:border-indigo-500/30' : 'border-zinc-100 bg-zinc-50 hover:border-indigo-200'}`}>
                       <Avatar name={post.user_name} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">

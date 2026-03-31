@@ -176,6 +176,11 @@ export default function Navbar({ dark, onToggleDark }) {
                   <Link href="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-600 hover:bg-zinc-50'}`}>
                     👤 View Profile
                   </Link>
+                  {user?.email === 'aahilakbar567@gmail.com' && (
+                    <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-indigo-400 hover:bg-indigo-500/8">
+                      🛡️ Admin
+                    </Link>
+                  )}
                   <button onClick={handleSignOut} className="w-full text-left px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/5 transition-colors">
                     Sign out
                   </button>
@@ -302,6 +307,12 @@ export default function Navbar({ dark, onToggleDark }) {
                       className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-700 hover:bg-zinc-50'}`}>
                       <span className="text-base">💼</span> Browse Jobs
                     </Link>
+                    {user?.email === 'aahilakbar567@gmail.com' && (
+                      <Link href="/admin" onClick={() => setUserMenuOpen(false)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all text-indigo-400 hover:bg-indigo-500/8`}>
+                        <span className="text-base">🛡️</span> Admin
+                      </Link>
+                    )}
                     <div className={`my-1 h-px ${dark ? 'bg-[#1e1e2e]' : 'bg-zinc-100'}`} />
                     <button onClick={handleSignOut}
                       className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/8 transition-all">

@@ -6,6 +6,14 @@ import AuthModal from '../components/AuthModal';
 import { useTheme } from '../hooks/useTheme';
 import { createClient } from '../../lib/supabase-browser';
 
+const VERIFIED_EMAILS = new Set(['aahilakbar567@gmail.com']);
+
+function VerifiedBadge() {
+  return (
+    <span title="Verified" className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500 text-white flex-shrink-0" style={{ fontSize: 9 }}>✓</span>
+  );
+}
+
 const POST_TYPES = [
   { value: 'story', label: '📖 Story', color: 'text-purple-400' },
   { value: 'job', label: '💼 Job Post', color: 'text-blue-400' },
@@ -112,7 +120,7 @@ function CommentSection({ postId, dark, currentUser, onSignIn }) {
   };
 
   const ui = {
-    input: dark ? 'bg-[#2a2a2e] border-[#3a3a3e] text-zinc-100 placeholder-zinc-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400',
+    input: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400',
     comment: dark ? 'bg-[#222226]' : 'bg-zinc-50',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
@@ -178,10 +186,10 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
   const typeInfo = POST_TYPES.find((t) => t.value === post.post_type) || POST_TYPES[0];
 
   const ui = {
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-100',
+    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
     action: (active) => active
       ? 'text-indigo-400'
       : dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600',
@@ -210,6 +218,7 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
           <div>
             <div className="flex items-center gap-2">
               <span className={`text-sm font-semibold ${ui.text}`}>{post.user_name}</span>
+              {VERIFIED_EMAILS.has(post.user_email) && <VerifiedBadge />}
               <FollowButton targetUserId={post.user_id} targetName={post.user_name} currentUser={currentUser} dark={dark} />
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
@@ -239,7 +248,7 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
       {post.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-3">
           {post.tags.map((tag) => (
-            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#2a2a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-500'}`}>
+            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-500'}`}>
               #{tag}
             </span>
           ))}
@@ -288,11 +297,11 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
   const [submitting, setSubmitting] = useState(false);
 
   const ui = {
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
-    input: dark ? 'bg-[#2a2a2e] border-[#3a3a3e] text-zinc-100 placeholder-zinc-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
+    input: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    pill: (a) => a ? 'bg-indigo-600 text-white border-indigo-600' : dark ? 'bg-[#2a2a2e] text-zinc-400 border-[#3a3a3e]' : 'bg-white text-zinc-500 border-zinc-200',
+    pill: (a) => a ? 'bg-indigo-600 text-white border-indigo-600' : dark ? 'bg-[#1a1a2e] text-zinc-400 border-[#3a3a3e]' : 'bg-white text-zinc-500 border-zinc-200',
   };
 
   const submit = async () => {
@@ -342,7 +351,7 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
       </div>
 
       {open && (
-        <div className={`px-4 pb-4 space-y-3 border-t ${dark ? 'border-[#2a2a2e]' : 'border-zinc-100'} pt-4`}>
+        <div className={`px-4 pb-4 space-y-3 border-t ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'} pt-4`}>
           {/* Post type */}
           <div className="flex gap-2 flex-wrap">
             {POST_TYPES.map((t) => (
@@ -374,7 +383,7 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
           />
           <div className="flex gap-2 justify-end">
             <button onClick={() => setOpen(false)}
-              className={`px-4 py-2 rounded-xl text-sm border font-medium transition-all ${dark ? 'border-[#3a3a3e] text-zinc-400 hover:bg-[#2a2a2e]' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+              className={`px-4 py-2 rounded-xl text-sm border font-medium transition-all ${dark ? 'border-[#2a2a3e] text-zinc-400 hover:bg-[#1a1a2e]' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
               Cancel
             </button>
             <button onClick={submit} disabled={!content.trim() || submitting}
@@ -400,8 +409,8 @@ export default function CommunityPage() {
   const PER_PAGE = 20;
 
   const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
   };
@@ -459,12 +468,24 @@ export default function CommunityPage() {
       {showAuth && <AuthModal dark={dark} onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
       <Navbar dark={dark} onToggleDark={toggleDark} />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-        {/* Page header */}
-        <div className="mb-6">
-          <h1 className={`text-2xl font-bold ${ui.text}`}>Community</h1>
-          <p className={`text-sm mt-1 ${ui.sub}`}>Share stories, post jobs, ask questions — connect with people navigating global careers</p>
+      {/* Gradient header */}
+      <div className={`relative overflow-hidden border-b ${dark ? 'border-[#1e1e2e]' : 'border-zinc-200'}`}>
+        {dark && (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-950/50 via-[#080810] to-indigo-950/40 pointer-events-none" />
+            <div className="absolute -top-10 right-10 w-64 h-64 bg-purple-600/8 rounded-full blur-3xl pointer-events-none" />
+          </>
+        )}
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10">
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4 text-xs font-medium ${dark ? 'border-purple-500/30 bg-purple-500/10 text-purple-400' : 'border-purple-200 bg-purple-50 text-purple-600'}`}>
+            🌍 Global Community
+          </div>
+          <h1 className={`text-3xl font-black mb-2 ${dark ? 'gradient-text' : 'text-zinc-900'}`}>Community</h1>
+          <p className={`text-sm max-w-xl ${ui.sub}`}>Share stories, post jobs, ask questions — connect with people navigating global careers</p>
         </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
 
         <div className="flex gap-6">
           {/* Main feed */}
@@ -513,7 +534,7 @@ export default function CommunityPage() {
                 {hasMore && (
                   <div className="text-center pt-2">
                     <button onClick={loadMore} disabled={loading}
-                      className={`px-6 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#2a2a2e] text-zinc-300 hover:bg-[#1a1a1d]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
+                      className={`px-6 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
                       {loading ? 'Loading...' : 'Load more'}
                     </button>
                   </div>
@@ -531,7 +552,7 @@ export default function CommunityPage() {
                 Share career stories, job opportunities, visa experiences, and advice for working globally.
                 Connect with people on the same journey.
               </p>
-              <div className={`mt-3 pt-3 border-t ${dark ? 'border-[#2a2a2e]' : 'border-zinc-100'} space-y-1`}>
+              <div className={`mt-3 pt-3 border-t ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'} space-y-1`}>
                 {POST_TYPES.map((t) => (
                   <div key={t.value} className="flex items-center gap-2">
                     <span className={`text-xs ${t.color}`}>{t.label}</span>
@@ -578,7 +599,7 @@ function UserStats({ user, dark, ui }) {
           <p className={`text-xs ${ui.sub}`}>{user.email}</p>
         </div>
       </div>
-      <div className={`flex gap-4 pt-3 border-t ${dark ? 'border-[#2a2a2e]' : 'border-zinc-100'}`}>
+      <div className={`flex gap-4 pt-3 border-t ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'}`}>
         <div>
           <p className={`text-sm font-bold ${ui.text}`}>{stats.followers}</p>
           <p className={`text-xs ${ui.sub}`}>Followers</p>

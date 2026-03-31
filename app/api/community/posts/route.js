@@ -38,6 +38,7 @@ export async function POST(request) {
       user_id: user.id,
       user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
       user_avatar: user.user_metadata?.avatar_url || '',
+      user_email: user.email || '',
       title: title?.trim() || null,
       content: content.trim(),
       post_type: post_type || 'story',

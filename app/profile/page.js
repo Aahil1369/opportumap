@@ -7,9 +7,11 @@ import Navbar from '../components/Navbar';
 import { useTheme } from '../hooks/useTheme';
 import { createClient } from '../../lib/supabase-browser';
 
+const VERIFIED_EMAILS = new Set(['aahilakbar567@gmail.com']);
+
 function StatBox({ label, value, dark }) {
   const ui = {
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
   };
@@ -23,7 +25,7 @@ function StatBox({ label, value, dark }) {
 
 function PostCard({ post, dark }) {
   const ui = {
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
   };
@@ -63,7 +65,7 @@ function PostCard({ post, dark }) {
       {post.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-2">
           {post.tags.map((tag) => (
-            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#2a2a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-500'}`}>#{tag}</span>
+            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-500'}`}>#{tag}</span>
           ))}
         </div>
       )}
@@ -81,11 +83,11 @@ export default function ProfilePage() {
   const [postsLoading, setPostsLoading] = useState(true);
 
   const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
+    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
+    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
     text: dark ? 'text-zinc-100' : 'text-zinc-900',
     sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-100',
+    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
   };
 
   useEffect(() => {
@@ -151,6 +153,9 @@ export default function ProfilePage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className={`text-xl font-bold ${ui.text}`}>{name}</h1>
+                {VERIFIED_EMAILS.has(user.email) && (
+                  <span title="Verified" className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white flex-shrink-0 shadow-md shadow-indigo-500/30" style={{ fontSize: 10 }}>✓</span>
+                )}
               </div>
               <p className={`text-sm mt-0.5 ${ui.sub}`}>{user.email}</p>
               {joinDate && <p className={`text-xs mt-1 ${ui.sub}`}>Joined {joinDate}</p>}
@@ -160,7 +165,7 @@ export default function ProfilePage() {
                   + New Post
                 </Link>
                 <Link href="/jobs"
-                  className={`px-4 py-1.5 rounded-full border text-xs font-medium transition-all ${dark ? 'border-[#3a3a3e] text-zinc-300 hover:bg-[#2a2a2e]' : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50'}`}>
+                  className={`px-4 py-1.5 rounded-full border text-xs font-medium transition-all ${dark ? 'border-[#2a2a3e] text-zinc-300 hover:bg-[#1a1a2e]' : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50'}`}>
                   Browse Jobs
                 </Link>
               </div>
