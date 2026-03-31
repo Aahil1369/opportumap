@@ -26,24 +26,30 @@ function extractKeywords(text) {
 export function scoreJob(job, profile) {
   if (!profile) return 0;
 
-  const jobText = normalize(`${job.title} ${job.company} ${job.location}`);
-  const jobWords = new Set(extractKeywords(jobText));
+  // Include description so skills actually match real job text
+  const descText = normalize((job.description || '').replace(/<[^>]+>/g, ' ').slice(0, 800));
+  const titleText = normalize(`${job.title} ${job.company} ${job.location}`);
+  const fullText = `${titleText} ${descText}`;
+  const titleWords = new Set(extractKeywords(titleText));
 
-  let score = 0;
+  // Base floor — having a profile at all means you're a real candidate
+  let score = 28;
 
-  // --- Skills match (highest weight) ---
+  // --- Skills match (title hit = strong signal, description hit = moderate) ---
   const skillKeywords = extractKeywords(profile.skills || '');
   for (const skill of skillKeywords) {
-    if (skill.length > 2 && jobText.includes(skill)) score += 12;
+    if (skill.length < 2) continue;
+    if (titleText.includes(skill)) score += 10;       // title match is a strong signal
+    else if (fullText.includes(skill)) score += 5;    // description match counts too
   }
 
   // --- Resume summary match ---
   const resumeKeywords = extractKeywords(profile.resumeSummary || '');
   for (const word of resumeKeywords) {
-    if (word.length > 3 && jobWords.has(word)) score += 6;
+    if (word.length > 3 && titleWords.has(word)) score += 4;
   }
 
-  // --- Experience level match ---
+  // --- Experience level match (softer penalties) ---
   const title = normalize(job.title);
   const exp = profile.experience;
   const isSenior = /senior|lead|staff|principal|head|director|vp|architect/.test(title);
@@ -51,33 +57,34 @@ export function scoreJob(job, profile) {
   const isMid = !isSenior && !isJunior;
 
   if (exp === 'student' || exp === '0-2') {
-    if (isJunior) score += 25;
-    if (isMid) score += 8;
-    if (isSenior) score -= 15;
+    if (isJunior) score += 20;
+    if (isMid)   score += 8;
+    if (isSenior) score -= 5;   // small penalty, not a dealbreaker
   } else if (exp === '3-5') {
-    if (isMid) score += 20;
-    if (isSenior) score += 5;
-    if (isJunior) score -= 5;
+    if (isMid)    score += 18;
+    if (isSenior) score += 8;
+    if (isJunior) score -= 3;
   } else if (exp === '5-10') {
-    if (isSenior) score += 25;
-    if (isMid) score += 10;
+    if (isSenior) score += 20;
+    if (isMid)    score += 10;
   } else if (exp === '10+') {
-    if (isSenior || /lead|director|vp|head/.test(title)) score += 30;
+    if (isSenior || /lead|director|vp|head/.test(title)) score += 22;
+    else score += 8;
   }
 
   // --- Job type interest match ---
   const typeMap = {
     'Software Engineering': ['engineer', 'developer', 'software', 'fullstack', 'frontend', 'backend', 'web', 'mobile', 'ios', 'android'],
-    'Data Science / ML': ['data', 'machine learning', 'ml', 'ai', 'analytics', 'scientist', 'deep learning', 'nlp', 'computer vision', 'llm'],
-    'DevOps / Cloud': ['devops', 'cloud', 'infrastructure', 'platform', 'sre', 'reliability', 'kubernetes', 'terraform', 'aws', 'azure', 'gcp'],
-    'Product Management': ['product manager', 'product owner', 'pm ', 'programme manager'],
-    'Design': ['design', 'ux', 'ui', 'figma', 'user experience', 'user interface', 'visual'],
-    'Research': ['research', 'scientist', 'phd', 'r&d', 'lab', 'academic'],
-    'Finance / Fintech': ['finance', 'fintech', 'quant', 'trading', 'banking', 'risk', 'analyst'],
+    'Data Science / ML':   ['data', 'machine learning', 'analytics', 'scientist', 'nlp', 'computer vision', 'llm', 'ai engineer'],
+    'DevOps / Cloud':      ['devops', 'cloud', 'infrastructure', 'platform', 'sre', 'kubernetes', 'terraform', 'aws', 'azure', 'gcp'],
+    'Product Management':  ['product manager', 'product owner', 'programme manager'],
+    'Design':              ['design', 'ux', 'ui', 'figma', 'user experience', 'user interface', 'visual'],
+    'Research':            ['research', 'scientist', 'phd', 'r&d', 'lab', 'academic'],
+    'Finance / Fintech':   ['finance', 'fintech', 'quant', 'trading', 'banking', 'risk', 'analyst'],
   };
   for (const type of (profile.jobTypes || [])) {
     const keywords = typeMap[type] || [];
-    if (keywords.some((k) => jobText.includes(k))) score += 18;
+    if (keywords.some((k) => fullText.includes(k))) score += 15;
   }
 
   return Math.min(Math.max(score, 0), 99);

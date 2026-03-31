@@ -5,8 +5,14 @@ import { getVisaStatus, VISA_COLORS } from '../data/visaData';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 import { matchColor } from '../data/matchJobs';
 
+// Visa ease — much gentler penalties. A visa requirement is an obstacle, not a dealbreaker.
 const VISA_EASE = {
-  citizen: 100, free: 90, e_visa: 60, on_arrival: 50, required: 20, unknown: 40,
+  citizen:    100,
+  free:        95,
+  e_visa:      85,
+  on_arrival:  78,
+  required:    62,  // was 20 — having to get a visa is fine, just more work
+  unknown:     75,
 };
 
 const VISA_BADGE = {
@@ -31,15 +37,17 @@ const COMPANY_GRADIENTS = [
 
 export function opportunityScore(matchScore, nationality, jobCountry) {
   const visaStatus = nationality ? getVisaStatus(nationality, jobCountry) : 'unknown';
-  const visaPoints = VISA_EASE[visaStatus] ?? 40;
-  return Math.round(matchScore * 0.6 + visaPoints * 0.4);
+  const visaPoints = VISA_EASE[visaStatus] ?? 75;
+  // Skills are 85% of the score — your skills matter most, not your passport
+  return Math.round(matchScore * 0.85 + visaPoints * 0.15);
 }
 
 export function oppScoreColor(score) {
-  if (score >= 70) return { text: 'text-emerald-400', bar: 'from-emerald-500 to-teal-500', label: 'Excellent' };
-  if (score >= 50) return { text: 'text-amber-400',   bar: 'from-amber-500 to-orange-400', label: 'Good' };
-  if (score >= 30) return { text: 'text-orange-400',  bar: 'from-orange-500 to-red-400',   label: 'Fair' };
-  return             { text: 'text-red-400',           bar: 'from-red-500 to-rose-600',     label: 'Hard' };
+  if (score >= 75) return { text: 'text-emerald-400', bar: 'from-emerald-500 to-teal-500',   label: 'Excellent', ring: 'text-emerald-400' };
+  if (score >= 55) return { text: 'text-sky-400',     bar: 'from-sky-500 to-indigo-500',     label: 'Strong',    ring: 'text-sky-400' };
+  if (score >= 40) return { text: 'text-amber-400',   bar: 'from-amber-500 to-orange-400',   label: 'Good',      ring: 'text-amber-400' };
+  if (score >= 28) return { text: 'text-orange-400',  bar: 'from-orange-500 to-red-400',     label: 'Fair',      ring: 'text-orange-400' };
+  return             { text: 'text-zinc-400',          bar: 'from-zinc-500 to-zinc-600',      label: 'Low',       ring: 'text-zinc-400' };
 }
 
 function CompanyLogo({ company, size = 44 }) {
