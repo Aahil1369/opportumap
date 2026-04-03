@@ -65,7 +65,7 @@ RESUME TEXT:
 ${resumeText.slice(0, 6000)}`,
         },
       ],
-      max_tokens: 2048,
+      max_tokens: 3000,
     });
 
     let text = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();
@@ -73,6 +73,9 @@ ${resumeText.slice(0, 6000)}`,
     if (jsonMatch) text = jsonMatch[0];
 
     const data = JSON.parse(text);
+    data.redFlags = data.redFlags || [];
+    data.clichesFound = data.clichesFound || [];
+    data.rewrittenBullets = data.rewrittenBullets || [];
     return Response.json(data);
   } catch (err) {
     console.error('Resume grade error:', err);
