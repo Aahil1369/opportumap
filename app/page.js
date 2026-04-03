@@ -167,6 +167,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ─── TOOLS STRIP ─── */}
+      <section className={`border-b ${divider} px-4 sm:px-8 py-8`}>
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-1">AI Tools</p>
+              <h2 className={`text-lg font-black ${text}`}>Everything you need, in one place</h2>
+            </div>
+            <Link href="/jobs" className={`text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors hidden sm:block`}>Browse jobs →</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              { href: '/resume', icon: '📄', label: 'Resume Analyzer', desc: 'Brutal honest AI grade', color: 'from-green-500 to-emerald-600', glow: 'group-hover:shadow-green-500/20' },
+              { href: '/cover-letter', icon: '✉️', label: 'Cover Letter', desc: 'Tailored in seconds', color: 'from-violet-500 to-purple-600', glow: 'group-hover:shadow-violet-500/20' },
+              { href: '/interview', icon: '🎤', label: 'Interview Prep', desc: 'AI mock interviews', color: 'from-emerald-500 to-teal-600', glow: 'group-hover:shadow-emerald-500/20' },
+              { href: '/visa', icon: '🛂', label: 'Visa Intelligence', desc: 'Know your status fast', color: 'from-cyan-500 to-blue-600', glow: 'group-hover:shadow-cyan-500/20' },
+              { href: '/relocate', icon: '✈️', label: 'Relocation Guide', desc: 'City-by-city plan', color: 'from-rose-500 to-pink-600', glow: 'group-hover:shadow-rose-500/20' },
+            ].map((tool) => (
+              <Link key={tool.href} href={tool.href}
+                className={`group relative rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${tool.glow} ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30' : 'bg-white border-zinc-200 hover:border-indigo-200'}`}>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-xl mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200`}>
+                  {tool.icon}
+                </div>
+                <p className={`text-xs font-bold mb-0.5 ${text}`}>{tool.label}</p>
+                <p className={`text-[10px] leading-relaxed ${sub}`}>{tool.desc}</p>
+                <div className="absolute bottom-3 right-3 text-indigo-400 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── FEATURES — Bento Grid ─── */}
       <section className="px-4 sm:px-8 py-20 sm:py-28 max-w-6xl mx-auto">
         <div className="text-center mb-14 reveal">
@@ -303,20 +335,23 @@ export default function Home() {
           <div className="text-center mb-14 reveal">
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">AI Tools</p>
             <h2 className={`text-3xl sm:text-4xl font-black mb-4 ${text}`}>Powerful tools at your fingertips</h2>
+            <p className={`text-base max-w-xl mx-auto ${sub}`}>Five AI-powered tools to take you from application to relocation.</p>
           </div>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { href: '/resume', icon: '📄', label: 'Resume Analyzer', desc: 'Grade your resume with AI', color: 'from-green-500 to-emerald-600' },
-              { href: '/visa', icon: '🛂', label: 'Visa Intelligence', desc: 'Know your visa status instantly', color: 'from-cyan-500 to-blue-600' },
-              { href: '/relocate', icon: '✈️', label: 'Relocation Guide', desc: 'Full city-by-city relocation plan', color: 'from-rose-500 to-pink-600' },
+              { href: '/resume', icon: '📄', label: 'Resume Analyzer', desc: 'Brutally honest AI grade with red flags, clichés detected, and bullet rewrites.', color: 'from-green-500 to-emerald-600' },
+              { href: '/cover-letter', icon: '✉️', label: 'Cover Letter Generator', desc: 'Paste a job description and get a tailored cover letter in seconds.', color: 'from-violet-500 to-purple-600' },
+              { href: '/interview', icon: '🎤', label: 'Interview Prep', desc: '15 tailored questions + AI mock interview that grades your actual answers.', color: 'from-emerald-500 to-teal-600' },
+              { href: '/visa', icon: '🛂', label: 'Visa Intelligence', desc: 'Full visa report: document checklist, timeline, financial requirements, and approval tips.', color: 'from-cyan-500 to-blue-600' },
+              { href: '/relocate', icon: '✈️', label: 'Relocation Guide', desc: 'Cost breakdown, safety info, banking, SIM, emergency numbers, and cultural tips.', color: 'from-rose-500 to-pink-600' },
             ].map((tool, i) => (
               <Link key={tool.href} href={tool.href}
-                className={`reveal reveal-delay-${i + 1} group block rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30 hover:shadow-indigo-500/10' : 'bg-white border-zinc-200 hover:border-indigo-300 hover:shadow-indigo-500/10'}`}>
+                className={`reveal reveal-delay-${(i % 3) + 1} group block rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30 hover:shadow-indigo-500/10' : 'bg-white border-zinc-200 hover:border-indigo-300 hover:shadow-indigo-500/10'}`}>
                 <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
                   {tool.icon}
                 </div>
                 <h3 className={`text-sm font-bold mb-1 ${text}`}>{tool.label}</h3>
-                <p className={`text-xs ${sub}`}>{tool.desc}</p>
+                <p className={`text-xs leading-relaxed ${sub}`}>{tool.desc}</p>
                 <div className="mt-4 text-indigo-400 text-xs font-semibold group-hover:translate-x-1 transition-transform inline-block">Try it →</div>
               </Link>
             ))}
