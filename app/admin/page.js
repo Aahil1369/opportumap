@@ -45,6 +45,7 @@ export default function AdminPage() {
   const [topPosts, setTopPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [liveRefreshing, setLiveRefreshing] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -66,6 +67,22 @@ export default function AdminPage() {
         setLoading(false);
       })
       .catch(() => { setError('Failed to load stats'); setLoading(false); });
+  }, [user]);
+
+  // Auto-refresh live users every 30s
+  useEffect(() => {
+    if (!user || user.email !== ADMIN_EMAIL) return;
+    const interval = setInterval(() => {
+      setLiveRefreshing(true);
+      fetch('/api/admin/stats')
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.error) setStats((prev) => ({ ...prev, liveUsers: d.stats.liveUsers }));
+        })
+        .catch(() => {})
+        .finally(() => setLiveRefreshing(false));
+    }, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const ui = {
@@ -124,7 +141,24 @@ export default function AdminPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 space-y-8">
         {error && <p className="text-red-400 text-sm">{error}</p>}
 
-        {/* Stats grid */}
+        {/* Stats grid — platform metrics */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard label="Total Users" value={stats?.totalUsers} icon="🧑‍💻" color="text-indigo-400 bg-indigo-500/10 border-indigo-500/20" dark={dark} />
+          <div className={`rounded-2xl border p-5 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xl">🟢</span>
+              <div className="flex items-center gap-2">
+                {liveRefreshing && <div className="w-2.5 h-2.5 border border-green-400 border-t-transparent rounded-full animate-spin" />}
+                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium text-green-400 bg-green-500/10 border-green-500/20`}>Live Now</span>
+              </div>
+            </div>
+            <p className={`text-3xl font-black ${dark ? 'text-zinc-100' : 'text-zinc-900'}`}>{stats?.liveUsers?.toLocaleString() ?? '—'}</p>
+            <p className={`text-xs mt-1 ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>active in last 5 min · refreshes 30s</p>
+          </div>
+          <StatCard label="Total Visits" value={stats?.totalVisits} icon="📊" color="text-violet-400 bg-violet-500/10 border-violet-500/20" dark={dark} />
+        </div>
+
+        {/* Community stats grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Posts" value={stats?.posts} icon="📝" color="text-purple-400 bg-purple-500/10 border-purple-500/20" dark={dark} />
           <StatCard label="Likes" value={stats?.likes} icon="❤️" color="text-rose-400 bg-rose-500/10 border-rose-500/20" dark={dark} />
