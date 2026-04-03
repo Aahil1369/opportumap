@@ -336,6 +336,80 @@ export default function RelocatePage() {
               </div>
             )}
 
+            {/* Safety Info */}
+            {result.safetyInfo && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-4 ${ui.text}`}>🛡 Safety Overview</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-full border ${
+                    result.safetyInfo.crimeIndex === 'low' ? 'text-green-400 border-green-500/30 bg-green-500/10' :
+                    result.safetyInfo.crimeIndex === 'medium' ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' :
+                    'text-red-400 border-red-500/30 bg-red-500/10'
+                  }`}>
+                    {result.safetyInfo.crimeIndex?.toUpperCase()} CRIME
+                  </span>
+                  {result.safetyInfo.nightSafety && <p className={`text-xs ${ui.sub}`}>{result.safetyInfo.nightSafety}</p>}
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {result.safetyInfo.safeAreas?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-green-400 mb-2">Safe Areas</p>
+                      {result.safetyInfo.safeAreas.map((a, i) => <p key={i} className={`text-xs flex gap-1.5 mb-1 ${ui.sub}`}><span className="text-green-400">✓</span>{a}</p>)}
+                    </div>
+                  )}
+                  {result.safetyInfo.areasToAvoid?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-red-400 mb-2">Areas to Avoid</p>
+                      {result.safetyInfo.areasToAvoid.map((a, i) => <p key={i} className={`text-xs flex gap-1.5 mb-1 ${ui.sub}`}><span className="text-red-400">✗</span>{a}</p>)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Climate */}
+            {result.climate && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>🌤 Climate & Weather</h3>
+                {result.climate.overview && <p className={`text-xs leading-relaxed mb-3 ${ui.sub}`}>{result.climate.overview}</p>}
+                {result.climate.bestTimeToArrive && (
+                  <p className={`text-xs mb-3 ${ui.sub}`}>Best time to arrive: <span className={`font-semibold ${ui.text}`}>{result.climate.bestTimeToArrive}</span></p>
+                )}
+                {result.climate.whatToPack?.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {result.climate.whatToPack.map((item, i) => (
+                      <span key={i} className={`text-xs px-2 py-1 rounded-full ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-600'}`}>{item}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Work Culture */}
+            {result.workCulture && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>💼 Work Culture</h3>
+                <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                  {result.workCulture.typicalHours && (
+                    <div className={`p-3 rounded-xl ${dark ? 'bg-[#0a0a14]' : 'bg-zinc-50'}`}>
+                      <p className={`text-xs ${ui.sub} mb-1`}>Hours</p>
+                      <p className={`text-xs font-semibold ${ui.text}`}>{result.workCulture.typicalHours}</p>
+                    </div>
+                  )}
+                  {result.workCulture.formality && (
+                    <div className={`p-3 rounded-xl ${dark ? 'bg-[#0a0a14]' : 'bg-zinc-50'}`}>
+                      <p className={`text-xs ${ui.sub} mb-1`}>Dress Code</p>
+                      <p className={`text-xs font-semibold ${ui.text} capitalize`}>{result.workCulture.formality}</p>
+                    </div>
+                  )}
+                </div>
+                {result.workCulture.expatTreatment && <p className={`text-xs mb-3 ${ui.sub}`}>{result.workCulture.expatTreatment}</p>}
+                {result.workCulture.tips?.map((t, i) => (
+                  <p key={i} className={`text-xs flex gap-1.5 mb-1 ${ui.sub}`}><span className="text-indigo-400">→</span>{t}</p>
+                ))}
+              </div>
+            )}
+
             {/* Before you move checklist */}
             {result.beforeYouMove?.length > 0 && (
               <div className={`rounded-2xl border p-5 ${ui.card}`}>
@@ -376,6 +450,109 @@ export default function RelocatePage() {
                 )}
               </div>
             </div>
+
+            {/* Banking + SIM side by side */}
+            <div className="grid sm:grid-cols-2 gap-5">
+              {result.bankingSetup && (
+                <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                  <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>🏦 Banking for Expats</h3>
+                  {result.bankingSetup.howToOpen && <p className={`text-xs mb-3 ${ui.sub}`}>{result.bankingSetup.howToOpen}</p>}
+                  {result.bankingSetup.bestBanksForExpats?.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-xs font-semibold text-indigo-400 mb-1">Recommended Banks</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.bankingSetup.bestBanksForExpats.map((b, i) => (
+                          <span key={i} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>{b}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {result.bankingSetup.alternativeApps?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-green-400 mb-1">Digital Alternatives</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.bankingSetup.alternativeApps.map((a, i) => (
+                          <span key={i} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-600'}`}>{a}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {result.simAndInternet && (
+                <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                  <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>📱 SIM & Internet</h3>
+                  {result.simAndInternet.howToGetOnArrival && <p className={`text-xs mb-2 ${ui.sub}`}>{result.simAndInternet.howToGetOnArrival}</p>}
+                  {result.simAndInternet.avgMonthlyCost && (
+                    <p className={`text-xs mb-2 ${ui.sub}`}>Avg monthly cost: <span className={`font-semibold ${ui.text}`}>{result.simAndInternet.avgMonthlyCost}</span></p>
+                  )}
+                  {result.simAndInternet.internetSpeed && (
+                    <p className={`text-xs mb-2 ${ui.sub}`}>Avg speed: <span className={`font-semibold ${ui.text}`}>{result.simAndInternet.internetSpeed}</span></p>
+                  )}
+                  {result.simAndInternet.bestProviders?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.simAndInternet.bestProviders.map((p, i) => (
+                        <span key={i} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-600'}`}>{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Emergency Numbers */}
+            {result.emergencyNumbers && (
+              <div className={`rounded-2xl border p-5 ${dark ? 'border-red-500/20 bg-red-500/5' : 'border-red-200 bg-red-50'}`}>
+                <h3 className={`text-sm font-bold mb-3 text-red-400`}>🆘 Emergency Numbers</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    ['Police', result.emergencyNumbers.police, '🚔'],
+                    ['Ambulance', result.emergencyNumbers.ambulance, '🚑'],
+                    ['Fire', result.emergencyNumbers.fire, '🚒'],
+                    ['General', result.emergencyNumbers.generalEmergency, '📞'],
+                  ].filter(([, num]) => num).map(([label, num, icon]) => (
+                    <div key={label} className={`text-center p-3 rounded-xl ${dark ? 'bg-[#0a0a14]' : 'bg-white'}`}>
+                      <p className="text-lg mb-1">{icon}</p>
+                      <p className={`text-sm font-black ${ui.text}`}>{num}</p>
+                      <p className={`text-xs ${ui.sub}`}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cultural Tips */}
+            {result.culturalTips && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-4 ${ui.text}`}>🤝 Cultural Tips & Etiquette</h3>
+                {result.culturalTips.etiquette && <p className={`text-xs mb-4 ${ui.sub}`}>{result.culturalTips.etiquette}</p>}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {result.culturalTips.dos?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-green-400 mb-2">Do</p>
+                      {result.culturalTips.dos.map((d, i) => <p key={i} className={`text-xs flex gap-1.5 mb-1.5 ${ui.sub}`}><span className="text-green-400 flex-shrink-0">✓</span>{d}</p>)}
+                    </div>
+                  )}
+                  {result.culturalTips.donts?.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-red-400 mb-2">Don&apos;t</p>
+                      {result.culturalTips.donts.map((d, i) => <p key={i} className={`text-xs flex gap-1.5 mb-1.5 ${ui.sub}`}><span className="text-red-400 flex-shrink-0">✗</span>{d}</p>)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Visa Path Summary */}
+            {result.visaPathSummary && (
+              <div className={`rounded-2xl border p-5 ${dark ? 'border-indigo-500/20 bg-indigo-500/5' : 'border-indigo-200 bg-indigo-50'}`}>
+                <h3 className={`text-sm font-bold mb-2 text-indigo-400`}>🛂 Visa Path for This Destination</h3>
+                <p className={`text-xs leading-relaxed ${ui.sub}`}>{result.visaPathSummary}</p>
+                <a href="/visa" className="inline-block mt-3 text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                  Get full visa intelligence →
+                </a>
+              </div>
+            )}
 
             {/* Expat communities */}
             {result.expatCommunities?.length > 0 && (
