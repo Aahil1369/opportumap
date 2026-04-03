@@ -272,6 +272,62 @@ export default function ResumePage() {
               </div>
             </div>
 
+            {/* Red Flags */}
+            {result.redFlags?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card} border-red-500/20`}>
+                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 text-red-400`}>
+                  🚨 Red Flags — Fix These First
+                </h3>
+                <ul className="space-y-2">
+                  {result.redFlags.map((flag, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-red-400 text-xs flex-shrink-0 mt-0.5">✗</span>
+                      <span className={`text-xs leading-relaxed ${ui.sub}`}>{flag}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Clichés Found */}
+            {result.clichesFound?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card} border-amber-500/20`}>
+                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 text-amber-400`}>
+                  ⚠️ Buzzwords & Clichés Detected
+                </h3>
+                <p className={`text-xs mb-3 ${ui.sub}`}>These phrases are meaningless to recruiters. Replace them with specific achievements and numbers.</p>
+                <div className="flex flex-wrap gap-2">
+                  {result.clichesFound.map((c, i) => (
+                    <span key={i} className="text-xs px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 line-through">{c}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Rewritten Bullets */}
+            {result.rewrittenBullets?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${ui.text}`}>
+                  ✏️ Bullet Point Rewrites
+                </h3>
+                <p className={`text-xs mb-4 ${ui.sub}`}>Here&apos;s how to rewrite your weakest bullets to actually land interviews.</p>
+                <div className="space-y-4">
+                  {result.rewrittenBullets.map((b, i) => (
+                    <div key={i} className={`rounded-xl p-4 border ${dark ? 'border-[#1e1e2e] bg-[#0a0a14]' : 'border-zinc-100 bg-zinc-50'}`}>
+                      <div className="mb-2">
+                        <span className="text-xs font-semibold text-red-400 block mb-1">Before</span>
+                        <p className={`text-xs ${ui.sub} line-through`}>{b.original}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-green-400 block mb-1">After</span>
+                        <p className={`text-xs ${ui.text}`}>{b.rewritten}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Job matches */}
             <div className={`rounded-2xl border p-5 ${ui.card}`}>
               <h3 className={`text-sm font-bold mb-1 flex items-center gap-2 ${ui.text}`}>
