@@ -15,7 +15,7 @@ const JOB_TYPES = ['Software Engineering', 'Data Science / ML', 'Product Managem
 
 const TOTAL_STEPS = 5;
 
-export default function ProfileModal({ onSave, dark, initialProfile, onClose }) {
+export default function ProfileModal({ onSave, dark, initialProfile, onClose, welcome = false }) {
   const [step, setStep] = useState(1);
   const [profile, setProfile] = useState(initialProfile || {
     name: '', nationality: '', currentCountry: '', experience: '', jobTypes: [], skills: '', preferredCountries: [],
@@ -69,9 +69,15 @@ export default function ProfileModal({ onSave, dark, initialProfile, onClose }) 
 
         {/* Header */}
         <div className={`px-6 pt-6 pb-4 border-b ${ui.border}`}>
+          {welcome && (
+            <div className="mb-3 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-500/10 to-violet-500/10 border border-indigo-500/20">
+              <p className="text-xs font-bold text-indigo-400 mb-0.5">👋 Welcome to OpportuMap!</p>
+              <p className={`text-xs ${ui.sub}`}>Takes 60 seconds — unlocks AI job matching, visa filters, and opportunity scores.</p>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-1">
             <h2 className={`text-lg font-bold ${ui.text}`}>
-              {initialProfile ? 'Edit your profile' : 'Set up your profile'}
+              {welcome ? 'Quick profile setup' : initialProfile?.name ? 'Edit your profile' : 'Set up your profile'}
             </h2>
             <div className="flex items-center gap-3">
               <span className={`text-xs ${ui.sub}`}>Step {step} of {TOTAL_STEPS}</span>

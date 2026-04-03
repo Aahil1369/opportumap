@@ -91,6 +91,7 @@ export default function JobsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [hideExpired, setHideExpired] = useState(true);
   const [authUser, setAuthUser] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const PER_PAGE = 24;
   const supabase = createClient();
 
@@ -122,7 +123,9 @@ export default function JobsPage() {
           setInput(buildQueryFromProfile(p));
           return;
         }
+        // New user — no profile anywhere → prompt to set one up
         setProfile({ name, nationality: '', currentCountry: '', experience: '', jobTypes: [], skills: '', preferredCountries: [] });
+        setShowWelcome(true);
       } else {
         const localRaw = localStorage.getItem('opportumap_profile');
         if (localRaw) {
@@ -395,7 +398,15 @@ export default function JobsPage() {
 
   return (
     <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
-      {showProfile && <ProfileModal onSave={handleSaveProfile} dark={dark} initialProfile={profile} onClose={() => setShowProfile(false)} />}
+      {(showProfile || showWelcome) && (
+        <ProfileModal
+          onSave={handleSaveProfile}
+          dark={dark}
+          initialProfile={profile}
+          onClose={() => { setShowProfile(false); setShowWelcome(false); }}
+          welcome={showWelcome}
+        />
+      )}
       {showRelocation && <RelocationModal onClose={() => setShowRelocation(false)} dark={dark} />}
       <ChatWidget dark={dark} profile={profile} />
       <Navbar dark={dark} onToggleDark={toggleDark} />
@@ -432,23 +443,6 @@ export default function JobsPage() {
             </button>
           </form>
 
-          {/* Category pills */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {JOB_TYPES.slice(1).map((t) => (
-              <button key={t.value} onClick={() => { setTypeFilter(t.value); setPage(1); }}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${ui.pill(typeFilter === t.value)}`}>
-                {t.label}
-              </button>
-            ))}
-            <div className={`ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1 ${dark ? 'border-[#1e1e2e]' : 'border-zinc-200'}`}>
-              {['all', 'remote', 'onsite'].map((r) => (
-                <button key={r} onClick={() => setRemoteFilter(r)}
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all capitalize ${remoteFilter === r ? 'bg-indigo-600 text-white' : ui.sub}`}>
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
