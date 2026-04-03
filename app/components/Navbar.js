@@ -10,14 +10,17 @@ import ProfileModal from './ProfileModal';
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs', icon: '💼' },
   { href: '/map', label: 'Map', icon: '🌍' },
+  { href: '/saved', label: 'Saved', icon: '♥' },
   { href: '/community', label: 'Community', icon: '💬' },
 ];
 
 const TOOL_LINKS = [
   { href: '/resume', label: 'Resume Analyzer', icon: '📄', desc: 'Grade your resume with AI' },
+  { href: '/cover-letter', label: 'Cover Letter', icon: '✉️', desc: 'Generate a tailored cover letter' },
+  { href: '/interview', label: 'Interview Prep', icon: '🎤', desc: 'Practice with AI mock interviews' },
   { href: '/visa', label: 'Visa Intelligence', icon: '🛂', desc: 'Know your visa status instantly' },
   { href: '/relocate', label: 'Relocation Guide', icon: '✈️', desc: 'Full city relocation plan' },
-  { href: '/contact', label: 'Contact', icon: '✉️', desc: 'Get in touch with us' },
+  { href: '/contact', label: 'Contact', icon: '📬', desc: 'Get in touch with us' },
 ];
 
 function UserAvatar({ user, size = 'md' }) {
@@ -47,6 +50,7 @@ export default function Navbar({ dark, onToggleDark }) {
   const [profileSetupData, setProfileSetupData] = useState(null);
   const [user, setUser] = useState(null);
   const [scrolled, setScrolled] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
   const prevUserRef = useRef(null);
   const dropdownRef = useRef(null);
   const userMenuRef = useRef(null);
