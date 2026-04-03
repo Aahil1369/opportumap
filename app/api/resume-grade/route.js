@@ -20,11 +20,22 @@ export async function POST(request) {
       messages: [
         {
           role: 'user',
-          content: `You are an expert resume coach and recruiter. Analyze this resume thoroughly and return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
+          content: `You are a brutally honest senior recruiter who has reviewed over 10,000 resumes. You do not sugarcoat. You do not inflate scores to make people feel good. Your job is to tell the truth so candidates actually improve.
+
+SCORING CALIBRATION:
+- Average resume: 35-55. Do NOT score average resumes above 55.
+- Good resume: 56-70.
+- Strong resume: 71-85. Rare. Must have quantified impact, clean formatting, strong keywords.
+- Exceptional: 86-100. Almost never seen. Top 1% of candidates only.
+- If a resume has vague bullets, buzzwords without evidence, or no quantified achievements, it CANNOT score above 55.
+
+TONE: Direct, cold, professional. Like a recruiter's internal notes. No cheerleading. Every weakness gets a concrete fix.
+
+Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
 {
-  "score": <integer 1-100, be honest and strict>,
+  "score": <integer 1-100, calibrated as above>,
   "grade": "<A+|A|A-|B+|B|B-|C+|C|C-|D|F>",
-  "summary": "<2-3 sentence honest overall assessment>",
+  "summary": "<2-3 sentences. Honest assessment. What a recruiter would actually think when they see this.>",
   "sectionScores": {
     "formatting": <1-100>,
     "experience": <1-100>,
@@ -33,17 +44,22 @@ export async function POST(request) {
     "impact": <1-100>,
     "ats_compatibility": <1-100>
   },
-  "strengths": ["<specific strength 1>", "<specific strength 2>", "<specific strength 3>"],
+  "strengths": ["<specific, genuine strength — only include if it actually exists>"],
   "improvements": [
-    {"issue": "<specific problem>", "fix": "<concrete actionable fix>", "priority": "high|medium|low"}
+    {"issue": "<specific problem, be blunt>", "fix": "<concrete actionable fix with example if possible>", "priority": "high|medium|low"}
+  ],
+  "redFlags": ["<thing that would cause immediate rejection: ATS failure, unexplained gap, red-flag formatting, lying indicators, etc.>"],
+  "clichesFound": ["<overused buzzword found: e.g. 'team player', 'passionate', 'results-driven' with no numbers>"],
+  "rewrittenBullets": [
+    {"original": "<weak bullet copied verbatim from resume>", "rewritten": "<strong version with action verb + metric + impact>"}
   ],
   "jobMatches": [
-    {"title": "<job title>", "matchScore": <1-100>, "reason": "<why this person qualifies>"}
+    {"title": "<job title>", "matchScore": <1-100>, "reason": "<why this person qualifies or doesn't>"}
   ],
-  "keywords_missing": ["<keyword 1>", "<keyword 2>"],
+  "keywords_missing": ["<ATS keyword missing from resume>"],
   "name": "<candidate's name if visible, else null>"
 }
-Provide at least 3 strengths, 4 improvements, and 8 job matches. Be specific, not generic.
+Provide at least 3 strengths (only if genuine), 5 improvements, 3 red flags (or state none if truly clean), 3 rewritten bullets, and 8 job matches. Be specific, not generic. If the resume has no quantified achievements, say so directly.
 
 RESUME TEXT:
 ${resumeText.slice(0, 6000)}`,
