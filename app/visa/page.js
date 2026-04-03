@@ -324,6 +324,120 @@ export default function VisaPage() {
               </div>
             )}
 
+            {/* Document Checklist */}
+            {result.documentChecklist?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-4 ${ui.text}`}>📋 Document Checklist</h3>
+                <div className="space-y-2">
+                  {result.documentChecklist.map((doc, i) => (
+                    <div key={i} className={`flex items-start gap-3 p-3 rounded-xl ${dark ? 'bg-[#0a0a14]' : 'bg-zinc-50'}`}>
+                      <input type="checkbox" className="mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className={`text-xs font-semibold ${ui.text}`}>{doc.document}</p>
+                        <p className={`text-xs mt-0.5 ${ui.sub}`}>Format: <span className="text-indigo-400">{doc.format}</span>{doc.notes ? ` · ${doc.notes}` : ''}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Timeline + Financial */}
+            <div className="grid sm:grid-cols-2 gap-5">
+              {result.timeline && (
+                <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                  <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>⏱ Application Timeline</h3>
+                  <div className="space-y-2">
+                    <div className={`flex justify-between text-xs ${ui.sub}`}>
+                      <span>Apply how far in advance</span>
+                      <span className={`font-semibold ${ui.text}`}>{result.timeline.applyHowFarInAdvance}</span>
+                    </div>
+                    <div className={`flex justify-between text-xs ${ui.sub}`}>
+                      <span>Typical approval time</span>
+                      <span className={`font-semibold ${ui.text}`}>{result.timeline.typicalApprovalTime}</span>
+                    </div>
+                    <div className={`flex justify-between text-xs ${ui.sub}`}>
+                      <span>Urgent processing</span>
+                      <span className={result.timeline.urgentOptionAvailable ? 'text-green-400 font-semibold text-xs' : 'text-red-400 font-semibold text-xs'}>
+                        {result.timeline.urgentOptionAvailable ? 'Available' : 'Not available'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {result.financialRequirements && (
+                <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                  <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>💰 Financial Requirements</h3>
+                  {result.financialRequirements.minimumBankBalance && (
+                    <p className={`text-xs mb-2 ${ui.sub}`}>Min bank balance: <span className={`font-semibold ${ui.text}`}>{result.financialRequirements.minimumBankBalance}</span></p>
+                  )}
+                  {result.financialRequirements.proofFormat && (
+                    <p className={`text-xs mb-2 ${ui.sub}`}>Proof required: <span className="text-indigo-400">{result.financialRequirements.proofFormat}</span></p>
+                  )}
+                  {result.financialRequirements.notes && (
+                    <p className={`text-xs ${ui.sub}`}>{result.financialRequirements.notes}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Language Requirements */}
+            {result.languageRequirements?.required && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>🗣 Language Requirements</h3>
+                {result.languageRequirements.tests?.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {result.languageRequirements.tests.map((t, i) => (
+                      <span key={i} className={`text-xs px-2 py-1 rounded-full ${dark ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-indigo-50 text-indigo-600 border border-indigo-200'}`}>{t}</span>
+                    ))}
+                  </div>
+                )}
+                {result.languageRequirements.notes && <p className={`text-xs ${ui.sub}`}>{result.languageRequirements.notes}</p>}
+              </div>
+            )}
+
+            {/* Interview Tips */}
+            {result.interviewTips?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>🎤 Consulate Interview Tips</h3>
+                <ul className="space-y-2">
+                  {result.interviewTips.map((tip, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-indigo-400 text-xs flex-shrink-0 mt-0.5">→</span>
+                      <span className={`text-xs leading-relaxed ${ui.sub}`}>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Success Rate Factors */}
+            {result.successRateFactors?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card}`}>
+                <h3 className={`text-sm font-bold mb-3 ${ui.text}`}>🎯 What Actually Gets You Approved</h3>
+                <ul className="space-y-2">
+                  {result.successRateFactors.map((f, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-green-400 text-xs flex-shrink-0 mt-0.5">✓</span>
+                      <span className={`text-xs leading-relaxed ${ui.sub}`}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Recent Policy Changes */}
+            {result.recentPolicyChanges?.length > 0 && (
+              <div className={`rounded-2xl border p-5 ${ui.card} ${dark ? 'border-blue-500/20' : 'border-blue-200'}`}>
+                <h3 className={`text-sm font-bold mb-3 text-blue-400`}>🔔 Recent Policy Changes</h3>
+                <ul className="space-y-1.5">
+                  {result.recentPolicyChanges.map((c, i) => (
+                    <li key={i} className={`text-xs flex gap-1.5 ${ui.sub}`}><span className="text-blue-400 flex-shrink-0">•</span>{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Important notes + official site */}
             {(result.importantNotes?.length > 0 || result.officialWebsite) && (
               <div className={`rounded-2xl border p-5 ${ui.card}`}>
