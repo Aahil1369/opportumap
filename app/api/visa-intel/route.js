@@ -53,9 +53,33 @@ Return ONLY valid JSON (no markdown) with this exact structure:
   "commonRejectionReasons": ["<reason 1>", "<reason 2>"],
   "pathToResidency": "<practical description of how to eventually get PR/citizenship>",
   "importantNotes": ["<note 1>", "<note 2>"],
-  "officialWebsite": "<official immigration website URL>"
+  "officialWebsite": "<official immigration website URL>",
+  "documentChecklist": [
+    {"document": "<exact document name>", "format": "<original|certified copy|notarized|apostille|apostille|translated>", "notes": "<any important note>"}
+  ],
+  "financialRequirements": {
+    "minimumBankBalance": "<amount in USD if applicable, else null>",
+    "proofFormat": "<bank statement, sponsorship letter, etc.>",
+    "notes": "<any nuance>"
+  },
+  "embassyContacts": [
+    {"country": "<where this embassy is located>", "address": "<address if known>", "phone": "<phone if known>", "website": "<URL>"}
+  ],
+  "recentPolicyChanges": ["<notable change post-2023 if any>"],
+  "languageRequirements": {
+    "required": true,
+    "tests": ["<e.g. IELTS 6.0, DELF B1>"],
+    "notes": "<explanation>"
+  },
+  "interviewTips": ["<tip for consulate interview if required — empty array if no interview needed>"],
+  "timeline": {
+    "applyHowFarInAdvance": "<e.g. 3 months before travel date>",
+    "typicalApprovalTime": "<e.g. 2-4 weeks>",
+    "urgentOptionAvailable": true
+  },
+  "successRateFactors": ["<what actually determines approval — be specific>"]
 }
-Include at least 3 visa types, 5 application steps, 5 guarantee tips, and 3 rejection reasons.`,
+Include at least 3 visa types, 5 application steps, 5 guarantee tips, 3 rejection reasons, a full document checklist, and timeline info.`,
         },
       ],
       max_tokens: 2048,
@@ -66,6 +90,10 @@ Include at least 3 visa types, 5 application steps, 5 guarantee tips, and 3 reje
     if (jsonMatch) text = jsonMatch[0];
 
     const data = JSON.parse(text);
+    data.documentChecklist = data.documentChecklist || [];
+    data.recentPolicyChanges = data.recentPolicyChanges || [];
+    data.interviewTips = data.interviewTips || [];
+    data.successRateFactors = data.successRateFactors || [];
     cache.set(cacheKey, { data, ts: Date.now() });
     return Response.json(data);
   } catch (err) {
