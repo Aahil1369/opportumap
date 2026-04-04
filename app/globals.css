@@ -83,8 +83,8 @@ body {
 .animate-float       { animation: float 6s ease-in-out infinite; }
 .animate-float-alt   { animation: floatAlt 8s ease-in-out infinite; }
 .animate-float-slow  { animation: float 10s ease-in-out infinite; }
-.animate-blob        { animation: blobMove 12s ease-in-out infinite; }
-.animate-blob-alt    { animation: blobMove 15s ease-in-out infinite reverse; }
+.animate-blob        { animation: none; display: none; }
+.animate-blob-alt    { animation: none; display: none; }
 .animate-fade-scale  { animation: fadeInScale 0.7s cubic-bezier(.22,1,.36,1) both; }
 
 /* ─── Glassmorphism ─── */

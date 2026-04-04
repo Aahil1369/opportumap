@@ -70,12 +70,6 @@ export default function Home() {
       {/* ─── HERO ─── */}
       <section className="relative min-h-[92vh] flex flex-col items-center justify-center px-4 sm:px-8 pt-16 pb-24 overflow-hidden">
 
-        {/* Animated blobs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="animate-blob absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full opacity-[0.15] bg-indigo-600 blur-[120px]" />
-          <div className="animate-blob-alt absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full opacity-[0.12] bg-purple-600 blur-[100px]" />
-          <div className="animate-blob absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-[0.08] bg-cyan-500 blur-[100px]" />
-        </div>
 
         {/* Grid overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -89,7 +83,7 @@ export default function Home() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium mb-8 animate-fade-scale"
             style={{ borderColor: 'rgba(99,102,241,0.35)', background: 'rgba(99,102,241,0.08)', color: '#818cf8' }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse inline-block" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />
             AI-Powered Global Job Discovery · 33,664+ Live Jobs
           </div>
 
@@ -97,7 +91,7 @@ export default function Home() {
           <h1 className={`text-5xl sm:text-7xl font-black tracking-tight leading-[1.05] mb-6 animate-fade-scale ${text}`}
             style={{ animationDelay: '0.1s' }}>
             Find your next role<br />
-            <span className="gradient-text">anywhere in the world</span>
+            <span className="text-indigo-400">anywhere in the world</span>
           </h1>
 
           {/* Sub */}
