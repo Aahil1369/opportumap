@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import StartupChat from '../components/StartupChat';
@@ -18,7 +18,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export default function MessagesPage() {
+function MessagesInner() {
   const { dark, toggleDark } = useTheme();
   const searchParams = useSearchParams();
   const [user, setUser] = useState(null);
@@ -141,5 +141,13 @@ export default function MessagesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense>
+      <MessagesInner />
+    </Suspense>
   );
 }
