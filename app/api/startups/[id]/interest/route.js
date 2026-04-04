@@ -1,5 +1,5 @@
-import { createClient as createServerClient } from '../../../../../../lib/supabase-server.js';
-import { supabase } from '../../../../../../lib/supabase.js';
+import { createClient as createServerClient } from '../../../../../lib/supabase-server.js';
+import { supabase } from '../../../../../lib/supabase.js';
 
 export async function POST(request, { params }) {
   const { id } = await params;
