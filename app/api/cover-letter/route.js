@@ -82,7 +82,25 @@ Return ONLY valid JSON (no markdown) with this structure:
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) text = jsonMatch[0];
 
-    const data = JSON.parse(text);
+    // Escape literal control characters inside JSON string values before parsing
+    let sanitized = '';
+    let inString = false;
+    let escaped = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (escaped) { sanitized += ch; escaped = false; continue; }
+      if (ch === '\\' && inString) { sanitized += ch; escaped = true; continue; }
+      if (ch === '"') { inString = !inString; sanitized += ch; continue; }
+      if (inString) {
+        if (ch === '\n') { sanitized += '\\n'; continue; }
+        if (ch === '\r') { sanitized += '\\r'; continue; }
+        if (ch === '\t') { sanitized += '\\t'; continue; }
+        if (ch.charCodeAt(0) < 32) continue;
+      }
+      sanitized += ch;
+    }
+
+    const data = JSON.parse(sanitized);
     data.keywordsUsed = data.keywordsUsed || [];
     data.tailoringNotes = data.tailoringNotes || [];
     return Response.json(data);
