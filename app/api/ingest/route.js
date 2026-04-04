@@ -259,7 +259,7 @@ export async function POST(request) {
   if (!isAdmin) {
     // Also allow Supabase admin session (for manual trigger from admin panel)
     const { createClient } = await import('../../../lib/supabase-server.js');
-    const serverClient = createClient();
+    const serverClient = await createClient();
     const { data: { user } } = await serverClient.auth.getUser();
     if (!user || user.email !== 'aahilakbar567@gmail.com') {
       return Response.json({ error: 'Unauthorized' }, { status: 403 });
