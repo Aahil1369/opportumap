@@ -10,8 +10,10 @@ import ProfileModal from './ProfileModal';
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs', icon: '💼' },
   { href: '/map', label: 'Map', icon: '🌍' },
+  { href: '/startups', label: 'Startups', icon: '🚀' },
   { href: '/saved', label: 'Saved', icon: '♥' },
   { href: '/community', label: 'Community', icon: '💬' },
+  { href: '/messages', label: 'Messages', icon: '✉️' },
 ];
 
 const TOOL_LINKS = [
