@@ -6,7 +6,7 @@ const ADMIN_EMAIL = 'aahilakbar567@gmail.com';
 export async function GET() {
   if (!hasSupabase) return Response.json({ error: 'Not configured' }, { status: 503 });
 
-  const serverSupabase = createClient();
+  const serverSupabase = await createClient();
   const { data: { user } } = await serverSupabase.auth.getUser();
   if (!user || user.email !== ADMIN_EMAIL) {
     return Response.json({ error: 'Unauthorized' }, { status: 403 });
