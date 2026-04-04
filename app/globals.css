@@ -38,12 +38,9 @@ body {
 .reveal-delay-4 { transition-delay: 0.4s; }
 .reveal-delay-5 { transition-delay: 0.5s; }
 
-/* ─── Gradient text ─── */
+/* ─── Gradient text (disabled — use text-indigo-400 instead) ─── */
 .gradient-text {
-  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 40%, #38bdf8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #818cf8;
 }
 .gradient-text-warm {
   background: linear-gradient(135deg, #f472b6 0%, #a78bfa 50%, #818cf8 100%);
@@ -99,24 +96,9 @@ body {
   border: 1px solid rgba(0,0,0,0.06);
 }
 
-/* ─── Gradient border ─── */
-.gradient-border {
-  position: relative;
-}
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, #6366f1, #a78bfa, #38bdf8);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.gradient-border:hover::before { opacity: 1; }
+/* ─── Gradient border (disabled) ─── */
+.gradient-border { position: relative; }
+.gradient-border::before { display: none; }
 
 /* ─── Job markers ─── */
 /* Job markers */

@@ -6,12 +6,12 @@ import Navbar from './components/Navbar';
 import { useTheme } from './hooks/useTheme';
 
 const FEATURES = [
-  { icon: '🗺️', color: 'from-indigo-500 to-blue-500', title: 'Interactive Global Map', desc: 'Explore 33,000+ live jobs pinned across 100 countries on an interactive world map — filtered by your visa eligibility.' },
-  { icon: '🤖', color: 'from-purple-500 to-pink-500', title: 'AI Resume Matching', desc: 'Upload your resume and our AI extracts your skills, scores every job for fit, and surfaces the best matches instantly.' },
-  { icon: '🛂', color: 'from-cyan-500 to-teal-500', title: 'Visa Intelligence', desc: 'Enter your nationality once. Every job on the map instantly shows your visa status — no more manual research.' },
-  { icon: '💰', color: 'from-amber-500 to-orange-500', title: 'AI Salary Prediction', desc: "Job doesn't show salary? Our AI estimates compensation based on role, seniority, company size, and country." },
-  { icon: '📄', color: 'from-green-500 to-emerald-500', title: 'Resume Analyzer', desc: 'Get a detailed AI grade on your resume — section-by-section scores, what to fix, and which jobs match your profile.' },
-  { icon: '✈️', color: 'from-rose-500 to-purple-500', title: 'Relocation Guide', desc: 'Got an offer? Get a full relocation plan: cost of living, visa steps, neighborhoods, expat communities, and more.' },
+  { icon: '🗺️', title: 'Interactive Global Map', desc: 'Explore 33,000+ live jobs pinned across 100 countries on an interactive world map — filtered by your visa eligibility.' },
+  { icon: '🤖', title: 'AI Resume Matching', desc: 'Upload your resume and our AI extracts your skills, scores every job for fit, and surfaces the best matches instantly.' },
+  { icon: '🛂', title: 'Visa Intelligence', desc: 'Enter your nationality once. Every job on the map instantly shows your visa status — no more manual research.' },
+  { icon: '💰', title: 'AI Salary Prediction', desc: "Job doesn't show salary? Our AI estimates compensation based on role, seniority, company size, and country." },
+  { icon: '📄', title: 'Resume Analyzer', desc: 'Get a detailed AI grade on your resume — section-by-section scores, what to fix, and which jobs match your profile.' },
+  { icon: '✈️', title: 'Relocation Guide', desc: 'Got an offer? Get a full relocation plan: cost of living, visa steps, neighborhoods, expat communities, and more.' },
 ];
 
 const STATS = [
@@ -154,7 +154,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-4 sm:px-8 py-10 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
           {STATS.map((s, i) => (
             <div key={s.label} className={`reveal reveal-delay-${i + 1}`}>
-              <p className="text-4xl sm:text-5xl font-black gradient-text mb-1">{s.value}{s.suffix}</p>
+              <p className="text-4xl sm:text-5xl font-black text-indigo-400 mb-1">{s.value}{s.suffix}</p>
               <p className={`text-sm font-medium ${sub}`}>{s.label}</p>
             </div>
           ))}
@@ -181,7 +181,7 @@ export default function Home() {
             ].map((tool) => (
               <Link key={tool.href} href={tool.href}
                 className={`group relative rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${tool.glow} ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30' : 'bg-white border-zinc-200 hover:border-indigo-200'}`}>
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-xl mb-3 shadow-lg group-hover:scale-110 transition-transform duration-200`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3 group-hover:scale-110 transition-transform duration-200 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>
                   {tool.icon}
                 </div>
                 <p className={`text-xs font-bold mb-0.5 ${text}`}>{tool.label}</p>
@@ -205,9 +205,8 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
 
           {/* Large card — spans 2 cols */}
-          <div className={`reveal reveal-delay-1 lg:col-span-2 gradient-border rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${dark ? 'hover:shadow-indigo-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-indigo-500/5'} overflow-hidden relative`}>
-            <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-10 blur-3xl bg-indigo-500 pointer-events-none" />
-            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${FEATURES[0].color} flex items-center justify-center text-2xl mb-5 shadow-xl`}>{FEATURES[0].icon}</div>
+          <div className={`reveal reveal-delay-1 lg:col-span-2 rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'} overflow-hidden`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-5 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[0].icon}</div>
             <h3 className={`text-xl font-black mb-3 ${text}`}>{FEATURES[0].title}</h3>
             <p className={`text-sm leading-relaxed max-w-md ${sub}`}>{FEATURES[0].desc}</p>
             <div className="mt-6 flex items-center gap-2">
@@ -221,23 +220,22 @@ export default function Home() {
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-2 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-purple-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
-            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[1].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[1].icon}</div>
+          <div className={`reveal reveal-delay-2 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[1].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[1].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[1].desc}</p>
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-3 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-cyan-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
-            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[2].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[2].icon}</div>
+          <div className={`reveal reveal-delay-3 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[2].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[2].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[2].desc}</p>
           </div>
 
           {/* Large card — spans 2 cols on the right */}
-          <div className={`reveal reveal-delay-1 lg:col-span-2 gradient-border rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${dark ? 'hover:shadow-amber-500/8 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'} overflow-hidden relative`}>
-            <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full opacity-10 blur-3xl bg-amber-500 pointer-events-none" />
-            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${FEATURES[3].color} flex items-center justify-center text-2xl mb-5 shadow-xl`}>{FEATURES[3].icon}</div>
+          <div className={`reveal reveal-delay-1 lg:col-span-2 rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'} overflow-hidden`}>
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-5 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[3].icon}</div>
             <h3 className={`text-xl font-black mb-3 ${text}`}>{FEATURES[3].title}</h3>
             <p className={`text-sm leading-relaxed max-w-md ${sub}`}>{FEATURES[3].desc}</p>
             <div className="mt-6 flex items-center gap-3">
@@ -248,15 +246,15 @@ export default function Home() {
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-2 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-green-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
-            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[4].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[4].icon}</div>
+          <div className={`reveal reveal-delay-2 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[4].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[4].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[4].desc}</p>
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-3 gradient-border rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${dark ? 'hover:shadow-rose-500/10 bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200'}`}>
-            <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${FEATURES[5].color} flex items-center justify-center text-xl mb-4 shadow-lg`}>{FEATURES[5].icon}</div>
+          <div className={`reveal reveal-delay-3 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[5].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[5].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[5].desc}</p>
           </div>
@@ -264,10 +262,7 @@ export default function Home() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className={`border-t ${divider} px-4 sm:px-8 py-20 sm:py-28 relative overflow-hidden`}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full opacity-[0.06] bg-purple-600 blur-[100px]" />
-        </div>
+      <section className={`border-t ${divider} px-4 sm:px-8 py-20 sm:py-28`}>
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14 reveal">
             <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-3">How It Works</p>
@@ -280,7 +275,7 @@ export default function Home() {
               style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.4), rgba(167,139,250,0.4), transparent)' }} />
             {HOW_IT_WORKS.map((s, i) => (
               <div key={s.step} className={`reveal reveal-delay-${i + 1} text-center relative`}>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>
                   {s.icon}
                 </div>
                 <span className="text-xs font-bold text-indigo-400 tracking-widest">{s.step}</span>
@@ -309,7 +304,7 @@ export default function Home() {
                 </div>
                 <p className={`text-sm leading-relaxed mb-5 ${sub}`}>&ldquo;{t.quote}&rdquo;</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e] text-indigo-400' : 'bg-indigo-100 border border-indigo-200 text-indigo-600'}`}>
                     {t.name.split(' ').map((w) => w[0]).join('')}
                   </div>
                   <div>
@@ -341,7 +336,7 @@ export default function Home() {
             ].map((tool, i) => (
               <Link key={tool.href} href={tool.href}
                 className={`reveal reveal-delay-${(i % 3) + 1} group block rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30 hover:shadow-indigo-500/10' : 'bg-white border-zinc-200 hover:border-indigo-300 hover:shadow-indigo-500/10'}`}>
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>
                   {tool.icon}
                 </div>
                 <h3 className={`text-sm font-bold mb-1 ${text}`}>{tool.label}</h3>
