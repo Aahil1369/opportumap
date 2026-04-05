@@ -46,7 +46,7 @@ function useScrollReveal() {
       (entries) => entries.forEach((e) => {
         if (e.isIntersecting) { e.target.classList.add('revealed'); observer.unobserve(e.target); }
       }),
-      { threshold: 0.12 }
+      { threshold: 0.06, rootMargin: '0px 0px -32px 0px' }
     );
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
     return () => observer.disconnect();
@@ -205,7 +205,7 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
 
           {/* Large card — spans 2 cols */}
-          <div className={`reveal reveal-delay-1 lg:col-span-2 rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'} overflow-hidden`}>
+          <div className={`reveal reveal-delay-1 lg:col-span-2 rounded-3xl border p-8 transition-all duration-200 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'} overflow-hidden`}>
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-5 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[0].icon}</div>
             <h3 className={`text-xl font-black mb-3 ${text}`}>{FEATURES[0].title}</h3>
             <p className={`text-sm leading-relaxed max-w-md ${sub}`}>{FEATURES[0].desc}</p>
@@ -220,21 +220,21 @@ export default function Home() {
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-2 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+          <div className={`reveal reveal-delay-2 rounded-3xl border p-6 transition-all duration-200 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[1].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[1].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[1].desc}</p>
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-3 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+          <div className={`reveal reveal-delay-3 rounded-3xl border p-6 transition-all duration-200 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[2].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[2].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[2].desc}</p>
           </div>
 
           {/* Large card — spans 2 cols on the right */}
-          <div className={`reveal reveal-delay-1 lg:col-span-2 rounded-3xl border p-8 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'} overflow-hidden`}>
+          <div className={`reveal reveal-delay-1 lg:col-span-2 rounded-3xl border p-8 transition-all duration-200 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'} overflow-hidden`}>
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-5 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[3].icon}</div>
             <h3 className={`text-xl font-black mb-3 ${text}`}>{FEATURES[3].title}</h3>
             <p className={`text-sm leading-relaxed max-w-md ${sub}`}>{FEATURES[3].desc}</p>
@@ -246,14 +246,14 @@ export default function Home() {
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-2 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+          <div className={`reveal reveal-delay-2 rounded-3xl border p-6 transition-all duration-200 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[4].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[4].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[4].desc}</p>
           </div>
 
           {/* Regular card */}
-          <div className={`reveal reveal-delay-3 rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
+          <div className={`reveal reveal-delay-3 rounded-3xl border p-6 transition-all duration-200 hover:-translate-y-1 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200 hover:shadow-md'}`}>
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl mb-4 ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-zinc-100 border border-zinc-200'}`}>{FEATURES[5].icon}</div>
             <h3 className={`text-sm font-bold mb-2 ${text}`}>{FEATURES[5].title}</h3>
             <p className={`text-xs leading-relaxed ${sub}`}>{FEATURES[5].desc}</p>

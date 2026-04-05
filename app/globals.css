@@ -19,24 +19,33 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Global scroll reveal ─── */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.65s cubic-bezier(.22,1,.36,1), transform 0.65s cubic-bezier(.22,1,.36,1);
+  transform: translateY(16px);
+  transition: opacity 0.45s cubic-bezier(.22,1,.36,1), transform 0.45s cubic-bezier(.22,1,.36,1);
+  will-change: transform, opacity;
 }
 .reveal.revealed { opacity: 1; transform: translateY(0); }
-.reveal-delay-1 { transition-delay: 0.1s; }
-.reveal-delay-2 { transition-delay: 0.2s; }
-.reveal-delay-3 { transition-delay: 0.3s; }
-.reveal-delay-4 { transition-delay: 0.4s; }
-.reveal-delay-5 { transition-delay: 0.5s; }
+.reveal-delay-1 { transition-delay: 0.06s; }
+.reveal-delay-2 { transition-delay: 0.12s; }
+.reveal-delay-3 { transition-delay: 0.18s; }
+.reveal-delay-4 { transition-delay: 0.24s; }
+.reveal-delay-5 { transition-delay: 0.30s; }
+.reveal-delay-6 { transition-delay: 0.36s; }
+.reveal-delay-7 { transition-delay: 0.42s; }
 
 /* ─── Gradient text (disabled — use text-indigo-400 instead) ─── */
 .gradient-text {
@@ -73,7 +82,7 @@ body {
   66%       { border-radius: 50% 60% 30% 60% / 30% 50% 60% 50%; transform: translate(-10px,10px) scale(0.97); }
 }
 @keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
@@ -82,7 +91,7 @@ body {
 .animate-float-slow  { animation: float 10s ease-in-out infinite; }
 .animate-blob        { animation: none; display: none; }
 .animate-blob-alt    { animation: none; display: none; }
-.animate-fade-scale  { animation: fadeInScale 0.7s cubic-bezier(.22,1,.36,1) both; }
+.animate-fade-scale  { animation: fadeInScale 0.5s cubic-bezier(.22,1,.36,1) both; }
 
 /* ─── Glassmorphism ─── */
 .glass-dark {
