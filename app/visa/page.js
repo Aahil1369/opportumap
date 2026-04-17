@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { useTheme } from '../hooks/useTheme';
 import { NATIONALITIES } from '../data/countries';
+import VisaProbabilityMeter from '../components/VisaProbabilityMeter';
 
 const COUNTRIES = [
   { code: 'us', label: 'United States 🇺🇸' },
@@ -112,6 +113,8 @@ export default function VisaPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [probData, setProbData] = useState(null);
+  const [probLoading, setProbLoading] = useState(false);
 
   // Pre-fill nationality from saved profile
   useEffect(() => {
@@ -154,6 +157,25 @@ export default function VisaPage() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
+
+      // Parallel probability fetch
+      setProbLoading(true);
+      setProbData(null);
+      const savedProfile = (() => { try { const p = localStorage.getItem('opportumap_profile'); return p ? JSON.parse(p) : null; } catch { return null; } })();
+      fetch('/api/visa-probability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nationality: nationality,
+          destination: targetCountry,
+          purpose: purpose,
+          profile: savedProfile,
+        }),
+      })
+        .then(r => r.json())
+        .then(d => { if (!d.error) setProbData(d); })
+        .catch(() => {})
+        .finally(() => setProbLoading(false));
     } catch (e) {
       setError(e.message || 'Failed to load visa information.');
     }
@@ -246,6 +268,15 @@ export default function VisaPage() {
                 </div>
               </div>
             </div>
+
+            {/* Probability meter */}
+            {probLoading && (
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                <span className={dark ? 'text-zinc-400' : 'text-zinc-600'}>Calculating approval probability...</span>
+              </div>
+            )}
+            {probData && <VisaProbabilityMeter data={probData} isDark={dark} />}
 
             {/* Visa types */}
             {result.visaTypes?.length > 0 && (
