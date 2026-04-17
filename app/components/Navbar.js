@@ -10,18 +10,20 @@ import ProfileModal from './ProfileModal';
 const NAV_LINKS = [
   { href: '/jobs', label: 'Jobs', icon: '💼' },
   { href: '/map', label: 'Map', icon: '🌍' },
-  { href: '/startups', label: 'Startups', icon: '🚀' },
-  { href: '/saved', label: 'Saved', icon: '♥' },
+  { href: '/visa', label: 'Visa', icon: '🛂' },
+  { href: '/relocate', label: 'Relocate', icon: '✈️' },
+  { href: '/match', label: 'Match', icon: '🎯' },
   { href: '/community', label: 'Community', icon: '💬' },
-  { href: '/messages', label: 'Messages', icon: '✉️' },
 ];
 
 const TOOL_LINKS = [
   { href: '/resume', label: 'Resume Analyzer', icon: '📄', desc: 'Grade your resume with AI' },
   { href: '/cover-letter', label: 'Cover Letter', icon: '✉️', desc: 'Generate a tailored cover letter' },
   { href: '/interview', label: 'Interview Prep', icon: '🎤', desc: 'Practice with AI mock interviews' },
-  { href: '/visa', label: 'Visa Intelligence', icon: '🛂', desc: 'Know your visa status instantly' },
-  { href: '/relocate', label: 'Relocation Guide', icon: '✈️', desc: 'Full city relocation plan' },
+  { href: '/startups', label: 'Startups', icon: '🚀', desc: 'Discover and connect with startups' },
+  { href: '/saved', label: 'Saved Jobs', icon: '♥', desc: 'View your saved job listings' },
+  { href: '/messages', label: 'Messages', icon: '✉️', desc: 'Your conversations' },
+  { href: '/stories', label: 'Stories', icon: '📖', desc: 'Success stories from the community' },
   { href: '/contact', label: 'Contact', icon: '📬', desc: 'Get in touch with us' },
 ];
 
