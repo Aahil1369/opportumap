@@ -6,26 +6,26 @@ import Navbar from './components/Navbar';
 import { useTheme } from './hooks/useTheme';
 
 const FEATURES = [
-  { icon: '🗺️', title: 'Interactive Global Map', desc: 'Explore 33,000+ live jobs pinned across 100 countries on an interactive world map — filtered by your visa eligibility.' },
-  { icon: '🤖', title: 'AI Resume Matching', desc: 'Upload your resume and our AI extracts your skills, scores every job for fit, and surfaces the best matches instantly.' },
-  { icon: '🛂', title: 'Visa Intelligence', desc: 'Enter your nationality once. Every job on the map instantly shows your visa status — no more manual research.' },
-  { icon: '💰', title: 'AI Salary Prediction', desc: "Job doesn't show salary? Our AI estimates compensation based on role, seniority, company size, and country." },
-  { icon: '📄', title: 'Resume Analyzer', desc: 'Get a detailed AI grade on your resume — section-by-section scores, what to fix, and which jobs match your profile.' },
-  { icon: '✈️', title: 'Relocation Guide', desc: 'Got an offer? Get a full relocation plan: cost of living, visa steps, neighborhoods, expat communities, and more.' },
+  { icon: '🌍', title: 'Country Match', desc: 'AI finds the top 5 countries where you have the best shot — based on your nationality, skills, and visa access.' },
+  { icon: '🛂', title: 'Visa Intelligence', desc: 'Detailed visa requirements, approval probability, document checklists, and embassy tips for any destination.' },
+  { icon: '📍', title: 'Global Job Map', desc: 'Interactive map showing real job openings across 100+ countries. Filter by visa sponsorship, remote, and more.' },
+  { icon: '🏠', title: 'Relocation Guide', desc: 'Cost of living, neighborhoods, banking setup, cultural tips, and expat communities for your target country.' },
+  { icon: '📄', title: 'Resume Analyzer', desc: 'Upload your resume for a brutally honest AI grade with section-by-section feedback and rewritten bullet points.' },
+  { icon: '🎤', title: 'Interview Prep', desc: '15 tailored questions plus a mock interview mode where AI scores your answers and rewrites stronger versions.' },
 ];
 
 const STATS = [
-  { value: '33,664', label: 'Live Jobs', suffix: '+' },
-  { value: '100', label: 'Countries', suffix: '' },
-  { value: '6', label: 'AI Tools', suffix: '' },
-  { value: '100%', label: 'Free to Start', suffix: '' },
+  { value: '33,664', label: 'Jobs Worldwide', suffix: '+' },
+  { value: '100', label: 'Countries Covered', suffix: '+' },
+  { value: 'Free', label: 'Visa Intelligence', suffix: '' },
+  { value: 'AI', label: 'Country Matching', suffix: '' },
 ];
 
 const HOW_IT_WORKS = [
-  { step: '01', icon: '👤', title: 'Build your profile', desc: 'Tell us your nationality, skills, and target role. Takes 60 seconds.' },
-  { step: '02', icon: '📄', title: 'Upload your resume', desc: 'AI extracts your experience and matches you to the best global opportunities.' },
-  { step: '03', icon: '🌍', title: 'Explore the map', desc: 'Browse jobs on an interactive globe. Filter by country, visa, salary, and more.' },
-  { step: '04', icon: '🚀', title: 'Apply with confidence', desc: 'See visa info, salary estimates, and relocation guides before you apply.' },
+  { step: '01', icon: '👤', title: 'Tell us about you', desc: 'Your nationality, skills, and where you want to go. Takes 60 seconds.' },
+  { step: '02', icon: '🎯', title: 'Get matched', desc: 'AI finds countries where you have the best visa and job access.' },
+  { step: '03', icon: '🛠️', title: 'Prepare', desc: 'Visa guides, interview prep, and resume analysis — all tailored to you.' },
+  { step: '04', icon: '🚀', title: 'Go', desc: 'Apply with confidence. Real jobs, real visa paths, real relocation info.' },
 ];
 
 const FLOAT_CARDS = [
@@ -84,29 +84,28 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-medium mb-8 animate-fade-scale"
             style={{ borderColor: 'rgba(99,102,241,0.35)', background: 'rgba(99,102,241,0.08)', color: '#818cf8' }}>
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />
-            AI-Powered Global Job Discovery · 33,664+ Live Jobs
+            Built by an immigrant, for the world
           </div>
 
           {/* Headline */}
           <h1 className={`text-5xl sm:text-7xl font-black tracking-tight leading-[1.05] mb-6 animate-fade-scale ${text}`}
             style={{ animationDelay: '0.1s' }}>
-            Find your next role<br />
-            <span className="text-indigo-400">anywhere in the world</span>
+            Find opportunities you can<br />
+            <span className="text-indigo-400">actually access</span>
           </h1>
 
           {/* Sub */}
           <p className={`text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-scale ${sub}`}
             style={{ animationDelay: '0.2s' }}>
-            OpportuMap aggregates thousands of global jobs, matches them to your resume with AI,
-            and shows you visa requirements, salary estimates, and relocation guides — all in one place.
+            Jobs, visas, and relocation intel across 100 countries. Built for people from everywhere else.
           </p>
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-scale"
             style={{ animationDelay: '0.3s' }}>
-            <Link href="/jobs"
+            <Link href="/match"
               className="group px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105 active:scale-95">
-              Browse Jobs →
+              Find Your Country Match →
             </Link>
             <Link href="/map"
               className={`px-8 py-3.5 rounded-2xl border font-semibold text-sm transition-all hover:scale-105 active:scale-95 ${dark ? 'border-[#2a2a3e] text-zinc-300 hover:bg-[#1a1a2e]' : 'border-zinc-300 text-zinc-700 hover:bg-white hover:shadow-md'}`}>
@@ -167,17 +166,17 @@ export default function Home() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400 mb-1">AI Tools</p>
-              <h2 className={`text-lg font-black ${text}`}>Everything you need, in one place</h2>
+              <h2 className={`text-lg font-black ${text}`}>Your global career toolkit</h2>
             </div>
-            <Link href="/jobs" className={`text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors hidden sm:block`}>Browse jobs →</Link>
+            <Link href="/match" className={`text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors hidden sm:block`}>Find your match →</Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
-              { href: '/resume', icon: '📄', label: 'Resume Analyzer', desc: 'Brutal honest AI grade', color: 'from-green-500 to-emerald-600', glow: 'group-hover:shadow-green-500/20' },
-              { href: '/cover-letter', icon: '✉️', label: 'Cover Letter', desc: 'Tailored in seconds', color: 'from-violet-500 to-purple-600', glow: 'group-hover:shadow-violet-500/20' },
-              { href: '/interview', icon: '🎤', label: 'Interview Prep', desc: 'AI mock interviews', color: 'from-emerald-500 to-teal-600', glow: 'group-hover:shadow-emerald-500/20' },
+              { href: '/match', icon: '🎯', label: 'Country Match', desc: 'Find your best fit', color: 'from-indigo-500 to-violet-600', glow: 'group-hover:shadow-indigo-500/20' },
               { href: '/visa', icon: '🛂', label: 'Visa Intelligence', desc: 'Know your status fast', color: 'from-cyan-500 to-blue-600', glow: 'group-hover:shadow-cyan-500/20' },
               { href: '/relocate', icon: '✈️', label: 'Relocation Guide', desc: 'City-by-city plan', color: 'from-rose-500 to-pink-600', glow: 'group-hover:shadow-rose-500/20' },
+              { href: '/resume', icon: '📄', label: 'Resume Analyzer', desc: 'Brutal honest AI grade', color: 'from-green-500 to-emerald-600', glow: 'group-hover:shadow-green-500/20' },
+              { href: '/interview', icon: '🎤', label: 'Interview Prep', desc: 'AI mock interviews', color: 'from-emerald-500 to-teal-600', glow: 'group-hover:shadow-emerald-500/20' },
             ].map((tool) => (
               <Link key={tool.href} href={tool.href}
                 className={`group relative rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${tool.glow} ${dark ? 'bg-[#0e0e18] border-[#1e1e2e] hover:border-indigo-500/30' : 'bg-white border-zinc-200 hover:border-indigo-200'}`}>
@@ -359,15 +358,15 @@ export default function Home() {
             <div className="relative z-10">
               <p className="text-xs font-semibold uppercase tracking-widest text-indigo-200 mb-4">Start for free</p>
               <h2 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-tight">
-                Your global career<br />starts here
+                Opportunity shouldn&apos;t depend on your passport
               </h2>
               <p className="text-indigo-100 text-base mb-8 max-w-md mx-auto">
-                No account needed to start. Upload your resume, explore 33,664 jobs across 100 countries, and move anywhere.
+                Join thousands of people using OpportuMap to find jobs, visas, and new homes across 100+ countries.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link href="/jobs"
+                <Link href="/match"
                   className="px-8 py-3.5 rounded-2xl bg-white text-indigo-700 font-bold text-sm hover:bg-indigo-50 transition-all hover:scale-105 shadow-xl">
-                  Get Started — It&apos;s Free
+                  Find Your Match — It&apos;s Free
                 </Link>
                 <Link href="/map"
                   className="px-8 py-3.5 rounded-2xl border border-white/30 text-white font-semibold text-sm hover:bg-white/10 transition-all hover:scale-105">
@@ -388,7 +387,7 @@ export default function Home() {
                 <div className="w-2 h-2 rounded-full bg-indigo-500" />
                 <span className={`text-sm font-bold ${text}`}>OpportuMap</span>
               </div>
-              <p className={`text-xs leading-relaxed ${sub}`}>AI-powered global job discovery for the modern career seeker.</p>
+              <p className={`text-xs leading-relaxed ${sub}`}>Global opportunities for people from everywhere.</p>
             </div>
             <div>
               <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${sub}`}>Discover</p>
@@ -417,7 +416,7 @@ export default function Home() {
           </div>
           <div className={`border-t ${divider} pt-6 flex flex-col sm:flex-row items-center justify-between gap-2`}>
             <p className={`text-xs ${sub}`}>© {new Date().getFullYear()} OpportuMap · Built with AI for global job seekers</p>
-            <p className={`text-xs ${sub}`}>33,664 jobs · 100 countries · 6 AI tools</p>
+            <p className={`text-xs ${sub}`}>33,664 jobs · 100 countries · Built by an immigrant</p>
           </div>
         </div>
       </footer>
