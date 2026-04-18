@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import { useTheme } from './hooks/useTheme';
+import Dashboard from './components/Dashboard';
 
 const FEATURES = [
   { icon: '🌍', title: 'Country Match', desc: 'AI finds the top 5 countries where you have the best shot — based on your nationality, skills, and visa access.' },
@@ -57,11 +58,41 @@ export default function Home() {
   const { dark, toggleDark } = useTheme();
   useScrollReveal();
 
+  const [profile, setProfile] = useState(null);
+  const [checkingProfile, setCheckingProfile] = useState(true);
+
+  useEffect(() => {
+    async function check() {
+      try {
+        const res = await fetch('/api/user-profile');
+        const data = await res.json();
+        if (data.profile && data.profile.nationality) {
+          setProfile(data.profile);
+        }
+      } catch {}
+      setCheckingProfile(false);
+    }
+    check();
+  }, []);
+
   const bg = dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]';
   const text = dark ? 'text-zinc-100' : 'text-zinc-900';
   const sub = dark ? 'text-zinc-400' : 'text-zinc-500';
   const card = dark ? 'bg-[#12121a] border-[#1e1e2e]' : 'bg-white border-zinc-200';
   const divider = dark ? 'border-[#1e1e2e]' : 'border-zinc-200';
+
+  if (checkingProfile) return (
+    <div className={`min-h-screen ${bg}`}>
+      <Navbar dark={dark} onToggleDark={toggleDark} />
+    </div>
+  );
+
+  if (profile) return (
+    <div className={`min-h-screen ${bg} ${text}`}>
+      <Navbar dark={dark} onToggleDark={toggleDark} />
+      <Dashboard profile={profile} dark={dark} />
+    </div>
+  );
 
   return (
     <div className={`min-h-screen ${bg} transition-colors duration-300 overflow-x-hidden`}>
