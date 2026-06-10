@@ -2,70 +2,55 @@
 
 import { useState, useRef } from 'react';
 import Navbar from '../components/Navbar';
-import { useTheme } from '../hooks/useTheme';
+import EditorialHero from '../components/ui/EditorialHero';
+import Btn from '../components/ui/Btn';
+import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
+import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 
 function ScoreRing({ score, size = 120 }) {
   const r = 46;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
-  const color = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : score >= 40 ? '#f97316' : '#ef4444';
-  const grade_bg = score >= 80 ? 'text-green-400' : score >= 60 ? 'text-amber-400' : score >= 40 ? 'text-orange-400' : 'text-red-400';
+  const color = '#c75d2c';
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox="0 0 100 100" className="-rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="currentColor" strokeWidth="8" className="text-zinc-800" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="currentColor" strokeWidth="8" className="text-paper-rule" />
         <circle cx="50" cy="50" r={r} fill="none" stroke={color} strokeWidth="8"
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
       </svg>
       <div className="absolute text-center">
-        <p className={`text-2xl font-black ${grade_bg}`}>{score}</p>
-        <p className="text-xs text-zinc-500">/100</p>
+        <p className="font-display text-[28px] leading-none text-accent">{score}</p>
+        <p className="font-mono text-[10px] text-paper-ink-sub">/100</p>
       </div>
     </div>
   );
 }
 
-function SectionBar({ label, score, dark }) {
-  const color = score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-amber-500' : score >= 40 ? 'bg-orange-500' : 'bg-red-500';
+function SectionBar({ label, score }) {
   return (
     <div>
-      <div className="flex justify-between mb-1">
-        <span className={`text-xs ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{label}</span>
-        <span className={`text-xs font-bold ${dark ? 'text-zinc-300' : 'text-zinc-700'}`}>{score}</span>
+      <div className="flex justify-between mb-1.5">
+        <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub">{label}</span>
+        <span className="font-mono text-[11px] font-medium text-paper-ink">{score}</span>
       </div>
-      <div className={`h-2 rounded-full ${dark ? 'bg-zinc-800' : 'bg-zinc-200'}`}>
-        <div className={`h-2 rounded-full transition-all duration-700 ${color}`} style={{ width: `${score}%` }} />
+      <div className="h-1.5 bg-paper-rule">
+        <div className="h-1.5 bg-accent transition-all duration-700" style={{ width: `${score}%` }} />
       </div>
     </div>
   );
 }
 
-const PRIORITY_COLORS = {
-  high: 'border-red-500/40 bg-red-500/5 text-red-400',
-  medium: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
-  low: 'border-blue-500/40 bg-blue-500/5 text-blue-400',
-};
-
 export default function ResumePage() {
-  const { dark, toggleDark } = useTheme();
+  useScrollReveal();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [fileName, setFileName] = useState('');
   const fileRef = useRef(null);
-
-  const ui = {
-    bg: dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]',
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
-    upload: dark
-      ? `border-[#2a2a3e] bg-[#0e0e18] hover:border-indigo-500/60 ${dragOver ? 'border-indigo-500/80 bg-indigo-500/5' : ''}`
-      : `border-zinc-300 bg-zinc-50 hover:border-indigo-400 ${dragOver ? 'border-indigo-400 bg-indigo-50' : ''}`,
-  };
 
   const analyze = async (file) => {
     if (!file || file.type !== 'application/pdf') {
@@ -96,272 +81,241 @@ export default function ResumePage() {
     if (file) analyze(file);
   };
 
+  const hero = HERO_COPY.resume;
+
   return (
-    <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
-        <div className="mb-10 relative">
-          <div className="absolute -top-10 -right-10 w-64 h-64 rounded-full opacity-[0.06] bg-green-500 blur-[80px] pointer-events-none" />
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-2xl shadow-lg shadow-green-500/30">📄</div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-green-400 mb-0.5">AI Tool</p>
-              <h1 className="text-3xl font-black gradient-text">Resume Analyzer</h1>
-            </div>
-          </div>
-          <p className={`text-sm max-w-lg ${ui.sub}`}>
-            Upload your resume and get an AI grade, section-by-section scores, what to fix, and matched job recommendations.
-          </p>
-        </div>
+      <EditorialHero
+        kicker={hero.kicker}
+        title={hero.title}
+        titleItalic={hero.italic}
+        titleTail={hero.tail}
+        sub={hero.sub}
+        meta={['SECTION-BY-SECTION SCORING', 'ATS KEYWORD CHECK', '~15 SECONDS']}
+      />
 
-        {/* Upload zone */}
-        {!result && (
-          <div
-            className={`rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all mb-6 ${ui.upload}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            onClick={() => fileRef.current?.click()}
-          >
-            <input ref={fileRef} type="file" accept="application/pdf" className="hidden"
-              onChange={(e) => analyze(e.target.files?.[0])} />
-            {loading ? (
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative w-16 h-16">
-                  <div className="w-16 h-16 border-2 border-indigo-500/20 rounded-full" />
-                  <div className="absolute inset-0 w-16 h-16 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                  <div className="absolute inset-3 w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
-                </div>
-                <p className={`text-sm font-bold ${ui.text}`}>Analyzing with AI...</p>
-                <p className={`text-xs ${ui.sub}`}>Reading sections, scoring, matching jobs · ~15 seconds</p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-600/20 border border-green-500/20 flex items-center justify-center text-3xl">
-                  📎
-                </div>
-                <div className="text-center">
-                  <p className={`text-base font-bold ${ui.text}`}>Drop your resume here</p>
-                  <p className={`text-sm ${ui.sub}`}>or click to browse</p>
-                </div>
-                <p className={`text-xs ${ui.sub}`}>PDF only · Max 10MB</p>
-                <button className="mt-1 px-6 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white text-sm font-bold transition-all hover:scale-105 shadow-lg shadow-green-500/25">
-                  Choose File →
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Results */}
-        {result && (
-          <div className="space-y-5">
-            {/* Re-upload bar */}
-            <div className={`flex items-center justify-between px-4 py-3 rounded-2xl border ${ui.card}`}>
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-sm">📄</div>
-                <div>
-                  <p className={`text-xs font-semibold ${ui.text}`}>{fileName}</p>
-                  <p className={`text-xs ${ui.sub}`}>Resume analyzed</p>
-                </div>
-              </div>
-              <button
-                onClick={() => { setResult(null); setFileName(''); setError(''); }}
-                className="text-xs px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold transition-all hover:scale-105">
-                ↑ Upload New Resume
-              </button>
-            </div>
-
-            {/* Score card */}
-            <div className={`rounded-2xl border p-6 ${ui.card}`}>
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <ScoreRing score={result.score} size={130} />
-                <div className="flex-1 text-center sm:text-left">
-                  {result.name && <p className={`text-lg font-bold mb-1 ${ui.text}`}>{result.name}</p>}
-                  <div className="flex items-center gap-3 justify-center sm:justify-start mb-3">
-                    <span className={`text-3xl font-black ${result.score >= 80 ? 'text-green-400' : result.score >= 60 ? 'text-amber-400' : result.score >= 40 ? 'text-orange-400' : 'text-red-400'}`}>
-                      {result.grade}
-                    </span>
-                    <span className={`text-sm px-3 py-1 rounded-full font-medium ${
-                      result.score >= 80 ? 'bg-green-500/10 text-green-400' :
-                      result.score >= 60 ? 'bg-amber-500/10 text-amber-400' :
-                      result.score >= 40 ? 'bg-orange-500/10 text-orange-400' :
-                      'bg-red-500/10 text-red-400'
-                    }`}>
-                      {result.score >= 80 ? 'Strong Resume' : result.score >= 60 ? 'Good Resume' : result.score >= 40 ? 'Needs Work' : 'Major Issues'}
-                    </span>
+      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
+        <div className="py-14 max-w-[820px]">
+          {/* Upload zone */}
+          {!result && (
+            <div
+              className={`border border-dashed p-12 text-center cursor-pointer transition-colors mb-6 ${dragOver ? 'border-accent bg-paper-bg-alt' : 'border-paper-rule bg-paper-bg-alt hover:border-accent/60'}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              onClick={() => fileRef.current?.click()}
+            >
+              <input ref={fileRef} type="file" accept="application/pdf" className="hidden"
+                onChange={(e) => analyze(e.target.files?.[0])} />
+              {loading ? (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative w-12 h-12">
+                    <div className="w-12 h-12 border-2 border-paper-rule rounded-full" />
+                    <div className="absolute inset-0 w-12 h-12 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                   </div>
-                  <p className={`text-sm leading-relaxed ${ui.sub}`}>{result.summary}</p>
+                  <p className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">
+                    ANALYZING WITH AI…
+                  </p>
+                  <p className="text-[13px] text-paper-ink-dim">Reading sections, scoring, matching jobs · ~15 seconds</p>
                 </div>
-              </div>
-
-              {/* Section scores */}
-              {result.sectionScores && (
-                <div className={`mt-5 pt-5 border-t ${ui.divider} grid sm:grid-cols-2 gap-3`}>
-                  {Object.entries(result.sectionScores).map(([key, val]) => (
-                    <SectionBar key={key} label={key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())} score={val} dark={dark} />
-                  ))}
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-1">// UPLOAD</div>
+                  <div>
+                    <p className="font-display text-[24px] leading-[1.15] text-paper-ink">Drop your resume here</p>
+                    <p className="text-[13px] text-paper-ink-dim mt-1">or click to browse</p>
+                  </div>
+                  <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">PDF ONLY · MAX 10MB</p>
+                  <Btn variant="primary" as="button" className="mt-1">Choose file →</Btn>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Two-col layout */}
-            <div className="grid sm:grid-cols-2 gap-5">
-              {/* Strengths */}
-              <div className={`rounded-2xl border p-5 ${ui.card}`}>
-                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${ui.text}`}>
-                  <span className="text-green-400">✓</span> What&apos;s Working
-                </h3>
-                <ul className="space-y-2">
-                  {result.strengths?.map((s, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-green-400 text-xs mt-0.5 flex-shrink-0">●</span>
-                      <span className={`text-xs leading-relaxed ${ui.sub}`}>{s}</span>
-                    </li>
-                  ))}
-                </ul>
+          {error && (
+            <div className="mb-4 px-4 py-3 border border-accent/40 bg-paper-bg-alt text-[13px] text-paper-ink-dim">
+              <span className="font-mono text-[10px] tracking-[0.12em] text-accent mr-2">// ERROR</span>
+              {error}
+            </div>
+          )}
+
+          {/* Results */}
+          {result && (
+            <div className="space-y-10">
+              {/* Re-upload bar */}
+              <div className="flex items-center justify-between px-5 py-4 border border-paper-rule bg-paper-bg-alt">
+                <div>
+                  <p className="text-[13px] font-medium text-paper-ink">{fileName}</p>
+                  <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub mt-0.5">RESUME ANALYZED</p>
+                </div>
+                <Btn
+                  variant="secondary"
+                  as="button"
+                  onClick={() => { setResult(null); setFileName(''); setError(''); }}
+                >
+                  ↑ Upload new resume
+                </Btn>
               </div>
 
-              {/* Missing keywords */}
-              {result.keywords_missing?.length > 0 && (
-                <div className={`rounded-2xl border p-5 ${ui.card}`}>
-                  <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${ui.text}`}>
-                    <span className="text-amber-400">🔑</span> Missing Keywords
-                  </h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {result.keywords_missing.map((k, i) => (
-                      <span key={i} className={`text-xs px-2 py-0.5 rounded-full border ${dark ? 'border-amber-500/30 bg-amber-500/5 text-amber-400' : 'border-amber-200 bg-amber-50 text-amber-600'}`}>
-                        {k}
+              {/* Score card */}
+              <div className="border border-paper-rule p-7">
+                <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
+                  <ScoreRing score={result.score} size={130} />
+                  <div className="flex-1 text-center sm:text-left">
+                    {result.name && <p className="font-display text-[22px] leading-[1.15] text-paper-ink mb-1">{result.name}</p>}
+                    <div className="flex items-center gap-3 justify-center sm:justify-start mb-3">
+                      <span className="font-display text-[40px] leading-none text-accent">{result.grade}</span>
+                      <span className="font-mono text-[10px] tracking-[0.1em] uppercase border border-paper-rule px-2.5 py-1 text-paper-ink-dim">
+                        {result.score >= 80 ? 'Strong Resume' : result.score >= 60 ? 'Good Resume' : result.score >= 40 ? 'Needs Work' : 'Major Issues'}
                       </span>
+                    </div>
+                    <p className="text-[14px] leading-[1.55] text-paper-ink-dim">{result.summary}</p>
+                  </div>
+                </div>
+
+                {/* Section scores */}
+                {result.sectionScores && (
+                  <div className="mt-6 pt-6 border-t border-paper-rule grid sm:grid-cols-2 gap-x-8 gap-y-4">
+                    {Object.entries(result.sectionScores).map(([key, val]) => (
+                      <SectionBar key={key} label={key.replace(/_/g, ' ')} score={val} />
                     ))}
                   </div>
-                  <p className={`text-xs mt-3 ${ui.sub}`}>Add these keywords to improve ATS ranking.</p>
+                )}
+              </div>
+
+              {/* Two-col layout */}
+              <div className="grid sm:grid-cols-2 gap-5">
+                {/* Strengths */}
+                <div className="border border-paper-rule p-6">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// WHAT'S WORKING</div>
+                  <ul className="space-y-2.5">
+                    {result.strengths?.map((s, i) => (
+                      <li key={i} className="flex gap-2.5">
+                        <span className="text-accent text-[10px] mt-1 flex-shrink-0">●</span>
+                        <span className="text-[13px] leading-[1.55] text-paper-ink-dim">{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Missing keywords */}
+                {result.keywords_missing?.length > 0 && (
+                  <div className="border border-paper-rule p-6">
+                    <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// MISSING KEYWORDS</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.keywords_missing.map((k, i) => (
+                        <span key={i} className="font-mono text-[11px] px-2 py-1 border border-paper-rule text-paper-ink-dim">
+                          {k}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[12px] text-paper-ink-sub mt-4">Add these keywords to improve ATS ranking.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Improvements */}
+              <div className="border border-paper-rule p-6">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-4">// WHAT TO FIX</div>
+                <div className="space-y-3">
+                  {result.improvements?.map((item, i) => (
+                    <div key={i} className="border border-paper-rule p-4">
+                      <div className="flex items-start gap-3">
+                        <span className="font-mono text-[9px] tracking-[0.1em] uppercase mt-0.5 px-1.5 py-0.5 border border-paper-rule text-paper-ink-sub shrink-0">
+                          {item.priority}
+                        </span>
+                        <div>
+                          <p className="text-[13px] font-medium text-paper-ink">{item.issue}</p>
+                          <p className="text-[13px] mt-1 leading-[1.55] text-paper-ink-dim">
+                            <span className="font-medium text-paper-ink">Fix: </span>{item.fix}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Red Flags */}
+              {result.redFlags?.length > 0 && (
+                <div className="border border-accent/40 p-6">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-accent mb-3">// RED FLAGS — FIX THESE FIRST</div>
+                  <ul className="space-y-2.5">
+                    {result.redFlags.map((flag, i) => (
+                      <li key={i} className="flex gap-2.5">
+                        <span className="text-accent text-[12px] flex-shrink-0 mt-0.5">✗</span>
+                        <span className="text-[13px] leading-[1.55] text-paper-ink-dim">{flag}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
-            </div>
 
-            {/* Improvements */}
-            <div className={`rounded-2xl border p-5 ${ui.card}`}>
-              <h3 className={`text-sm font-bold mb-4 flex items-center gap-2 ${ui.text}`}>
-                <span className="text-red-400">⚠</span> What to Fix
-              </h3>
-              <div className="space-y-3">
-                {result.improvements?.map((item, i) => (
-                  <div key={i} className={`rounded-xl border p-4 ${PRIORITY_COLORS[item.priority] || PRIORITY_COLORS.medium}`}>
-                    <div className="flex items-start gap-2">
-                      <span className={`text-xs font-bold uppercase mt-0.5 px-1.5 py-0.5 rounded ${
-                        item.priority === 'high' ? 'bg-red-500/20' : item.priority === 'medium' ? 'bg-amber-500/20' : 'bg-blue-500/20'
-                      }`}>{item.priority}</span>
-                      <div>
-                        <p className="text-xs font-semibold">{item.issue}</p>
-                        <p className={`text-xs mt-1 leading-relaxed ${ui.sub}`}>
-                          <span className="font-medium">Fix: </span>{item.fix}
-                        </p>
-                      </div>
-                    </div>
+              {/* Clichés Found */}
+              {result.clichesFound?.length > 0 && (
+                <div className="border border-paper-rule p-6">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// BUZZWORDS &amp; CLICHÉS DETECTED</div>
+                  <p className="text-[13px] text-paper-ink-dim mb-4">These phrases are meaningless to recruiters. Replace them with specific achievements and numbers.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {result.clichesFound.map((c, i) => (
+                      <span key={i} className="font-mono text-[11px] px-2 py-1 border border-paper-rule text-paper-ink-sub line-through">{c}</span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Red Flags */}
-            {result.redFlags?.length > 0 && (
-              <div className={`rounded-2xl border p-5 ${ui.card} border-red-500/20`}>
-                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 text-red-400`}>
-                  🚨 Red Flags — Fix These First
-                </h3>
-                <ul className="space-y-2">
-                  {result.redFlags.map((flag, i) => (
-                    <li key={i} className="flex gap-2">
-                      <span className="text-red-400 text-xs flex-shrink-0 mt-0.5">✗</span>
-                      <span className={`text-xs leading-relaxed ${ui.sub}`}>{flag}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Clichés Found */}
-            {result.clichesFound?.length > 0 && (
-              <div className={`rounded-2xl border p-5 ${ui.card} border-amber-500/20`}>
-                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 text-amber-400`}>
-                  ⚠️ Buzzwords & Clichés Detected
-                </h3>
-                <p className={`text-xs mb-3 ${ui.sub}`}>These phrases are meaningless to recruiters. Replace them with specific achievements and numbers.</p>
-                <div className="flex flex-wrap gap-2">
-                  {result.clichesFound.map((c, i) => (
-                    <span key={i} className="text-xs px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 line-through">{c}</span>
-                  ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Rewritten Bullets */}
-            {result.rewrittenBullets?.length > 0 && (
-              <div className={`rounded-2xl border p-5 ${ui.card}`}>
-                <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${ui.text}`}>
-                  ✏️ Bullet Point Rewrites
-                </h3>
-                <p className={`text-xs mb-4 ${ui.sub}`}>Here&apos;s how to rewrite your weakest bullets to actually land interviews.</p>
-                <div className="space-y-4">
-                  {result.rewrittenBullets.map((b, i) => (
-                    <div key={i} className={`rounded-xl p-4 border ${dark ? 'border-[#1e1e2e] bg-[#0a0a14]' : 'border-zinc-100 bg-zinc-50'}`}>
-                      <div className="mb-2">
-                        <span className="text-xs font-semibold text-red-400 block mb-1">Before</span>
-                        <p className={`text-xs ${ui.sub} line-through`}>{b.original}</p>
+              {/* Rewritten Bullets */}
+              {result.rewrittenBullets?.length > 0 && (
+                <div className="border border-paper-rule p-6">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-1">// BULLET POINT REWRITES</div>
+                  <p className="text-[13px] text-paper-ink-dim mb-4 mt-2">Here&apos;s how to rewrite your weakest bullets to actually land interviews.</p>
+                  <div className="space-y-4">
+                    {result.rewrittenBullets.map((b, i) => (
+                      <div key={i} className="border border-paper-rule p-4 bg-paper-bg-alt">
+                        <div className="mb-2">
+                          <span className="font-mono text-[10px] tracking-[0.1em] text-accent block mb-1">BEFORE</span>
+                          <p className="text-[13px] text-paper-ink-sub line-through">{b.original}</p>
+                        </div>
+                        <div>
+                          <span className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub block mb-1">AFTER</span>
+                          <p className="text-[13px] text-paper-ink">{b.rewritten}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xs font-semibold text-green-400 block mb-1">After</span>
-                        <p className={`text-xs ${ui.text}`}>{b.rewritten}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Job matches */}
+              <div className="border border-paper-rule p-6">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-1">// JOBS YOU QUALIFY FOR</div>
+                <p className="text-[13px] text-paper-ink-dim mb-4 mt-2">Based on your resume, here are roles you match well for right now:</p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {result.jobMatches?.map((job, i) => (
+                    <div key={i} className="border border-paper-rule p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[13px] font-medium text-paper-ink">{job.title}</span>
+                        <span className="font-mono text-[11px] text-accent">{job.matchScore}%</span>
                       </div>
+                      <div className="h-1.5 bg-paper-rule mb-2">
+                        <div className="h-1.5 bg-accent" style={{ width: `${job.matchScore}%` }} />
+                      </div>
+                      <p className="text-[12px] text-paper-ink-dim leading-[1.5]">{job.reason}</p>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Job matches */}
-            <div className={`rounded-2xl border p-5 ${ui.card}`}>
-              <h3 className={`text-sm font-bold mb-1 flex items-center gap-2 ${ui.text}`}>
-                <span className="text-indigo-400">💼</span> Jobs You Qualify For
-              </h3>
-              <p className={`text-xs mb-4 ${ui.sub}`}>Based on your resume, here are roles you match well for right now:</p>
-              <div className="grid sm:grid-cols-2 gap-3">
-                {result.jobMatches?.map((job, i) => (
-                  <div key={i} className={`rounded-xl p-3 border ${dark ? 'border-[#2a2a2e] bg-[#111113]' : 'border-zinc-100 bg-zinc-50'}`}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className={`text-xs font-semibold ${ui.text}`}>{job.title}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        job.matchScore >= 80 ? 'bg-green-500/10 text-green-400' :
-                        job.matchScore >= 60 ? 'bg-amber-500/10 text-amber-400' :
-                        'bg-zinc-500/10 text-zinc-400'
-                      }`}>{job.matchScore}%</span>
-                    </div>
-                    <div className={`h-1.5 rounded-full ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} mb-1.5`}>
-                      <div className={`h-1.5 rounded-full ${job.matchScore >= 80 ? 'bg-green-500' : job.matchScore >= 60 ? 'bg-amber-500' : 'bg-zinc-500'}`}
-                        style={{ width: `${job.matchScore}%` }} />
-                    </div>
-                    <p className={`text-xs ${ui.sub}`}>{job.reason}</p>
-                  </div>
-                ))}
-              </div>
-              <div className={`mt-4 pt-4 border-t ${ui.divider} flex gap-3`}>
-                <a href="/jobs" className="flex-1 text-center px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all">
-                  Browse Matching Jobs →
-                </a>
+                <div className="mt-5 pt-5 border-t border-paper-rule">
+                  <Btn variant="primary" href="/jobs">Browse matching jobs →</Btn>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          <Footnote>{FOOTNOTES.resume}</Footnote>
+        </div>
+      </main>
     </div>
   );
 }
