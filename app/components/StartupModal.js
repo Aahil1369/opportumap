@@ -2,12 +2,20 @@
 
 import { useState } from 'react';
 import { createClient } from '../../lib/supabase-browser';
+import Btn from './ui/Btn';
 
 const STAGES = ['idea', 'pre-seed', 'seed', 'series-a', 'series-b+'];
 const SECTORS = ['AI', 'Fintech', 'HealthTech', 'CleanTech', 'SaaS', 'EdTech', 'Other'];
 const TOTAL_STEPS = 5;
 
-export default function StartupModal({ dark, onClose, onSuccess }) {
+const inputClass = 'w-full px-3 py-2.5 border bg-paper-bg border-paper-rule text-paper-ink placeholder-paper-ink-sub text-[13px] outline-none focus:border-accent transition-colors';
+const labelClass = 'font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-1.5 block';
+
+function pillClass(active) {
+  return `font-mono text-[11px] px-3 py-1.5 transition-colors ${active ? 'bg-paper-ink text-paper-bg' : 'border border-paper-rule text-paper-ink hover:bg-paper-bg-alt'}`;
+}
+
+export default function StartupModal({ onClose, onSuccess }) {
   const [step, setStep] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -20,15 +28,6 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
   });
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const ui = {
-    bg: dark ? 'bg-[#0e0e18]' : 'bg-white',
-    border: dark ? 'border-[#1e1e2e]' : 'border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    input: dark ? 'bg-[#1a1a28] border-[#2a2a3e] text-zinc-100 placeholder-zinc-600' : 'bg-zinc-50 border-zinc-300 text-zinc-900',
-    pill: (a) => a ? 'bg-indigo-600 text-white border-indigo-600' : dark ? 'bg-[#1a1a28] text-zinc-400 border-[#2a2a3e] hover:border-indigo-500' : 'bg-white text-zinc-500 border-zinc-200 hover:border-indigo-400',
-  };
 
   const handlePitchDeck = async (file) => {
     if (!file || file.type !== 'application/pdf') return;
@@ -66,18 +65,18 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className={`w-full max-w-lg mx-4 rounded-2xl border shadow-2xl ${ui.bg} ${ui.border}`}>
+      <div className="w-full max-w-lg mx-4 border bg-paper-bg border-paper-rule">
         {/* Header */}
-        <div className={`px-6 pt-6 pb-4 border-b ${ui.border}`}>
+        <div className="px-6 pt-6 pb-4 border-b border-paper-rule">
           <div className="flex items-center justify-between mb-1">
-            <h2 className={`text-lg font-bold ${ui.text}`}>Post your startup</h2>
+            <h2 className="font-display text-[22px] leading-[1.15] text-paper-ink">Post your startup</h2>
             <div className="flex items-center gap-3">
-              <span className={`text-xs ${ui.sub}`}>Step {step} of {TOTAL_STEPS}</span>
-              <button onClick={onClose} className={`text-xs px-2 py-0.5 rounded-lg ${dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600'}`}>✕</button>
+              <span className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub">STEP {step} OF {TOTAL_STEPS}</span>
+              <button onClick={onClose} className="font-mono text-[11px] text-paper-ink-sub hover:text-paper-ink transition-colors">✕</button>
             </div>
           </div>
-          <div className={`h-1 rounded-full mt-3 ${dark ? 'bg-[#1a1a28]' : 'bg-zinc-100'}`}>
-            <div className="h-1 rounded-full bg-indigo-500 transition-all duration-300" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
+          <div className="h-1 mt-3 bg-paper-rule">
+            <div className="h-1 bg-accent transition-all duration-300" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
           </div>
         </div>
 
@@ -85,21 +84,21 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
           {/* Step 1: Name + tagline */}
           {step === 1 && (
             <>
-              <p className={`text-sm ${ui.sub}`}>What's your startup called?</p>
+              <p className="text-[13px] text-paper-ink-dim">What's your startup called?</p>
               <div>
-                <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Startup name</label>
+                <label className={labelClass}>STARTUP NAME</label>
                 <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. NeuralHire"
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                  className={inputClass} />
               </div>
               <div>
-                <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>One-line tagline</label>
+                <label className={labelClass}>ONE-LINE TAGLINE</label>
                 <input value={form.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="e.g. AI recruiter that replaces the whole hiring funnel"
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                  className={inputClass} />
               </div>
               <div>
-                <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Description (2-4 sentences)</label>
+                <label className={labelClass}>DESCRIPTION (2-4 SENTENCES)</label>
                 <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} placeholder="What problem do you solve? How? What's your traction?"
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none ${ui.input}`} />
+                  className={`${inputClass} resize-none`} />
               </div>
             </>
           )}
@@ -107,22 +106,22 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
           {/* Step 2: Stage + sector */}
           {step === 2 && (
             <>
-              <p className={`text-sm ${ui.sub}`}>Where are you in your journey?</p>
+              <p className="text-[13px] text-paper-ink-dim">Where are you in your journey?</p>
               <div>
-                <label className={`text-xs font-medium mb-2 block ${ui.sub}`}>Funding stage</label>
+                <label className={labelClass}>FUNDING STAGE</label>
                 <div className="flex flex-wrap gap-2">
                   {STAGES.map((s) => (
                     <button key={s} onClick={() => set('stage', s)}
-                      className={`px-3 py-1.5 rounded-full text-xs border transition-all ${ui.pill(form.stage === s)}`}>{s}</button>
+                      className={pillClass(form.stage === s)}>{s.toUpperCase()}</button>
                   ))}
                 </div>
               </div>
               <div>
-                <label className={`text-xs font-medium mb-2 block ${ui.sub}`}>Sector</label>
+                <label className={labelClass}>SECTOR</label>
                 <div className="flex flex-wrap gap-2">
                   {SECTORS.map((s) => (
                     <button key={s} onClick={() => set('sector', s)}
-                      className={`px-3 py-1.5 rounded-full text-xs border transition-all ${ui.pill(form.sector === s)}`}>{s}</button>
+                      className={pillClass(form.sector === s)}>{s.toUpperCase()}</button>
                   ))}
                 </div>
               </div>
@@ -132,27 +131,27 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
           {/* Step 3: Raise + team */}
           {step === 3 && (
             <>
-              <p className={`text-sm ${ui.sub}`}>Funding ask and team details</p>
+              <p className="text-[13px] text-paper-ink-dim">Funding ask and team details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Raising ($)</label>
+                  <label className={labelClass}>RAISING ($)</label>
                   <input value={form.raise_amount} onChange={(e) => set('raise_amount', e.target.value)} placeholder="500000" type="number"
-                    className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                    className={inputClass} />
                 </div>
                 <div>
-                  <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Equity (%)</label>
+                  <label className={labelClass}>EQUITY (%)</label>
                   <input value={form.equity_offered} onChange={(e) => set('equity_offered', e.target.value)} placeholder="10" type="number"
-                    className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                    className={inputClass} />
                 </div>
                 <div>
-                  <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Team size</label>
+                  <label className={labelClass}>TEAM SIZE</label>
                   <input value={form.team_size} onChange={(e) => set('team_size', e.target.value)} placeholder="3" type="number"
-                    className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                    className={inputClass} />
                 </div>
                 <div>
-                  <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Location</label>
+                  <label className={labelClass}>LOCATION</label>
                   <input value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="San Francisco, CA"
-                    className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                    className={inputClass} />
                 </div>
               </div>
             </>
@@ -161,16 +160,16 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
           {/* Step 4: Links */}
           {step === 4 && (
             <>
-              <p className={`text-sm ${ui.sub}`}>Where can investors learn more?</p>
+              <p className="text-[13px] text-paper-ink-dim">Where can investors learn more?</p>
               <div>
-                <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>Website</label>
+                <label className={labelClass}>WEBSITE</label>
                 <input value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://yourstartup.com"
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                  className={inputClass} />
               </div>
               <div>
-                <label className={`text-xs font-medium mb-1 block ${ui.sub}`}>LinkedIn / Twitter (optional)</label>
+                <label className={labelClass}>LINKEDIN / TWITTER (OPTIONAL)</label>
                 <input value={form.linkedin} onChange={(e) => set('linkedin', e.target.value)} placeholder="https://linkedin.com/company/yourstartup"
-                  className={`w-full px-3 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`} />
+                  className={inputClass} />
               </div>
             </>
           )}
@@ -178,28 +177,27 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
           {/* Step 5: Pitch deck + review */}
           {step === 5 && (
             <>
-              <p className={`text-sm ${ui.sub}`}>Upload your pitch deck (optional) and review.</p>
-              <label className={`flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed cursor-pointer transition-all ${dark ? 'border-[#2a2a3e] bg-[#1a1a28] hover:border-indigo-500' : 'border-zinc-300 bg-zinc-50 hover:border-indigo-400'}`}>
+              <p className="text-[13px] text-paper-ink-dim">Upload your pitch deck (optional) and review.</p>
+              <label className="flex flex-col items-center justify-center w-full h-24 border border-dashed border-paper-rule bg-paper-bg-alt hover:border-accent cursor-pointer transition-colors">
                 <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handlePitchDeck(e.target.files?.[0])} />
                 {uploading ? (
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                    <p className={`text-xs ${ui.sub}`}>Uploading...</p>
+                    <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                    <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">UPLOADING…</p>
                   </div>
                 ) : form.pitch_deck_url ? (
-                  <p className="text-xs text-green-400 font-medium">✓ Pitch deck uploaded</p>
+                  <p className="font-mono text-[11px] text-[#5a7d3f]">✓ Pitch deck uploaded</p>
                 ) : (
                   <div className="text-center">
-                    <p className="text-lg">📊</p>
-                    <p className={`text-xs ${ui.sub}`}>Upload pitch deck (PDF)</p>
+                    <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">UPLOAD PITCH DECK (PDF)</p>
                   </div>
                 )}
               </label>
-              <div className={`rounded-xl border p-4 ${ui.border}`}>
-                <p className={`text-xs font-semibold mb-2 ${ui.text}`}>Review</p>
-                <p className={`text-xs ${ui.sub}`}>{form.name} · {form.stage} · {form.sector}</p>
-                {form.raise_amount && <p className={`text-xs mt-1 ${ui.sub}`}>Raising ${Number(form.raise_amount).toLocaleString()}{form.equity_offered ? ` · ${form.equity_offered}% equity` : ''}</p>}
-                {form.location && <p className={`text-xs mt-1 ${ui.sub}`}>{form.location}{form.team_size ? ` · ${form.team_size} people` : ''}</p>}
+              <div className="border border-paper-rule p-4">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-2">// REVIEW</div>
+                <p className="text-[13px] text-paper-ink-dim">{form.name} · {form.stage} · {form.sector}</p>
+                {form.raise_amount && <p className="text-[13px] text-paper-ink-dim mt-1">Raising ${Number(form.raise_amount).toLocaleString()}{form.equity_offered ? ` · ${form.equity_offered}% equity` : ''}</p>}
+                {form.location && <p className="text-[13px] text-paper-ink-dim mt-1">{form.location}{form.team_size ? ` · ${form.team_size} people` : ''}</p>}
               </div>
             </>
           )}
@@ -208,22 +206,20 @@ export default function StartupModal({ dark, onClose, onSuccess }) {
         {/* Footer */}
         <div className="px-6 pb-6 flex gap-3">
           {step > 1 && (
-            <button onClick={() => setStep(step - 1)}
-              className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#2a2a3e] text-zinc-300 hover:bg-[#1a1a28]' : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50'}`}>
+            <Btn variant="secondary" as="button" className="flex-1 justify-center" onClick={() => setStep(step - 1)}>
               Back
-            </button>
+            </Btn>
           )}
           {step < TOTAL_STEPS ? (
-            <button onClick={() => setStep(step + 1)}
+            <Btn variant="primary" as="button" className="flex-1 justify-center disabled:opacity-40"
               disabled={step === 1 && (!form.name || !form.tagline || !form.description) || step === 2 && (!form.stage || !form.sector)}
-              className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-medium transition-all">
+              onClick={() => setStep(step + 1)}>
               Continue
-            </button>
+            </Btn>
           ) : (
-            <button onClick={handleSubmit} disabled={submitting}
-              className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-medium transition-all">
-              {submitting ? 'Posting...' : 'Post Startup 🚀'}
-            </button>
+            <Btn variant="primary" as="button" className="flex-1 justify-center disabled:opacity-40" disabled={submitting} onClick={handleSubmit}>
+              {submitting ? 'Posting…' : 'Post startup →'}
+            </Btn>
           )}
         </div>
       </div>
