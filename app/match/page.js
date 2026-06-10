@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import CountryMatchCard from '../components/CountryMatchCard';
-import { useTheme } from '../hooks/useTheme';
+import EditorialHero from '../components/ui/EditorialHero';
+import Btn from '../components/ui/Btn';
+import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
+import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 
 export default function MatchPage() {
-  const { dark, toggleDark } = useTheme();
-  const isDark = dark;
+  useScrollReveal();
   const [matches, setMatches] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -66,68 +69,67 @@ export default function MatchPage() {
     if (profile) findMatches();
   }, [profile]);
 
+  const hero = HERO_COPY.match;
+
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-[#080810] text-zinc-100' : 'bg-white text-zinc-900'}`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
-      <main className="max-w-4xl mx-auto px-6 pt-28 pb-16">
-        <div className="text-center mb-12">
-          <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
-            Your Country Match
-          </h1>
-          <p className={`text-lg ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-            AI-powered recommendations based on your nationality, skills, and goals.
-          </p>
-        </div>
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
 
-        {hasProfile === false && (
-          <div className={`text-center p-8 rounded-xl border ${
-            isDark ? 'bg-[#12121e] border-[#2a2a3e]' : 'bg-zinc-50 border-zinc-200'
-          }`}>
-            <p className={`text-lg mb-4 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
-              Set up your profile first so we can find your best matches.
-            </p>
-            <p className={`text-sm mb-6 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
-              Click your avatar in the top-right, or sign in to get started.
-            </p>
-          </div>
-        )}
+      <EditorialHero
+        kicker={hero.kicker}
+        title={hero.title}
+        titleItalic={hero.italic}
+        titleTail={hero.tail}
+        sub={hero.sub}
+        meta={['100+ COUNTRIES SCANNED', 'RANKED BY VISA + ROLE FIT', '~60 SECONDS']}
+      />
 
-        {loading && (
-          <div className="text-center py-16">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className={`text-lg ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
-              Analyzing your profile across 100+ countries...
-            </p>
-          </div>
-        )}
-
-        {error && (
-          <div className="text-center py-8">
-            <p className="text-red-400 mb-4">{error}</p>
-            <button onClick={findMatches}
-              className="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors">
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {matches && (
-          <div className="space-y-4">
-            {matches.map((match, i) => (
-              <CountryMatchCard key={match.country_code || i} match={match} isDark={isDark} />
-            ))}
-            <div className="text-center pt-8">
-              <button onClick={findMatches}
-                className={`px-6 py-2 rounded-lg border font-medium transition-colors ${
-                  isDark
-                    ? 'border-zinc-700 text-zinc-300 hover:bg-zinc-800'
-                    : 'border-zinc-300 text-zinc-700 hover:bg-zinc-100'
-                }`}>
-                Refresh Matches
-              </button>
+      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
+        <div className="py-14">
+          {hasProfile === false && (
+            <div className="border border-paper-rule bg-paper-bg-alt p-10 max-w-[640px]">
+              <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-4">// NO PROFILE FOUND</div>
+              <h2 className="font-display text-[28px] leading-[1.15] mb-3">Set up your profile first.</h2>
+              <p className="text-[14px] text-paper-ink-dim leading-[1.55] mb-2">
+                We need your nationality and skills to find the countries where you actually have a shot.
+              </p>
+              <p className="text-[13px] text-paper-ink-sub leading-[1.5]">
+                Click your avatar in the top-right, or sign in to get started.
+              </p>
             </div>
-          </div>
-        )}
+          )}
+
+          {loading && (
+            <div className="py-20 text-center">
+              <div className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">
+                ANALYZING YOUR PROFILE ACROSS 100+ COUNTRIES…
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="border border-accent/40 bg-paper-bg-alt p-8 max-w-[520px]">
+              <div className="font-mono text-[10px] tracking-[0.12em] text-accent mb-3">// ERROR</div>
+              <p className="text-[14px] text-paper-ink-dim mb-5">{error}</p>
+              <Btn variant="primary" as="button" onClick={findMatches}>Try again</Btn>
+            </div>
+          )}
+
+          {matches && (
+            <>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {matches.map((match, i) => (
+                  <CountryMatchCard key={match.country_code || i} match={match} rank={i + 1} />
+                ))}
+              </div>
+              <div className="pt-10">
+                <Btn variant="secondary" as="button" onClick={findMatches}>Refresh matches</Btn>
+              </div>
+            </>
+          )}
+
+          <Footnote>{FOOTNOTES.match}</Footnote>
+        </div>
       </main>
     </div>
   );
