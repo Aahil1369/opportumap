@@ -21,7 +21,7 @@ export const HERO_COPY = {
     title: 'Find work you can',
     italic: 'actually',
     tail: ' access.',
-    sub: 'Jobs, visas, and relocation intelligence across 100 countries. Built by an immigrant kid for people who weren’t born into the passport lottery.',
+    sub: 'Jobs with visa-sponsorship signals across 100 countries. For visas and relocation, see our sibling app Migrova. Built by an immigrant kid for people who weren’t born into the passport lottery.',
   },
   resume: {
     kicker: '§ Tool 03 · Resume Grader',
