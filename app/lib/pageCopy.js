@@ -1,12 +1,9 @@
 export const FOOTNOTES = {
   home:         'This is a field guide, not a platform. We update it weekly.',
-  match:        'Your nationality is half the answer. Your willingness to move is the other half.',
   jobs:         'Jobs refresh every 6 hours from Adzuna + RemoteOK. Numbers will drift.',
   map:          'Every pin is a real job we could verify. The blank ones mean we haven’t been yet.',
   community:    'Keep this place honest. No recruiters, no pitch threads, no crypto.',
   resume:       'We grade hard on purpose. An inflated score doesn’t help you land a job.',
-  visa:         'Visa policy is a moving target. We mark every report with a timestamp.',
-  relocate:     'Rent numbers come from listings, not brochures. Assume +15% in the first month.',
   'cover-letter': 'A good cover letter is short. If ours writes long, trim it — it’s a draft, not a ruling.',
   interview:    'Practice out loud. Reading your answer and saying it are different sports.',
   startups:     'Early-stage means early-stage. Due diligence is your job.',
@@ -15,7 +12,6 @@ export const FOOTNOTES = {
   admin:        'You’re looking at a live snapshot. Metrics reset every midnight UTC.',
   profile:      'Your profile stays on this device unless you check the Remember box.',
   contact:      'We read every email. Response time is usually within 48 hours.',
-  stories:      'Real people, real moves. Submit yours — we’ll read it.',
   auth:         'Sign-in requires a verified email. We don’t sell data. We don’t spam.',
 };
 
@@ -25,14 +21,7 @@ export const HERO_COPY = {
     title: 'Find work you can',
     italic: 'actually',
     tail: ' access.',
-    sub: 'Jobs, visas, and relocation intelligence across 100 countries. Built by an immigrant kid for people who weren’t born into the passport lottery.',
-  },
-  match: {
-    kicker: '§ Tool 01 · Country Match',
-    title: 'Where can you',
-    italic: 'actually',
-    tail: ' go?',
-    sub: 'Five countries, ranked by your real visa access and role fit. Takes 60 seconds.',
+    sub: 'Jobs with visa-sponsorship signals across 100 countries. For visas and relocation, see our sibling app Migrova. Built by an immigrant kid for people who weren’t born into the passport lottery.',
   },
   resume: {
     kicker: '§ Tool 03 · Resume Grader',
@@ -40,20 +29,6 @@ export const HERO_COPY = {
     italic: 'deserve',
     tail: ', not the one you want.',
     sub: 'Brutally honest, section-by-section. Average scores here land 35–55. That’s the point.',
-  },
-  visa: {
-    kicker: '§ Tool 02 · Visa Intelligence',
-    title: 'The visa rules, in',
-    italic: 'plain English',
-    tail: '.',
-    sub: 'Document checklists, timelines, embassy tips, approval signals — by nationality and destination.',
-  },
-  relocate: {
-    kicker: '§ Tool 04 · Relocation Guide',
-    title: 'Land on your feet,',
-    italic: 'anywhere',
-    tail: '.',
-    sub: 'Rent, neighborhoods, banking, SIM, expat community, safety — written for the week you arrive.',
   },
   'cover-letter': {
     kicker: '§ Tool 05 · Cover Letter',
@@ -82,12 +57,5 @@ export const HERO_COPY = {
     italic: 'already there',
     tail: '.',
     sub: 'No recruiters, no pitch threads. Just people who moved, and what they learned.',
-  },
-  stories: {
-    kicker: '§ Archive · Stories',
-    title: 'They did it.',
-    italic: 'You can too',
-    tail: '.',
-    sub: 'Submitted by readers. Edited for length, never for honesty.',
   },
 };

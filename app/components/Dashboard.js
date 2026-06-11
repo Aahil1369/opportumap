@@ -12,9 +12,8 @@ import Footnote from './ui/Footnote';
 import { FOOTNOTES } from '../lib/pageCopy';
 
 const NEXT_STEPS = [
-  { glyph: 'compass',  title: 'New country match', body: 'Fresh visa data landed this week.',         href: '/match' },
-  { glyph: 'passport', title: 'Visa report',       body: 'Generate or re-read for a target country.', href: '/visa' },
-  { glyph: 'document', title: 'Resume grade',      body: 'Re-upload for a new 1–100 grade.',          href: '/resume' },
+  { glyph: 'document', title: 'Resume Grader', body: "Get the brutal-honest grade and fix what's broken.", href: '/resume' },
+  { glyph: 'globe-wire', title: 'Migrova ↗', body: 'Visas, relocation, legal guidance — our sibling app.', href: 'https://migrova.netlify.app', external: true },
 ];
 
 export default function Dashboard({ profile }) {
@@ -56,7 +55,7 @@ export default function Dashboard({ profile }) {
         Your profile is saved. Here’s what’s worth your time today.
       </p>
       <div className="flex flex-wrap gap-3 mb-10">
-        <Btn variant="primary" href="/match" magnetic>Re-run country match</Btn>
+        <Btn variant="primary" href="/resume" magnetic>Re-grade my resume</Btn>
         <Btn variant="secondary" href="/jobs">Browse fresh jobs</Btn>
         <Btn variant="ghost" href="/profile">Edit profile</Btn>
       </div>
@@ -64,26 +63,31 @@ export default function Dashboard({ profile }) {
       {countries.length > 0 && (
         <div className="mb-14 flex flex-wrap gap-2">
           {countries.map((c) => (
-            <Link key={c} href="/visa" className="hover:opacity-80">
+            <a key={c} href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:opacity-80">
               <Tag variant="outline">{c}</Tag>
-            </Link>
+            </a>
           ))}
         </div>
       )}
 
       <SectionHead number={1} kicker="TODAY" title="Worth your 10 minutes." className="mb-10" />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-paper-rule">
-        {NEXT_STEPS.map((c) => (
-          <Link
-            key={c.href}
-            href={c.href}
-            className="tool-card-underline block p-8 border-r border-b border-paper-rule hover:bg-paper-bg-alt transition-colors"
-          >
-            <div className="mb-5 text-paper-ink"><Glyph name={c.glyph} size={32} /></div>
-            <div className="font-display text-[22px] mb-2">{c.title}</div>
-            <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{c.body}</div>
-          </Link>
-        ))}
+        {NEXT_STEPS.map((c) => {
+          const Cmp = c.external ? 'a' : Link;
+          const extra = c.external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+          return (
+            <Cmp
+              key={c.href}
+              href={c.href}
+              {...extra}
+              className="tool-card-underline block p-8 border-r border-b border-paper-rule hover:bg-paper-bg-alt transition-colors"
+            >
+              <div className="mb-5 text-paper-ink"><Glyph name={c.glyph} size={32} /></div>
+              <div className="font-display text-[22px] mb-2">{c.title}</div>
+              <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{c.body}</div>
+            </Cmp>
+          );
+        })}
       </div>
 
       <div className="mt-16">
