@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import StartupCard from '../components/StartupCard';
 import StartupModal from '../components/StartupModal';
-import { useTheme } from '../hooks/useTheme';
+import EditorialHero from '../components/ui/EditorialHero';
+import Btn from '../components/ui/Btn';
+import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
+import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
 
 const STAGES = ['idea', 'pre-seed', 'seed', 'series-a', 'series-b+'];
@@ -13,7 +17,7 @@ const SECTORS = ['AI', 'Fintech', 'HealthTech', 'CleanTech', 'SaaS', 'EdTech', '
 const SECTOR_COUNTS = { 'AI': 0, 'Fintech': 0, 'HealthTech': 0, 'CleanTech': 0, 'SaaS': 0, 'EdTech': 0, 'Other': 0 };
 
 export default function StartupsPage() {
-  const { dark, toggleDark } = useTheme();
+  useScrollReveal();
   const [startups, setStartups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState('');
@@ -46,122 +50,117 @@ export default function StartupsPage() {
       });
   }, [stage, sector, sort]);
 
-  const bg = dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]';
-  const text = dark ? 'text-zinc-100' : 'text-zinc-900';
-  const sub = dark ? 'text-zinc-400' : 'text-zinc-500';
-  const card = dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200';
-  const divider = dark ? 'border-[#1e1e2e]' : 'border-zinc-200';
-  const pillBase = 'text-xs px-3 py-1 rounded-full border transition-all cursor-pointer';
-  const pillActive = 'bg-indigo-600 text-white border-indigo-600';
-  const pillInactive = dark ? 'border-[#2a2a3e] text-zinc-400 hover:border-indigo-500' : 'border-zinc-300 text-zinc-500 hover:border-indigo-400';
+  const pillBase = 'font-mono text-[11px] px-3 py-1.5 transition-colors cursor-pointer';
+  const pillActive = 'bg-paper-ink text-paper-bg';
+  const pillInactive = 'border border-paper-rule text-paper-ink hover:bg-paper-bg-alt';
 
   const totalRaise = startups.reduce((s, x) => s + (x.raise_amount || 0), 0);
   const formatRaise = (n) => n >= 1_000_000 ? `$${(n/1_000_000).toFixed(1)}M` : `$${(n/1_000).toFixed(0)}K`;
 
   const featured = startups.find((s) => s.upvote_count > 0) || startups[0];
 
-  return (
-    <div className={`min-h-screen ${bg} transition-colors duration-300`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
-      {showModal && <StartupModal dark={dark} onClose={() => setShowModal(false)} onSuccess={(s) => setStartups((prev) => [s, ...prev])} />}
+  const hero = HERO_COPY.startups;
 
-      {/* Header */}
-      <div className={`border-b ${divider}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-2">Startup Discovery</p>
-              <h1 className={`text-3xl font-black tracking-tight ${text}`}>Find your next investment.</h1>
-              <p className={`text-sm mt-1 ${sub}`}>{startups.length} startups seeking funding · updated daily</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setShowModal(true)}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all">
-                + Post Startup
-              </button>
-            </div>
-          </div>
+  return (
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
+      {showModal && <StartupModal onClose={() => setShowModal(false)} onSuccess={(s) => setStartups((prev) => [s, ...prev])} />}
+
+      <EditorialHero
+        kicker={hero.kicker}
+        title={hero.title}
+        titleItalic={hero.italic}
+        titleTail={hero.tail}
+        sub={hero.sub}
+        meta={[`${startups.length} STARTUPS LISTED`, 'UPDATED DAILY', 'MESSAGE FOUNDERS DIRECTLY']}
+        cta={<Btn variant="primary" as="button" onClick={() => setShowModal(true)}>+ Post startup</Btn>}
+      />
+
+      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
+        <div className="py-14">
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-2 mt-5">
+          <div className="flex flex-wrap gap-2 mb-8">
             <button onClick={() => setSort(sort === 'trending' ? 'newest' : 'trending')}
               className={`${pillBase} ${sort === 'trending' ? pillActive : pillInactive}`}>
-              🔥 Trending
+              TRENDING
             </button>
             {STAGES.map((s) => (
               <button key={s} onClick={() => setStage(stage === s ? '' : s)}
-                className={`${pillBase} ${stage === s ? pillActive : pillInactive}`}>{s}</button>
+                className={`${pillBase} ${stage === s ? pillActive : pillInactive}`}>{s.toUpperCase()}</button>
             ))}
-            <div className={`w-px h-5 self-center ${dark ? 'bg-[#2a2a3e]' : 'bg-zinc-300'}`} />
+            <div className="w-px h-5 self-center bg-paper-rule" />
             {SECTORS.map((s) => (
               <button key={s} onClick={() => setSector(sector === s ? '' : s)}
-                className={`${pillBase} ${sector === s ? pillActive : pillInactive}`}>{s}</button>
+                className={`${pillBase} ${sector === s ? pillActive : pillInactive}`}>{s.toUpperCase()}</button>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 flex gap-6">
+          {/* Content */}
+          <div className="flex gap-10">
 
-        {/* Cards */}
-        <div className="flex-1 min-w-0">
-          {loading ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : startups.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-3xl mb-3">🚀</p>
-              <p className={`text-sm font-semibold ${text}`}>No startups yet</p>
-              <p className={`text-xs mt-1 ${sub}`}>Be the first to post your startup.</p>
-              <button onClick={() => setShowModal(true)} className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold">
-                Post Startup
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {featured && (
-                <StartupCard startup={featured} featured dark={dark} />
+            {/* Cards */}
+            <div className="flex-1 min-w-0">
+              {loading ? (
+                <div className="flex items-center justify-center h-40">
+                  <div className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">
+                    LOADING STARTUPS…
+                  </div>
+                </div>
+              ) : startups.length === 0 ? (
+                <div className="border border-paper-rule bg-paper-bg-alt p-10 text-center max-w-[520px]">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-4">// NOTHING POSTED YET</div>
+                  <h2 className="font-display text-[24px] leading-[1.15] mb-3">No startups yet.</h2>
+                  <p className="text-[13px] text-paper-ink-dim leading-[1.5] mb-5">Be the first to post your startup.</p>
+                  <Btn variant="primary" as="button" onClick={() => setShowModal(true)}>Post startup</Btn>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {featured && (
+                    <StartupCard startup={featured} featured />
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {startups.filter((s) => s.id !== featured?.id).map((s) => (
+                      <StartupCard key={s.id} startup={s} />
+                    ))}
+                  </div>
+                </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {startups.filter((s) => s.id !== featured?.id).map((s) => (
-                  <StartupCard key={s.id} startup={s} dark={dark} />
-                ))}
-              </div>
             </div>
-          )}
-        </div>
 
-        {/* Sidebar */}
-        <div className="hidden lg:block w-52 flex-shrink-0 space-y-4">
-          <div className={`rounded-xl border p-4 ${card}`}>
-            <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${text}`}>Hot Sectors</p>
-            <div className="space-y-2">
-              {Object.entries(sectorCounts).sort((a, b) => b[1] - a[1]).map(([sec, count]) => (
-                <button key={sec} onClick={() => setSector(sector === sec ? '' : sec)}
-                  className={`w-full flex justify-between items-center text-xs transition-all ${sector === sec ? 'text-indigo-400' : sub} hover:text-indigo-400`}>
-                  <span>{sec}</span>
-                  <span className="font-semibold">{count}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className={`rounded-xl border p-4 ${card}`}>
-            <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${text}`}>This Week</p>
-            <div>
-              <p className={`text-2xl font-black ${text}`}>{startups.length}</p>
-              <p className={`text-xs ${sub}`}>startups listed</p>
-            </div>
-            {totalRaise > 0 && (
-              <div className="mt-3">
-                <p className="text-2xl font-black text-emerald-400">{formatRaise(totalRaise)}</p>
-                <p className={`text-xs ${sub}`}>total sought</p>
+            {/* Sidebar */}
+            <div className="hidden lg:block w-56 flex-shrink-0 space-y-5">
+              <div className="border border-paper-rule p-5">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// HOT SECTORS</div>
+                <div className="space-y-2">
+                  {Object.entries(sectorCounts).sort((a, b) => b[1] - a[1]).map(([sec, count]) => (
+                    <button key={sec} onClick={() => setSector(sector === sec ? '' : sec)}
+                      className={`w-full flex justify-between items-center text-[13px] transition-colors ${sector === sec ? 'text-accent' : 'text-paper-ink-dim'} hover:text-accent`}>
+                      <span>{sec}</span>
+                      <span className="font-mono text-[11px]">{count}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
+              <div className="border border-paper-rule p-5">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// THIS WEEK</div>
+                <div>
+                  <p className="font-display text-[28px] leading-none text-paper-ink">{startups.length}</p>
+                  <p className="text-[12px] text-paper-ink-sub mt-1">startups listed</p>
+                </div>
+                {totalRaise > 0 && (
+                  <div className="mt-4 pt-4 border-t border-paper-rule">
+                    <p className="font-display text-[28px] leading-none text-accent">{formatRaise(totalRaise)}</p>
+                    <p className="text-[12px] text-paper-ink-sub mt-1">total sought</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+
+          <Footnote>{FOOTNOTES.startups}</Footnote>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

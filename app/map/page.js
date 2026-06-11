@@ -4,8 +4,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Navbar from '../components/Navbar';
 import ProfileModal from '../components/ProfileModal';
-import { useTheme } from '../hooks/useTheme';
-import { ADZUNA_COUNTRIES } from '../data/countries';
 import { VISA_COLORS } from '../data/visaData';
 import { scoreJob } from '../data/matchJobs';
 
@@ -34,7 +32,6 @@ function buildQueryFromProfile(profile) {
 }
 
 export default function MapPage() {
-  const { dark, toggleDark } = useTheme();
   const [profile, setProfile] = useState(() => {
     if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('opportumap_profile');
@@ -83,69 +80,63 @@ export default function MapPage() {
     setInput(q);
   };
 
-  const ui = {
-    bg: dark ? 'bg-[#0e0e10]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#1a1a1d] border-[#2a2a2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#2a2a2e]' : 'border-zinc-200',
-    toggle: dark ? 'bg-[#2a2a2e] text-zinc-300 hover:bg-[#333]' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300',
-    input: dark ? 'bg-[#2a2a2e] border-[#3a3a3e] text-zinc-100 placeholder-zinc-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400',
-  };
-
   return (
-    <div className={`flex flex-col h-screen ${ui.bg} transition-colors duration-300`}>
-      {showProfile && <ProfileModal onSave={handleSaveProfile} dark={dark} initialProfile={profile} onClose={() => setShowProfile(false)} />}
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="flex flex-col h-screen bg-paper-bg text-paper-ink">
+      {showProfile && <ProfileModal onSave={handleSaveProfile} initialProfile={profile} onClose={() => setShowProfile(false)} />}
+      <Navbar />
 
       {/* Map controls bar */}
-      <div className={`flex items-center gap-3 px-4 sm:px-6 py-2.5 border-b ${ui.divider} flex-shrink-0`}>
+      <div className="flex items-center gap-3 px-4 sm:px-6 py-2.5 border-b border-paper-rule flex-shrink-0 bg-paper-bg">
+        <div className="hidden md:block font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub flex-shrink-0">
+          § WORLD MAP
+        </div>
+
         <form onSubmit={(e) => { e.preventDefault(); setQuery(input); }} className="flex gap-2 flex-1 max-w-md">
           <input value={input} onChange={(e) => setInput(e.target.value)}
             placeholder="Search jobs on map..."
-            className={`flex-1 px-3 py-1.5 rounded-lg border text-xs outline-none focus:ring-2 focus:ring-indigo-500/40 ${ui.input}`} />
+            className="flex-1 px-3 py-1.5 border border-paper-rule bg-paper-bg text-paper-ink placeholder-paper-ink-sub text-xs outline-none focus:border-accent" />
           <button type="submit"
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+            className="px-3 py-1.5 border border-paper-ink bg-paper-ink text-paper-bg text-xs font-medium font-sans tracking-[0.01em] hover:bg-[#2a3a2f] transition-colors">
             Search
           </button>
         </form>
 
-        <div className={`hidden sm:flex items-center gap-2 text-xs ${ui.sub}`}>
+        <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] tracking-[0.08em] text-paper-ink-sub">
           {loading ? (
-            <span>Loading...</span>
+            <span className="animate-pulse">LOADING…</span>
           ) : (
-            <span>{scoredJobs.length.toLocaleString()} jobs</span>
+            <span>{scoredJobs.length.toLocaleString()} JOBS</span>
           )}
         </div>
 
         {profile?.nationality && (
-          <div className="hidden sm:flex items-center gap-2 flex-wrap">
+          <div className="hidden sm:flex items-center gap-3 flex-wrap font-mono text-[10px] tracking-[0.08em] text-paper-ink-sub">
             {Object.entries(VISA_COLORS).filter(([k]) => k !== 'unknown').map(([status, info]) => (
-              <div key={status} className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: info.hex }} />
-                <span className={`text-xs ${ui.sub}`}>{info.emoji} {info.label}</span>
+              <div key={status} className="flex items-center gap-1.5">
+                <div className="w-2 h-2" style={{ backgroundColor: info.hex }} />
+                <span>{info.label}</span>
               </div>
             ))}
           </div>
         )}
 
         <button onClick={() => setShowProfile(true)}
-          className={`flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${ui.toggle}`}>
-          {profile ? '👤 Profile' : 'Set up profile'}
+          className="flex-shrink-0 px-3 py-1.5 border border-paper-rule font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-dim hover:border-accent hover:text-accent transition-colors">
+          {profile ? 'Profile' : 'Set up profile'}
         </button>
       </div>
 
       {/* Full-screen map */}
       <div className="flex-1 relative">
         {loading && (
-          <div className={`absolute inset-0 flex items-center justify-center z-10 ${dark ? 'bg-[#0e0e10]/70' : 'bg-white/70'} backdrop-blur-sm`}>
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-paper-bg/70 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3">
-              <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <p className={`text-xs ${ui.sub}`}>Fetching jobs...</p>
+              <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+              <p className="font-mono text-[11px] tracking-[0.1em] text-paper-ink-sub">FETCHING JOBS…</p>
             </div>
           </div>
         )}
-        <MapWrapper ref={mapRef} dark={dark} jobs={scoredJobs} nationality={profile?.nationality} />
+        <MapWrapper ref={mapRef} dark={true} jobs={scoredJobs} nationality={profile?.nationality} />
       </div>
     </div>
   );
