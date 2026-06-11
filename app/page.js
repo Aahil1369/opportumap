@@ -29,9 +29,9 @@ const HOW_IT_WORKS = [
 ];
 
 const TESTIMONIALS = [
-  { quote: 'OpportuMap helped me land a role in Berlin I never would have found on LinkedIn. The visa tool saved me hours.', name: 'Priya S.',  role: 'Data Engineer',      move: 'IN → DE' },
-  { quote: 'The AI resume matching is insane. It told me exactly which jobs fit my background.',                             name: 'Marcus W.', role: 'Software Engineer',  move: 'BR → NL' },
-  { quote: 'I relocated from Lagos to Toronto using the relocation guide. Step-by-step, everything I needed.',               name: 'Amara O.',  role: 'ML Engineer',        move: 'NG → CA' },
+  { quote: 'OpportuMap helped me land a role in Berlin I never would have found on LinkedIn. The sponsorship signals saved me hours.', name: 'Priya S.',  role: 'Data Engineer',      move: 'IN → DE' },
+  { quote: 'The AI resume matching is insane. It told me exactly which jobs fit my background.',                                       name: 'Marcus W.', role: 'Software Engineer',  move: 'BR → NL' },
+  { quote: 'The resume grader was brutal — and right. Fixed what it flagged and started getting callbacks.',                           name: 'Amara O.',  role: 'ML Engineer',        move: 'NG → CA' },
 ];
 
 const LIVE_JOBS = [
@@ -160,8 +160,8 @@ export default function Home() {
 
       <footer className="border-t border-paper-rule px-6 sm:px-10 py-10 font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub flex flex-wrap justify-between gap-4 max-w-[1280px] mx-auto">
         <span>© OpportuMap 2026</span>
-        <span>A sibling of <a href="https://migrova.netlify.app" className="hover:text-accent underline">Migrova</a></span>
-        <span><Link href="/contact" className="hover:text-accent">Contact</Link> · <a href="https://migrova.netlify.app" className="hover:text-accent">Migrova</a></span>
+        <span>A sibling of <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-accent underline">Migrova</a></span>
+        <span><Link href="/contact" className="hover:text-accent">Contact</Link> · <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-accent">Migrova</a></span>
       </footer>
     </div>
   );
