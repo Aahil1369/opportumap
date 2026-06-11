@@ -7,9 +7,11 @@ import ChatWidget from '../components/ChatWidget';
 import RelocationModal from '../components/RelocationModal';
 import JobCard from '../components/JobCard';
 import JobDetailPanel from '../components/JobDetailPanel';
-import { useTheme } from '../hooks/useTheme';
+import Btn from '../components/ui/Btn';
+import Footnote from '../components/ui/Footnote';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 import { scoreJob } from '../data/matchJobs';
+import { FOOTNOTES } from '../lib/pageCopy';
 
 function jobFreshness(job) {
   const now = Date.now();
@@ -71,7 +73,6 @@ function buildQueryFromProfile(profile) {
 }
 
 export default function JobsPage() {
-  const { dark, toggleDark } = useTheme();
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showRelocation, setShowRelocation] = useState(false);
@@ -279,31 +280,20 @@ export default function JobsPage() {
     setInput(autoQ);
   };
 
-  const ui = {
-    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
-    sidebar: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-200',
-    input: dark ? 'bg-[#0e0e18] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-white border-zinc-300 text-zinc-900 placeholder-zinc-400',
-    select: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-300' : 'bg-white border-zinc-200 text-zinc-600',
-    pill: (a) => a
-      ? 'bg-indigo-600 text-white border-indigo-600'
-      : dark ? 'bg-[#1a1a2e] text-zinc-400 border-[#1e1e2e] hover:border-indigo-500/40' : 'bg-white text-zinc-600 border-zinc-200 hover:border-indigo-400',
-    toggle: dark ? 'bg-[#1a1a2e] text-zinc-300 hover:bg-[#222235]' : 'bg-zinc-200 text-zinc-600 hover:bg-zinc-300',
-  };
+  const pillClass = (active) => `w-full text-left px-3 py-1.5 font-mono text-[11px] transition-colors border ${
+    active ? 'bg-paper-ink text-paper-bg border-paper-ink' : 'border-paper-rule text-paper-ink hover:bg-paper-bg-alt'
+  }`;
 
   const FilterSidebar = () => (
-    <div className={`rounded-2xl border overflow-hidden flex-shrink-0 ${ui.sidebar}`}>
-      <div className={`px-4 py-3 border-b ${ui.divider}`}>
-        <p className={`text-xs font-semibold uppercase tracking-widest ${ui.sub}`}>Filters</p>
+    <div className="border border-paper-rule bg-paper-bg flex-shrink-0">
+      <div className="px-4 py-3 border-b border-paper-rule">
+        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-ink-sub">Filters</p>
       </div>
 
       <div className="p-4 space-y-5">
         {/* Sort */}
         <div>
-          <p className={`text-xs font-semibold mb-2 ${ui.text}`}>Sort by</p>
+          <p className="text-[12px] font-medium mb-2 text-paper-ink">Sort by</p>
           <div className="space-y-1.5">
             {[
               { value: 'opportunity', label: 'Opportunity Score' },
@@ -312,7 +302,7 @@ export default function JobsPage() {
               { value: 'default', label: 'Latest' },
             ].map((o) => (
               <button key={o.value} onClick={() => setSortBy(o.value)}
-                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(sortBy === o.value)}`}>
+                className={pillClass(sortBy === o.value)}>
                 {o.label}
               </button>
             ))}
@@ -321,11 +311,11 @@ export default function JobsPage() {
 
         {/* Job type */}
         <div>
-          <p className={`text-xs font-semibold mb-2 ${ui.text}`}>Job Type</p>
+          <p className="text-[12px] font-medium mb-2 text-paper-ink">Job Type</p>
           <div className="space-y-1.5">
             {JOB_TYPES.map((t) => (
               <button key={t.value} onClick={() => setTypeFilter(t.value)}
-                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(typeFilter === t.value)}`}>
+                className={pillClass(typeFilter === t.value)}>
                 {t.label}
               </button>
             ))}
@@ -334,7 +324,7 @@ export default function JobsPage() {
 
         {/* Work mode */}
         <div>
-          <p className={`text-xs font-semibold mb-2 ${ui.text}`}>Work Mode</p>
+          <p className="text-[12px] font-medium mb-2 text-paper-ink">Work Mode</p>
           <div className="space-y-1.5">
             {[
               { value: 'all', label: 'All' },
@@ -342,7 +332,7 @@ export default function JobsPage() {
               { value: 'onsite', label: '🏢 On-site only' },
             ].map((o) => (
               <button key={o.value} onClick={() => setRemoteFilter(o.value)}
-                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(remoteFilter === o.value)}`}>
+                className={pillClass(remoteFilter === o.value)}>
                 {o.label}
               </button>
             ))}
@@ -352,11 +342,11 @@ export default function JobsPage() {
         {/* Visa filter (only show if profile has nationality) */}
         {profile?.nationality && (
           <div>
-            <p className={`text-xs font-semibold mb-2 ${ui.text}`}>Visa Status</p>
+            <p className="text-[12px] font-medium mb-2 text-paper-ink">Visa Status</p>
             <div className="space-y-1.5">
               {VISA_FILTER_OPTIONS.map((o) => (
                 <button key={o.value} onClick={() => setVisaFilter(o.value)}
-                  className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(visaFilter === o.value)}`}>
+                  className={pillClass(visaFilter === o.value)}>
                   {o.label}
                 </button>
               ))}
@@ -366,15 +356,15 @@ export default function JobsPage() {
 
         {/* Country */}
         <div>
-          <p className={`text-xs font-semibold mb-2 ${ui.text}`}>Country</p>
+          <p className="text-[12px] font-medium mb-2 text-paper-ink">Country</p>
           <div className="space-y-1.5">
             <button onClick={() => setCountryFilter('all')}
-              className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(countryFilter === 'all')}`}>
+              className={pillClass(countryFilter === 'all')}>
               All Countries
             </button>
             {activeCountries.map((c) => (
               <button key={c.code} onClick={() => setCountryFilter(c.code)}
-                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(countryFilter === c.code)}`}>
+                className={pillClass(countryFilter === c.code)}>
                 {c.flag} {c.label}
               </button>
             ))}
@@ -383,13 +373,13 @@ export default function JobsPage() {
 
         {/* Saved jobs */}
         <button onClick={() => setSavedOnly((s) => !s)}
-          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(savedOnly)}`}>
+          className={pillClass(savedOnly)}>
           ♥ Saved jobs only
         </button>
 
         {/* Expired jobs */}
         <button onClick={() => setHideExpired((s) => !s)}
-          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${ui.pill(!hideExpired)}`}>
+          className={pillClass(!hideExpired)}>
           ⏰ Show expired{expiredCount > 0 ? ` (${expiredCount})` : ''}
         </button>
       </div>
@@ -397,75 +387,70 @@ export default function JobsPage() {
   );
 
   return (
-    <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
       {(showProfile || showWelcome) && (
         <ProfileModal
           onSave={handleSaveProfile}
-          dark={dark}
           initialProfile={profile}
           onClose={() => { setShowProfile(false); setShowWelcome(false); }}
           welcome={showWelcome}
         />
       )}
-      {showRelocation && <RelocationModal onClose={() => setShowRelocation(false)} dark={dark} />}
-      <ChatWidget dark={dark} profile={profile} />
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+      {showRelocation && <RelocationModal onClose={() => setShowRelocation(false)} />}
+      <ChatWidget profile={profile} />
+      <Navbar />
 
-      {/* Search header */}
-      <div className={`relative border-b ${ui.divider} px-4 sm:px-8 py-5 overflow-hidden`}>
-        {dark && (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/40 via-[#080810] to-violet-950/30 pointer-events-none" />
-            <div className="absolute -top-10 -left-10 w-64 h-64 bg-indigo-600/8 rounded-full blur-3xl pointer-events-none" />
-          </>
-        )}
-        <div className="relative max-w-7xl mx-auto space-y-3">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">🌐</span>
-            <h1 className={`text-lg font-bold ${dark ? 'gradient-text' : 'text-zinc-900'}`}>Global Jobs</h1>
-            {profile?.name && <span className={`text-xs px-2 py-0.5 rounded-full border ${dark ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' : 'border-indigo-200 text-indigo-600 bg-indigo-50'}`}>for {profile.name}</span>}
+      {/* Compact editorial header */}
+      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12">
+        <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-4 flex items-center gap-3">
+          <span className="inline-block w-7 h-px bg-paper-ink-sub" />
+          <span>§ JOBS · LIVE FEED</span>
+        </div>
+        <h1 className="font-display text-[40px] sm:text-[56px] leading-[1.0] tracking-[-0.02em] text-paper-ink">Real jobs, real visa paths.</h1>
+      </section>
+
+      {/* Search */}
+      <div className="border-t border-b border-paper-rule px-6 sm:px-10 py-5">
+        <div className="max-w-[1280px] mx-auto space-y-3">
+          <div className="flex items-center gap-2 mb-1 font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub">
+            {profile?.name && <span className="px-2 py-0.5 border border-paper-rule text-paper-ink-dim">for {profile.name}</span>}
           </div>
           <form onSubmit={(e) => { e.preventDefault(); setQuery(input); setPage(1); }}
             className="flex gap-2">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">🔍</span>
               <input value={input} onChange={(e) => setInput(e.target.value)}
                 placeholder="Job title, skills, company..."
-                className={`w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all ${ui.input}`} />
+                className="w-full px-4 py-2.5 border border-paper-rule bg-paper-bg text-paper-ink placeholder-paper-ink-sub text-[14px] outline-none focus:border-accent transition-colors" />
             </div>
-            <button type="submit"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20">
-              Search
-            </button>
+            <Btn variant="primary" as="button" type="submit">Search</Btn>
             <button type="button" onClick={() => setShowProfile(true)}
-              className={`px-3 py-2.5 rounded-xl border text-sm transition-all hidden sm:flex items-center gap-1.5 ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-600 hover:bg-white'}`}>
+              className="px-3 py-2.5 border border-paper-rule text-paper-ink hover:bg-paper-bg-alt text-[13px] transition-colors hidden sm:flex items-center gap-1.5">
               👤 {profile?.name || 'Profile'}
             </button>
           </form>
-
         </div>
       </div>
 
       {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-5">
+      <div className="max-w-[1280px] mx-auto px-6 sm:px-10 py-6">
         {/* Stats row */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className={`text-sm font-semibold ${ui.text}`}>
+            <p className="text-[14px] font-medium text-paper-ink">
               {loading ? 'Loading...' : `${filtered.length.toLocaleString()} jobs`}
             </p>
-            <p className={`text-xs ${ui.sub}`}>
+            <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub mt-0.5">
               {profile?.name ? `Matched for ${profile.name}` : 'Set up your profile for AI matching'}
               {!loading && ` · across ${new Set(filtered.map(j => j.country)).size} countries`}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setShowRelocation(true)}
-              className="px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition-all hidden sm:block">
+              className="px-3 py-1.5 font-mono text-[11px] bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] transition-colors hidden sm:block">
               ✈️ I got the job
             </button>
             <button onClick={() => setShowFilters(!showFilters)}
-              className={`lg:hidden px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300' : 'border-zinc-200 text-zinc-600'}`}>
+              className="lg:hidden px-3 py-1.5 font-mono text-[11px] border border-paper-rule text-paper-ink hover:bg-paper-bg-alt transition-colors">
               ⚙️ Filters
             </button>
           </div>
@@ -473,13 +458,13 @@ export default function JobsPage() {
 
         {/* No profile banner */}
         {!profile && (
-          <div className={`rounded-2xl border p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-200 bg-indigo-50'}`}>
+          <div className="border border-paper-rule bg-paper-bg-alt p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <p className={`text-sm font-semibold ${ui.text}`}>Unlock AI-powered Opportunity Scores</p>
-              <p className={`text-xs mt-0.5 ${ui.sub}`}>Upload your resume to see visa status, match %, and Opportunity Scores on every job.</p>
+              <p className="text-[14px] font-medium text-paper-ink">Unlock AI-powered Opportunity Scores</p>
+              <p className="font-mono text-[10px] tracking-[0.1em] uppercase mt-1 text-paper-ink-sub">Upload your resume to see visa status, match %, and Opportunity Scores on every job.</p>
             </div>
             <button onClick={() => setShowProfile(true)}
-              className="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
+              className="flex-shrink-0 px-4 py-2 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] text-[12px] font-medium transition-colors">
               Set up profile
             </button>
           </div>
@@ -505,24 +490,23 @@ export default function JobsPage() {
             {loading ? (
               <div className="grid sm:grid-cols-2 gap-3">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className={`rounded-2xl border p-4 space-y-3 ${ui.card}`}>
+                  <div key={i} className="border border-paper-rule bg-paper-bg p-4 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
                       <div className="flex-1 space-y-2">
-                        <div className={`h-3 w-1/2 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                        <div className={`h-2.5 w-3/4 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+                        <div className="h-3 w-1/2 bg-paper-bg-alt animate-pulse" />
+                        <div className="h-2.5 w-3/4 bg-paper-bg-alt animate-pulse" />
                       </div>
                     </div>
-                    <div className={`h-2 w-1/3 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                    <div className={`h-1.5 rounded-full ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+                    <div className="h-2 w-1/3 bg-paper-bg-alt animate-pulse" />
+                    <div className="h-1.5 bg-paper-bg-alt animate-pulse" />
                   </div>
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className={`text-center py-20 ${ui.sub}`}>
+              <div className="text-center py-20 text-paper-ink-sub">
                 <p className="text-4xl mb-3">🌍</p>
-                <p className="text-sm font-medium">No jobs match your filters</p>
-                <p className="text-xs mt-1">Try adjusting the filters or search term</p>
+                <p className="text-[14px] font-medium">No jobs match your filters</p>
+                <p className="font-mono text-[10px] tracking-[0.1em] uppercase mt-1">Try adjusting the filters or search term</p>
               </div>
             ) : (
               <>
@@ -532,7 +516,6 @@ export default function JobsPage() {
                       key={job.id}
                       job={job}
                       profile={profile}
-                      dark={dark}
                       selected={selectedJob?.id === job.id}
                       predictedSalary={predictedSalaries[job.id]}
                       onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
@@ -542,7 +525,7 @@ export default function JobsPage() {
                 {paginated.length < filtered.length && (
                   <div className="text-center pt-5">
                     <button onClick={() => setPage((p) => p + 1)}
-                      className={`px-6 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
+                      className="px-6 py-2.5 border border-paper-rule text-paper-ink hover:bg-paper-bg-alt text-[13px] font-medium transition-colors">
                       Load more · {filtered.length - paginated.length} remaining
                     </button>
                   </div>
@@ -557,11 +540,12 @@ export default function JobsPage() {
           <JobDetailPanel
             job={selectedJob}
             profile={profile}
-            dark={dark}
             predictedSalary={predictedSalaries[selectedJob?.id]}
             onClose={() => setSelectedJob(null)}
           />
         )}
+
+        <Footnote>{FOOTNOTES.jobs}</Footnote>
       </div>
     </div>
   );
