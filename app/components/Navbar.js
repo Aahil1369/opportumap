@@ -16,9 +16,6 @@ const NAV_LINKS = [
 ];
 
 const TOOL_LINKS = [
-  { href: '/match',        label: 'Country Match' },
-  { href: '/visa',         label: 'Visa Intelligence' },
-  { href: '/relocate',     label: 'Relocation Guide' },
   { href: '/resume',       label: 'Resume Grader' },
   { href: '/cover-letter', label: 'Cover Letter' },
   { href: '/interview',    label: 'Interview Prep' },
@@ -145,6 +142,7 @@ export default function Navbar() {
               {TOOL_LINKS.map((l) => (
                 <Link key={l.href} href={l.href} className={`block py-2 ${pathname === l.href ? 'text-accent' : 'hover:text-accent'}`}>{l.label}</Link>
               ))}
+              <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="block py-2 hover:text-accent">Migrova ↗</a>
             </div>
             <div className="px-5 py-4 border-t border-paper-rule">
               {user ? (
@@ -200,6 +198,10 @@ export default function Navbar() {
                       {t.label}
                     </Link>
                   ))}
+                  <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" onClick={() => setToolsOpen(false)}
+                    className="block px-4 py-2 text-[13px] transition-colors text-paper-ink hover:bg-paper-bg">
+                    Migrova ↗
+                  </a>
                 </div>
               )}
             </div>
