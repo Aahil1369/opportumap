@@ -2,62 +2,57 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '../../lib/supabase-browser';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 
 const NAV_LINKS = [
-  { href: '/jobs', label: 'Jobs', icon: '💼' },
-  { href: '/map', label: 'Map', icon: '🌍' },
-  { href: '/visa', label: 'Visa', icon: '🛂' },
-  { href: '/relocate', label: 'Relocate', icon: '✈️' },
-  { href: '/match', label: 'Match', icon: '🎯' },
-  { href: '/community', label: 'Community', icon: '💬' },
+  { href: '/jobs',      label: 'Jobs' },
+  { href: '/map',       label: 'Map' },
+  { href: '/startups',  label: 'Startups' },
+  { href: '/community', label: 'Community' },
+  { href: '/messages',  label: 'Messages' },
 ];
 
 const TOOL_LINKS = [
-  { href: '/resume', label: 'Resume Analyzer', icon: '📄', desc: 'Grade your resume with AI' },
-  { href: '/cover-letter', label: 'Cover Letter', icon: '✉️', desc: 'Generate a tailored cover letter' },
-  { href: '/interview', label: 'Interview Prep', icon: '🎤', desc: 'Practice with AI mock interviews' },
-  { href: '/startups', label: 'Startups', icon: '🚀', desc: 'Discover and connect with startups' },
-  { href: '/saved', label: 'Saved Jobs', icon: '♥', desc: 'View your saved job listings' },
-  { href: '/messages', label: 'Messages', icon: '✉️', desc: 'Your conversations' },
-  { href: '/stories', label: 'Stories', icon: '📖', desc: 'Success stories from the community' },
-  { href: '/contact', label: 'Contact', icon: '📬', desc: 'Get in touch with us' },
+  { href: '/match',        label: 'Country Match' },
+  { href: '/visa',         label: 'Visa Intelligence' },
+  { href: '/relocate',     label: 'Relocation Guide' },
+  { href: '/resume',       label: 'Resume Grader' },
+  { href: '/cover-letter', label: 'Cover Letter' },
+  { href: '/interview',    label: 'Interview Prep' },
 ];
 
-function UserAvatar({ user, size = 'md' }) {
+const ADMIN_EMAIL = 'aahilakbar567@gmail.com';
+
+function UserAvatar({ user, size = 'sm' }) {
   const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || '?';
   const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-  const colors = ['from-indigo-500 to-purple-600', 'from-violet-500 to-pink-600', 'from-blue-500 to-cyan-600', 'from-emerald-500 to-teal-600'];
-  const color = colors[(name.charCodeAt(0) || 0) % colors.length];
-  const sz = size === 'lg' ? 'w-10 h-10 text-sm' : 'w-8 h-8 text-xs';
-
-  if (avatar) return <img src={avatar} alt={name} className={`${sz} rounded-full object-cover`} />;
+  const sz = size === 'lg' ? 'w-10 h-10 text-[12px]' : 'w-7 h-7 text-[10px]';
+  if (avatar) return <img src={avatar} alt={name} className={`${sz} object-cover`} />;
   return (
-    <div className={`${sz} bg-gradient-to-br ${color} rounded-full flex items-center justify-center text-white font-bold`}>
+    <div className={`${sz} bg-paper-ink text-paper-bg flex items-center justify-center font-mono tracking-[0.05em]`}>
       {initials}
     </div>
   );
 }
 
-export default function Navbar({ dark, onToggleDark }) {
+export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [toolsOpen, setToolsOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [profileSetupData, setProfileSetupData] = useState(null);
-  const [user, setUser] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
-  const [savedCount, setSavedCount] = useState(0);
-  const prevUserRef = useRef(null);
-  const dropdownRef = useRef(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [toolsUsed, setToolsUsed] = useState(0);
+  const toolsRef = useRef(null);
   const userMenuRef = useRef(null);
+  const prevUserRef = useRef(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -70,7 +65,6 @@ export default function Navbar({ dark, onToggleDark }) {
       const prevUser = prevUserRef.current;
       prevUserRef.current = newUser;
       setUser(newUser);
-      // Just signed in — check if they have a profile
       if (newUser && !prevUser) {
         try {
           const res = await fetch('/api/user-profile');
@@ -87,21 +81,19 @@ export default function Navbar({ dark, onToggleDark }) {
   }, []);
 
   useEffect(() => {
+    if (!user) { setToolsUsed(0); return; }
+    fetch('/api/tool-usage').then((r) => r.ok ? r.json() : { count: 0 }).then((d) => setToolsUsed(d.count || 0)).catch(() => {});
+  }, [user, pathname]);
+
+  useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setToolsOpen(false);
+      if (toolsRef.current && !toolsRef.current.contains(e.target)) setToolsOpen(false);
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // Close mobile menu on route change
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const handleSignOut = async () => {
@@ -110,23 +102,16 @@ export default function Navbar({ dark, onToggleDark }) {
     router.push('/');
   };
 
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Account';
+  const progressPct = Math.min(100, (toolsUsed / TOOL_LINKS.length) * 100);
   const isToolActive = TOOL_LINKS.some((t) => pathname === t.href);
-  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
-
-  const navBg = scrolled
-    ? dark ? 'bg-[#080810]/95 shadow-lg shadow-black/20' : 'bg-white/95 shadow-lg shadow-black/5'
-    : dark ? 'bg-[#080810]/80' : 'bg-white/80';
-
-  const linkBase = 'relative text-sm font-medium transition-all duration-200 py-1';
-  const linkActive = dark ? 'text-white' : 'text-zinc-900';
-  const linkInactive = dark ? 'text-zinc-400 hover:text-zinc-100' : 'text-zinc-500 hover:text-zinc-900';
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   return (
     <>
-      {showAuth && <AuthModal dark={dark} onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
       {showProfileSetup && (
         <ProfileModal
-          dark={dark}
           initialProfile={profileSetupData}
           onClose={() => setShowProfileSetup(false)}
           onSave={async (profile, rememberOnDevice) => {
@@ -144,58 +129,42 @@ export default function Navbar({ dark, onToggleDark }) {
         />
       )}
 
-      {/* Mobile drawer overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 sm:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className={`absolute top-0 right-0 h-full w-72 ${dark ? 'bg-[#0e0e18]' : 'bg-white'} shadow-2xl flex flex-col`}>
-            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: dark ? '#1e1e2e' : '#e4e4e7' }}>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                <span className="font-bold text-sm gradient-text">OpportuMap</span>
-              </div>
-              <button onClick={() => setMobileOpen(false)} className={`text-lg ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>✕</button>
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-paper-ink/60" onClick={() => setMobileOpen(false)} />
+          <div className="absolute top-0 right-0 h-full w-[280px] bg-paper-bg border-l border-paper-rule flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-paper-rule">
+              <span className="font-display italic text-[22px] leading-none text-paper-ink">OpportuMap</span>
+              <button onClick={() => setMobileOpen(false)} className="font-mono text-[12px] text-paper-ink-sub hover:text-accent">CLOSE</button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-              {[{ href: '/', label: 'Home', icon: '🏠' }, ...NAV_LINKS].map((link) => (
-                <Link key={link.href} href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${pathname === link.href ? 'bg-indigo-500/10 text-indigo-400' : dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-600 hover:bg-zinc-50'}`}>
-                  <span>{link.icon}</span>{link.label}
-                </Link>
+            <div className="flex-1 overflow-y-auto px-5 py-5 font-mono text-[12px] tracking-[0.08em] uppercase text-paper-ink-dim space-y-1">
+              {NAV_LINKS.map((l) => (
+                <Link key={l.href} href={l.href} className={`block py-2 ${pathname === l.href ? 'text-accent' : 'hover:text-accent'}`}>{l.label}</Link>
               ))}
-              <div className={`text-xs font-semibold uppercase tracking-widest px-3 pt-4 pb-1 ${dark ? 'text-zinc-600' : 'text-zinc-400'}`}>Tools</div>
-              {TOOL_LINKS.map((link) => (
-                <Link key={link.href} href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${pathname === link.href ? 'bg-indigo-500/10 text-indigo-400' : dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-600 hover:bg-zinc-50'}`}>
-                  <span>{link.icon}</span>{link.label}
-                </Link>
+              <div className="pt-4 pb-1 text-[10px] text-paper-ink-sub tracking-[0.14em]">§ Tools</div>
+              {TOOL_LINKS.map((l) => (
+                <Link key={l.href} href={l.href} className={`block py-2 ${pathname === l.href ? 'text-accent' : 'hover:text-accent'}`}>{l.label}</Link>
               ))}
             </div>
-            <div className="px-4 py-4 border-t" style={{ borderColor: dark ? '#1e1e2e' : '#e4e4e7' }}>
+            <div className="px-5 py-4 border-t border-paper-rule">
               {user ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 px-3 py-2">
-                    <UserAvatar user={user} />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar user={user} size="lg" />
                     <div className="min-w-0">
-                      <p className={`text-sm font-semibold truncate ${dark ? 'text-zinc-100' : 'text-zinc-900'}`}>{userName}</p>
-                      <p className={`text-xs truncate ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{user.email}</p>
+                      <p className="font-display italic text-[16px] leading-tight text-paper-ink truncate">{userName}</p>
+                      <p className="font-mono text-[10px] text-paper-ink-sub truncate">{user.email}</p>
                     </div>
                   </div>
-                  <Link href="/profile" className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-600 hover:bg-zinc-50'}`}>
-                    👤 View Profile
-                  </Link>
-                  {user?.email === 'aahilakbar567@gmail.com' && (
-                    <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-indigo-400 hover:bg-indigo-500/8">
-                      🛡️ Admin
-                    </Link>
+                  <Link href="/profile" className="block font-mono text-[11px] tracking-[0.1em] uppercase text-paper-ink-dim hover:text-accent">Profile</Link>
+                  {isAdmin && (
+                    <Link href="/admin" className="block font-mono text-[11px] tracking-[0.1em] uppercase text-accent hover:opacity-80">Admin</Link>
                   )}
-                  <button onClick={handleSignOut} className="w-full text-left px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/5 transition-colors">
-                    Sign out
-                  </button>
+                  <button onClick={handleSignOut} className="block font-mono text-[11px] tracking-[0.1em] uppercase text-paper-ink-sub hover:text-accent">Sign out</button>
                 </div>
               ) : (
                 <button onClick={() => { setMobileOpen(false); setShowAuth(true); }}
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all">
+                  className="w-full bg-paper-ink text-paper-bg font-sans text-[13px] font-medium tracking-[0.01em] px-[22px] py-3 hover:bg-[#2a3a2f] transition-colors">
                   Sign in
                 </button>
               )}
@@ -204,148 +173,83 @@ export default function Navbar({ dark, onToggleDark }) {
         </div>
       )}
 
-      <nav className={`sticky top-0 z-40 flex items-center justify-between px-4 sm:px-8 py-3 border-b backdrop-blur-xl transition-all duration-300 ${navBg}`}
-        style={{ borderColor: dark ? 'rgba(99,102,241,0.1)' : 'rgba(0,0,0,0.06)' }}>
-
-        {/* Logo */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-all">
-                <span className="text-white text-xs font-black">O</span>
-              </div>
-              <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 animate-pulse" style={{ borderColor: dark ? '#080810' : 'white' }} />
-            </div>
-            <span className={`font-black text-sm tracking-tight gradient-text hidden sm:block`}>OpportuMap</span>
+      <header className="border-b border-paper-rule bg-paper-bg sticky top-0 z-30">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10 py-4 flex items-center justify-between gap-6">
+          <Link href="/" className="font-display italic text-[24px] leading-none tracking-[-0.02em] text-paper-ink hover:text-accent transition-colors">
+            OpportuMap
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden sm:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href}
-                className={`${linkBase} px-3 py-1.5 rounded-lg transition-all ${pathname === link.href
-                  ? `${linkActive} ${dark ? 'bg-white/8' : 'bg-zinc-100'}`
-                  : linkInactive}`}>
-                {link.label}
-                {pathname === link.href && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-indigo-500" />
-                )}
+          <nav className="hidden md:flex items-center gap-7 font-mono text-[11px] tracking-[0.08em] uppercase text-paper-ink-dim">
+            {NAV_LINKS.map((l) => (
+              <Link key={l.href} href={l.href}
+                className={`relative transition-colors ${pathname === l.href ? 'text-paper-ink' : 'hover:text-accent'}`}>
+                {l.label}
+                {pathname === l.href && <span className="absolute -bottom-[18px] left-0 right-0 h-px bg-accent" />}
               </Link>
             ))}
-
-            {/* Tools dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={toolsRef}>
               <button onClick={() => setToolsOpen(!toolsOpen)}
-                className={`${linkBase} px-3 py-1.5 rounded-lg flex items-center gap-1.5 ${isToolActive
-                  ? `${linkActive} ${dark ? 'bg-white/8' : 'bg-zinc-100'}`
-                  : linkInactive}`}>
+                className={`transition-colors ${isToolActive ? 'text-paper-ink' : 'hover:text-accent'}`}>
                 Tools
-                <svg className={`w-3 h-3 transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
               </button>
-
               {toolsOpen && (
-                <div className={`absolute top-full left-0 mt-2 w-64 rounded-2xl border shadow-2xl overflow-hidden z-50 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-100'}`}>
-                  <div className="p-1.5">
-                    {TOOL_LINKS.map((link) => (
-                      <Link key={link.href} href={link.href} onClick={() => setToolsOpen(false)}
-                        className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all group ${pathname === link.href
-                          ? 'bg-indigo-500/10'
-                          : dark ? 'hover:bg-white/5' : 'hover:bg-zinc-50'}`}>
-                        <span className="text-lg mt-0.5">{link.icon}</span>
-                        <div>
-                          <p className={`text-sm font-semibold ${pathname === link.href ? 'text-indigo-400' : dark ? 'text-zinc-200' : 'text-zinc-800'}`}>{link.label}</p>
-                          <p className={`text-xs ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{link.desc}</p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                <div className="absolute top-full right-0 mt-3 w-[240px] bg-paper-bg-alt border border-paper-rule py-2 font-sans normal-case tracking-normal">
+                  {TOOL_LINKS.map((t) => (
+                    <Link key={t.href} href={t.href} onClick={() => setToolsOpen(false)}
+                      className={`block px-4 py-2 text-[13px] transition-colors ${pathname === t.href ? 'text-accent' : 'text-paper-ink hover:bg-paper-bg'}`}>
+                      {t.label}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
+          </nav>
+
+          <div className="flex items-center gap-4 font-mono text-[11px]">
+            <span className="hidden lg:inline-block bg-paper-ink text-data px-[10px] py-[5px] tracking-[0.05em]">100 CTRY · 33,664 LIVE</span>
+            {user ? (
+              <div className="relative hidden md:block" ref={userMenuRef}>
+                <button onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 text-paper-ink hover:text-accent transition-colors">
+                  <UserAvatar user={user} />
+                  <span className="max-w-[90px] truncate">{userName}</span>
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-3 w-[220px] bg-paper-bg-alt border border-paper-rule">
+                    <div className="px-4 py-3 border-b border-paper-rule">
+                      <p className="font-display italic text-[15px] leading-tight text-paper-ink truncate">{userName}</p>
+                      <p className="text-[10px] text-paper-ink-sub truncate mt-1">{user.email}</p>
+                    </div>
+                    <div className="py-1 font-sans normal-case tracking-normal">
+                      <Link href="/profile" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-paper-ink hover:bg-paper-bg">Profile</Link>
+                      <Link href="/saved" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-paper-ink hover:bg-paper-bg">Saved jobs</Link>
+                      {isAdmin && (
+                        <Link href="/admin" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-accent hover:bg-paper-bg">Admin</Link>
+                      )}
+                      <div className="my-1 h-px bg-paper-rule" />
+                      <button onClick={handleSignOut} className="block w-full text-left px-4 py-2 text-[13px] text-paper-ink-sub hover:bg-paper-bg">Sign out</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button onClick={() => setShowAuth(true)} className="text-paper-ink hover:text-accent transition-colors">Sign in</button>
+            )}
+            <button onClick={() => setMobileOpen(true)}
+              className="md:hidden w-8 h-8 flex flex-col items-center justify-center gap-1 hover:text-accent">
+              <span className="block w-4 h-px bg-paper-ink" />
+              <span className="block w-4 h-px bg-paper-ink" />
+              <span className="block w-4 h-px bg-paper-ink" />
+            </button>
           </div>
         </div>
 
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          {/* Dark mode toggle */}
-          <button onClick={onToggleDark}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all ${dark ? 'bg-white/8 text-zinc-300 hover:bg-white/12' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}>
-            {dark ? '☀' : '☾'}
-          </button>
-
-          {user ? (
-            <div className="relative" ref={userMenuRef}>
-              <button onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border transition-all ${userMenuOpen
-                  ? dark ? 'border-indigo-500/50 bg-indigo-500/10' : 'border-indigo-300 bg-indigo-50'
-                  : dark ? 'border-[#2a2a3e] hover:border-indigo-500/30 bg-white/5' : 'border-zinc-200 hover:border-zinc-300 bg-white'}`}>
-                <UserAvatar user={user} />
-                <span className={`text-xs font-semibold hidden sm:block max-w-20 truncate ${dark ? 'text-zinc-200' : 'text-zinc-700'}`}>
-                  {userName.split(' ')[0]}
-                </span>
-                <svg className={`w-3 h-3 transition-transform duration-200 ${dark ? 'text-zinc-400' : 'text-zinc-400'} ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              {userMenuOpen && (
-                <div className={`absolute right-0 top-full mt-2 w-56 rounded-2xl border shadow-2xl overflow-hidden z-50 ${dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-100'}`}>
-                  {/* User header */}
-                  <div className={`px-4 py-3 border-b ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'}`}>
-                    <div className="flex items-center gap-3">
-                      <UserAvatar user={user} size="lg" />
-                      <div className="min-w-0">
-                        <p className={`text-sm font-bold truncate ${dark ? 'text-zinc-100' : 'text-zinc-900'}`}>{userName}</p>
-                        <p className={`text-xs truncate ${dark ? 'text-zinc-500' : 'text-zinc-400'}`}>{user.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-1.5">
-                    <Link href="/profile" onClick={() => setUserMenuOpen(false)}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-700 hover:bg-zinc-50'}`}>
-                      <span className="text-base">👤</span> View Profile
-                    </Link>
-                    <Link href="/community" onClick={() => setUserMenuOpen(false)}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-700 hover:bg-zinc-50'}`}>
-                      <span className="text-base">💬</span> Community
-                    </Link>
-                    <Link href="/jobs" onClick={() => setUserMenuOpen(false)}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${dark ? 'text-zinc-300 hover:bg-white/5' : 'text-zinc-700 hover:bg-zinc-50'}`}>
-                      <span className="text-base">💼</span> Browse Jobs
-                    </Link>
-                    {user?.email === 'aahilakbar567@gmail.com' && (
-                      <Link href="/admin" onClick={() => setUserMenuOpen(false)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all text-indigo-400 hover:bg-indigo-500/8`}>
-                        <span className="text-base">🛡️</span> Admin
-                      </Link>
-                    )}
-                    <div className={`my-1 h-px ${dark ? 'bg-[#1e1e2e]' : 'bg-zinc-100'}`} />
-                    <button onClick={handleSignOut}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/8 transition-all">
-                      <span className="text-base">↪</span> Sign out
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <button onClick={() => setShowAuth(true)}
-              className="px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95">
-              Sign in
-            </button>
-          )}
-
-          {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(true)}
-            className={`sm:hidden w-8 h-8 rounded-lg flex flex-col items-center justify-center gap-1.5 transition-all ${dark ? 'hover:bg-white/8' : 'hover:bg-zinc-100'}`}>
-            <span className={`block w-4 h-0.5 rounded-full transition-all ${dark ? 'bg-zinc-400' : 'bg-zinc-600'}`} />
-            <span className={`block w-4 h-0.5 rounded-full transition-all ${dark ? 'bg-zinc-400' : 'bg-zinc-600'}`} />
-            <span className={`block w-4 h-0.5 rounded-full transition-all ${dark ? 'bg-zinc-400' : 'bg-zinc-600'}`} />
-          </button>
-        </div>
-      </nav>
+        {user && toolsUsed > 0 && (
+          <div className="h-[2px] bg-paper-rule">
+            <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progressPct}%` }} />
+          </div>
+        )}
+      </header>
     </>
   );
 }

@@ -2,44 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Navbar from '../components/Navbar';
-import { useTheme } from '../hooks/useTheme';
+import Btn from '../components/ui/Btn';
+import Footnote from '../components/ui/Footnote';
+import { FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
 
 const VERIFIED_EMAILS = new Set(['aahilakbar567@gmail.com']);
 
-function StatBox({ label, value, dark }) {
-  const ui = {
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-  };
+function StatBox({ label, value }) {
   return (
-    <div className={`rounded-2xl border p-4 text-center ${ui.card}`}>
-      <p className={`text-2xl font-bold ${ui.text}`}>{value ?? '—'}</p>
-      <p className={`text-xs mt-0.5 ${ui.sub}`}>{label}</p>
+    <div className="border border-paper-rule bg-paper-bg p-4 text-center">
+      <p className="font-display text-[28px] leading-none text-accent">{value ?? '—'}</p>
+      <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mt-1.5">{label}</p>
     </div>
   );
 }
 
-function PostCard({ post, dark }) {
-  const ui = {
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-  };
-  const POST_TYPE_COLORS = {
-    story: 'text-purple-400',
-    job: 'text-blue-400',
-    question: 'text-amber-400',
-    advice: 'text-green-400',
-  };
+function PostCard({ post }) {
   const POST_TYPE_LABELS = {
-    story: '📖 Story',
-    job: '💼 Job Post',
-    question: '❓ Question',
-    advice: '💡 Advice',
+    story: 'STORY',
+    job: 'JOB POST',
+    question: 'QUESTION',
+    advice: 'ADVICE',
   };
   function timeAgo(dateStr) {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -52,20 +37,20 @@ function PostCard({ post, dark }) {
     return d < 30 ? `${d}d ago` : new Date(dateStr).toLocaleDateString();
   }
   return (
-    <div className={`rounded-2xl border p-4 ${ui.card}`}>
+    <div className="border border-paper-rule p-4">
       <div className="flex items-center gap-2 mb-2">
-        <span className={`text-xs font-medium ${POST_TYPE_COLORS[post.post_type] || 'text-zinc-400'}`}>
+        <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub">
           {POST_TYPE_LABELS[post.post_type] || post.post_type}
         </span>
-        <span className={`text-xs ${ui.sub}`}>· {timeAgo(post.created_at)}</span>
-        {post.like_count > 0 && <span className={`text-xs ${ui.sub} ml-auto`}>❤️ {post.like_count}</span>}
+        <span className="font-mono text-[10px] text-paper-ink-sub">· {timeAgo(post.created_at)}</span>
+        {post.like_count > 0 && <span className="font-mono text-[10px] text-paper-ink-sub ml-auto">♥ {post.like_count}</span>}
       </div>
-      {post.title && <p className={`text-sm font-semibold mb-1 ${ui.text}`}>{post.title}</p>}
-      <p className={`text-sm leading-relaxed ${ui.sub} line-clamp-3`}>{post.content}</p>
+      {post.title && <p className="text-[14px] font-medium text-paper-ink mb-1">{post.title}</p>}
+      <p className="text-[13px] leading-[1.55] text-paper-ink-dim line-clamp-3">{post.content}</p>
       {post.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="flex flex-wrap gap-1.5 mt-2.5">
           {post.tags.map((tag) => (
-            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-500'}`}>#{tag}</span>
+            <span key={tag} className="font-mono text-[10px] px-2 py-0.5 border border-paper-rule text-paper-ink-sub">#{tag}</span>
           ))}
         </div>
       )}
@@ -74,21 +59,12 @@ function PostCard({ post, dark }) {
 }
 
 export default function ProfilePage() {
-  const { dark, toggleDark } = useTheme();
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ followers: 0, following: 0, posts: 0 });
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [postsLoading, setPostsLoading] = useState(true);
-
-  const ui = {
-    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
-  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -117,10 +93,10 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen ${ui.bg}`}>
-        <Navbar dark={dark} onToggleDark={toggleDark} />
+      <div className="min-h-screen bg-paper-bg text-paper-ink">
+        <Navbar />
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <div className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">LOADING…</div>
         </div>
       </div>
     );
@@ -129,106 +105,107 @@ export default function ProfilePage() {
   const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
   const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-  const colors = ['bg-indigo-500', 'bg-purple-500', 'bg-blue-500', 'bg-green-500'];
-  const avatarColor = colors[(name.charCodeAt(0) || 0) % colors.length];
   const joinDate = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '';
 
   return (
-    <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-        {/* Profile header card */}
-        <div className={`rounded-2xl border p-6 mb-6 ${ui.card}`}>
-          <div className="flex items-start gap-5">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              {avatar
-                ? <img src={avatar} alt={name} className="w-20 h-20 rounded-full object-cover ring-2 ring-indigo-500/30" />
-                : <div className={`w-20 h-20 ${avatarColor} rounded-full flex items-center justify-center text-white text-2xl font-bold ring-2 ring-indigo-500/30`}>{initials}</div>
-              }
-            </div>
+      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12">
+        <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-4 flex items-center gap-3">
+          <span className="inline-block w-7 h-px bg-paper-ink-sub" />
+          <span>§ PROFILE</span>
+        </div>
+        <h1 className="font-display text-[40px] sm:text-[56px] leading-[1.0] tracking-[-0.02em] text-paper-ink">Your profile.</h1>
+      </section>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className={`text-xl font-bold ${ui.text}`}>{name}</h1>
-                {VERIFIED_EMAILS.has(user.email) && (
-                  <span title="Verified" className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-500 text-white flex-shrink-0 shadow-md shadow-indigo-500/30" style={{ fontSize: 10 }}>✓</span>
-                )}
+      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
+        <div className="py-14 max-w-3xl">
+          {/* Profile header card */}
+          <div className="border border-paper-rule p-6 mb-6">
+            <div className="flex items-start gap-5">
+              {/* Avatar */}
+              <div className="flex-shrink-0">
+                {avatar
+                  ? <img src={avatar} alt={name} className="w-20 h-20 object-cover border border-paper-rule" />
+                  : <div className="w-20 h-20 border border-paper-rule bg-paper-bg-alt flex items-center justify-center font-display text-[28px] text-accent">{initials}</div>
+                }
               </div>
-              <p className={`text-sm mt-0.5 ${ui.sub}`}>{user.email}</p>
-              {joinDate && <p className={`text-xs mt-1 ${ui.sub}`}>Joined {joinDate}</p>}
-              <div className="flex gap-3 mt-3">
-                <Link href="/community"
-                  className="px-4 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
-                  + New Post
-                </Link>
-                <Link href="/jobs"
-                  className={`px-4 py-1.5 rounded-full border text-xs font-medium transition-all ${dark ? 'border-[#2a2a3e] text-zinc-300 hover:bg-[#1a1a2e]' : 'border-zinc-200 text-zinc-600 hover:bg-zinc-50'}`}>
-                  Browse Jobs
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <StatBox label="Followers" value={stats.followers} dark={dark} />
-          <StatBox label="Following" value={stats.following} dark={dark} />
-          <StatBox label="Posts" value={stats.posts} dark={dark} />
-        </div>
-
-        {/* Account info */}
-        <div className={`rounded-2xl border p-5 mb-6 ${ui.card}`}>
-          <h2 className={`text-sm font-bold mb-4 ${ui.text}`}>Account Details</h2>
-          <div className={`space-y-3 text-sm`}>
-            <div className={`flex justify-between py-2 border-b ${ui.divider}`}>
-              <span className={ui.sub}>Email</span>
-              <span className={ui.text}>{user.email}</span>
-            </div>
-            <div className={`flex justify-between py-2 border-b ${ui.divider}`}>
-              <span className={ui.sub}>Sign-in method</span>
-              <span className={ui.text}>{user.app_metadata?.provider === 'google' ? '🔵 Google' : '✉️ Email'}</span>
-            </div>
-            <div className={`flex justify-between py-2`}>
-              <span className={ui.sub}>Member since</span>
-              <span className={ui.text}>{joinDate}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Posts */}
-        <div>
-          <h2 className={`text-sm font-bold mb-3 ${ui.text}`}>Your Posts</h2>
-          {postsLoading ? (
-            <div className="space-y-3">
-              {[1, 2].map((i) => (
-                <div key={i} className={`rounded-2xl border p-4 ${ui.card}`}>
-                  <div className={`h-3 w-1/3 rounded mb-2 ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                  <div className={`h-3 w-full rounded mb-1 ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                  <div className={`h-3 w-2/3 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="font-display text-[24px] leading-[1.15] text-paper-ink">{name}</h2>
+                  {VERIFIED_EMAILS.has(user.email) && (
+                    <span title="Verified" className="inline-flex items-center justify-center w-5 h-5 border border-accent text-accent flex-shrink-0" style={{ fontSize: 10 }}>✓</span>
+                  )}
                 </div>
-              ))}
+                <p className="text-[13px] text-paper-ink-dim mt-0.5">{user.email}</p>
+                {joinDate && <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub mt-1">JOINED {joinDate.toUpperCase()}</p>}
+                <div className="flex gap-3 mt-4">
+                  <Btn variant="primary" href="/community">+ New Post</Btn>
+                  <Btn variant="secondary" href="/jobs">Browse Jobs</Btn>
+                </div>
+              </div>
             </div>
-          ) : posts.length === 0 ? (
-            <div className={`rounded-2xl border p-10 text-center ${ui.card}`}>
-              <p className="text-3xl mb-3">✍️</p>
-              <p className={`text-sm font-semibold ${ui.text}`}>No posts yet</p>
-              <p className={`text-xs mt-1 mb-4 ${ui.sub}`}>Share your story with the community</p>
-              <Link href="/community"
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
-                Go to Community
-              </Link>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-px bg-paper-rule border border-paper-rule mb-6">
+            <StatBox label="FOLLOWERS" value={stats.followers} />
+            <StatBox label="FOLLOWING" value={stats.following} />
+            <StatBox label="POSTS" value={stats.posts} />
+          </div>
+
+          {/* Account info */}
+          <div className="border border-paper-rule p-5 mb-6">
+            <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-4">// ACCOUNT DETAILS</div>
+            <div className="space-y-0">
+              <div className="flex justify-between py-2.5 border-b border-paper-rule text-[13px]">
+                <span className="text-paper-ink-sub">Email</span>
+                <span className="text-paper-ink">{user.email}</span>
+              </div>
+              <div className="flex justify-between py-2.5 border-b border-paper-rule text-[13px]">
+                <span className="text-paper-ink-sub">Sign-in method</span>
+                <span className="text-paper-ink">{user.app_metadata?.provider === 'google' ? 'Google' : 'Email'}</span>
+              </div>
+              <div className="flex justify-between py-2.5 text-[13px]">
+                <span className="text-paper-ink-sub">Member since</span>
+                <span className="text-paper-ink">{joinDate}</span>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {posts.map((post) => <PostCard key={post.id} post={post} dark={dark} />)}
-            </div>
-          )}
+          </div>
+
+          {/* Posts */}
+          <div>
+            <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-4">// YOUR POSTS</div>
+            {postsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="border border-paper-rule p-4">
+                    <div className="h-3 w-1/3 bg-paper-rule mb-2 animate-pulse" />
+                    <div className="h-3 w-full bg-paper-rule mb-1 animate-pulse" />
+                    <div className="h-3 w-2/3 bg-paper-rule animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="border border-paper-rule bg-paper-bg-alt p-10 text-center">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// NO POSTS YET</div>
+                <p className="font-display text-[22px] leading-[1.15] text-paper-ink mb-1">No posts yet.</p>
+                <p className="text-[13px] text-paper-ink-dim mb-5">Share your story with the community</p>
+                <Btn variant="primary" href="/community">Go to Community</Btn>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {posts.map((post) => <PostCard key={post.id} post={post} />)}
+              </div>
+            )}
+          </div>
+
+          <Footnote>{FOOTNOTES.profile}</Footnote>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

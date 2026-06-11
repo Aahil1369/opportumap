@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import JobCard from '../components/JobCard';
 import JobDetailPanel from '../components/JobDetailPanel';
-import { useTheme } from '../hooks/useTheme';
+import Footnote from '../components/ui/Footnote';
 import { scoreJob } from '../data/matchJobs';
+import { FOOTNOTES } from '../lib/pageCopy';
 
 export default function SavedJobsPage() {
-  const { dark, toggleDark } = useTheme();
   const [savedIds, setSavedIds] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [profile, setProfile] = useState(null);
@@ -76,57 +76,39 @@ export default function SavedJobsPage() {
     } catch {}
   };
 
-  const ui = {
-    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-200',
-  };
-
   return (
-    <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
 
-      {/* Header */}
-      <div className={`relative overflow-hidden border-b ${ui.divider}`}>
-        {dark && (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-950/40 via-[#080810] to-indigo-950/30 pointer-events-none" />
-            <div className="absolute -top-10 right-0 w-64 h-64 bg-rose-600/8 rounded-full blur-3xl pointer-events-none" />
-          </>
-        )}
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-8 py-10">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4 text-xs font-medium ${dark ? 'border-rose-500/30 bg-rose-500/10 text-rose-400' : 'border-rose-200 bg-rose-50 text-rose-600'}`}>
-            ♥ Saved Jobs
-          </div>
-          <h1 className={`text-3xl font-black mb-2 ${dark ? 'gradient-text' : 'text-zinc-900'}`}>
-            Your Saved Jobs
-          </h1>
-          <p className={`text-sm ${ui.sub}`}>
-            {savedIds.length > 0
-              ? `${savedIds.length} job${savedIds.length !== 1 ? 's' : ''} saved · click any card to view details and apply`
-              : 'Jobs you heart will appear here'}
-          </p>
+      {/* Compact editorial header */}
+      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12">
+        <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-4 flex items-center gap-3">
+          <span className="inline-block w-7 h-px bg-paper-ink-sub" />
+          <span>§ SAVED</span>
         </div>
-      </div>
+        <h1 className="font-display text-[40px] sm:text-[56px] leading-[1.0] tracking-[-0.02em] text-paper-ink">Jobs you kept.</h1>
+        <p className="font-mono text-[11px] tracking-[0.1em] uppercase text-paper-ink-sub mt-4">
+          {savedIds.length > 0
+            ? `${savedIds.length} job${savedIds.length !== 1 ? 's' : ''} saved · click any card to view details and apply`
+            : 'Jobs you heart will appear here'}
+        </p>
+      </section>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
+      <div className="max-w-[1280px] mx-auto px-6 sm:px-10 py-6 border-t border-paper-rule">
 
         {/* Loading skeletons */}
         {loading && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className={`rounded-2xl border p-4 space-y-3 ${ui.card}`}>
+              <div key={i} className="border border-paper-rule bg-paper-bg p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
                   <div className="flex-1 space-y-2">
-                    <div className={`h-3 w-1/2 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                    <div className={`h-2.5 w-3/4 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+                    <div className="h-3 w-1/2 bg-paper-bg-alt animate-pulse" />
+                    <div className="h-2.5 w-3/4 bg-paper-bg-alt animate-pulse" />
                   </div>
                 </div>
-                <div className={`h-2 w-1/3 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                <div className={`h-1.5 rounded-full ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+                <div className="h-2 w-1/3 bg-paper-bg-alt animate-pulse" />
+                <div className="h-1.5 bg-paper-bg-alt animate-pulse" />
               </div>
             ))}
           </div>
@@ -135,15 +117,15 @@ export default function SavedJobsPage() {
         {/* Empty state — no saved IDs at all */}
         {!loading && savedIds.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl ${dark ? 'bg-[#0e0e18]' : 'bg-white'} border ${ui.divider} shadow-lg`}>
+            <div className="w-20 h-20 flex items-center justify-center text-3xl border border-paper-rule bg-paper-bg-alt">
               ♡
             </div>
             <div>
-              <p className={`text-lg font-bold mb-1 ${ui.text}`}>No saved jobs yet</p>
-              <p className={`text-sm ${ui.sub}`}>Tap the ♡ on any job card to save it for later</p>
+              <p className="font-display text-[22px] leading-[1.15] mb-1 text-paper-ink">No saved jobs yet</p>
+              <p className="text-[13px] text-paper-ink-sub">Tap the ♡ on any job card to save it for later</p>
             </div>
             <a href="/jobs"
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/25 hover:scale-105">
+              className="px-6 py-2.5 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] text-[13px] font-medium transition-colors">
               Browse Jobs →
             </a>
           </div>
@@ -152,18 +134,18 @@ export default function SavedJobsPage() {
         {/* Saved IDs exist but none loaded from API yet */}
         {!loading && savedIds.length > 0 && jobs.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-            <p className={`text-4xl mb-2`}>🔍</p>
-            <p className={`text-sm font-semibold ${ui.text}`}>Couldn&apos;t reload {savedIds.length} saved job{savedIds.length !== 1 ? 's' : ''}</p>
-            <p className={`text-xs max-w-sm ${ui.sub}`}>
+            <p className="text-4xl mb-2">🔍</p>
+            <p className="text-[14px] font-medium text-paper-ink">Couldn&apos;t reload {savedIds.length} saved job{savedIds.length !== 1 ? 's' : ''}</p>
+            <p className="text-[12px] max-w-sm text-paper-ink-sub">
               These listings may have expired or been removed. Your saves are still stored — try again or browse for new ones.
             </p>
             <div className="flex gap-3">
               <button onClick={() => window.location.reload()}
-                className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-600 hover:bg-white'}`}>
+                className="px-4 py-2 border border-paper-rule text-paper-ink hover:bg-paper-bg-alt text-[13px] font-medium transition-colors">
                 Retry
               </button>
               <a href="/jobs"
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all">
+                className="px-4 py-2 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] text-[13px] font-medium transition-colors">
                 Browse Jobs
               </a>
             </div>
@@ -175,13 +157,13 @@ export default function SavedJobsPage() {
           <>
             {/* Profile nudge if no profile */}
             {!profile && (
-              <div className={`rounded-2xl border p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${dark ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-indigo-200 bg-indigo-50'}`}>
+              <div className="border border-paper-rule bg-paper-bg-alt p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                  <p className={`text-sm font-semibold ${ui.text}`}>See Opportunity Scores on your saved jobs</p>
-                  <p className={`text-xs mt-0.5 ${ui.sub}`}>Set up your profile to get AI match scores and visa status on every saved job.</p>
+                  <p className="text-[14px] font-medium text-paper-ink">See Opportunity Scores on your saved jobs</p>
+                  <p className="font-mono text-[10px] tracking-[0.1em] uppercase mt-1 text-paper-ink-sub">Set up your profile to get AI match scores and visa status on every saved job.</p>
                 </div>
                 <a href="/jobs"
-                  className="flex-shrink-0 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
+                  className="flex-shrink-0 px-4 py-2 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] text-[12px] font-medium transition-colors">
                   Set up profile
                 </a>
               </div>
@@ -193,7 +175,6 @@ export default function SavedJobsPage() {
                   <JobCard
                     job={job}
                     profile={profile}
-                    dark={dark}
                     selected={selectedJob?.id === job.id}
                     predictedSalary={predictedSalaries[job.id]}
                     onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
@@ -201,7 +182,7 @@ export default function SavedJobsPage() {
                   {/* Unsave button */}
                   <button
                     onClick={(e) => { e.stopPropagation(); handleUnsave(job.id); }}
-                    className={`absolute top-3 right-3 opacity-0 group-hover/saved:opacity-100 transition-all text-xs px-2.5 py-1 rounded-full border font-medium ${dark ? 'border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'border-red-200 text-red-500 bg-red-50 hover:bg-red-100'}`}
+                    className="absolute top-3 right-3 opacity-0 group-hover/saved:opacity-100 transition-opacity font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 border border-accent/40 text-accent bg-paper-bg hover:bg-paper-bg-alt"
                     title="Remove from saved"
                   >
                     Remove
@@ -211,6 +192,8 @@ export default function SavedJobsPage() {
             </div>
           </>
         )}
+
+        <Footnote>{FOOTNOTES.saved}</Footnote>
       </div>
 
       {/* Job detail modal */}
@@ -218,7 +201,6 @@ export default function SavedJobsPage() {
         <JobDetailPanel
           job={selectedJob}
           profile={profile}
-          dark={dark}
           predictedSalary={predictedSalaries[selectedJob?.id]}
           onClose={() => setSelectedJob(null)}
         />

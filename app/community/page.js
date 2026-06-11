@@ -3,22 +3,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import Navbar from '../components/Navbar';
 import AuthModal from '../components/AuthModal';
-import { useTheme } from '../hooks/useTheme';
+import EditorialHero from '../components/ui/EditorialHero';
+import Btn from '../components/ui/Btn';
+import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
+import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
 
 const VERIFIED_EMAILS = new Set(['aahilakbar567@gmail.com']);
 
 function VerifiedBadge() {
   return (
-    <span title="Verified" className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500 text-white flex-shrink-0" style={{ fontSize: 9 }}>✓</span>
+    <span title="Verified" className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-accent text-paper-bg flex-shrink-0" style={{ fontSize: 9 }}>✓</span>
   );
 }
 
 const POST_TYPES = [
-  { value: 'story', label: '📖 Story', color: 'text-purple-400' },
-  { value: 'job', label: '💼 Job Post', color: 'text-blue-400' },
-  { value: 'question', label: '❓ Question', color: 'text-amber-400' },
-  { value: 'advice', label: '💡 Advice', color: 'text-green-400' },
+  { value: 'story', label: '📖 Story' },
+  { value: 'job', label: '💼 Job Post' },
+  { value: 'question', label: '❓ Question' },
+  { value: 'advice', label: '💡 Advice' },
 ];
 
 function timeAgo(dateStr) {
@@ -34,15 +38,17 @@ function timeAgo(dateStr) {
 }
 
 function Avatar({ name, avatar, size = 'md' }) {
-  const sz = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm';
+  const sz = size === 'sm' ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-[12px]';
   const initials = (name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-  const colors = ['bg-indigo-500', 'bg-purple-500', 'bg-blue-500', 'bg-green-500', 'bg-amber-500', 'bg-pink-500'];
-  const color = colors[(name?.charCodeAt(0) || 0) % colors.length];
   if (avatar) return <img src={avatar} alt={name} className={`${sz} rounded-full object-cover flex-shrink-0`} />;
-  return <div className={`${sz} ${color} rounded-full flex items-center justify-center font-bold text-white flex-shrink-0`}>{initials}</div>;
+  return (
+    <div className={`${sz} ${sz} bg-paper-ink text-paper-bg rounded-full flex items-center justify-center font-mono font-medium flex-shrink-0`}>
+      {initials}
+    </div>
+  );
 }
 
-function FollowButton({ targetUserId, targetName, currentUser, dark }) {
+function FollowButton({ targetUserId, targetName, currentUser }) {
   const [following, setFollowing] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -75,10 +81,10 @@ function FollowButton({ targetUserId, targetName, currentUser, dark }) {
     <button
       onClick={toggle}
       disabled={loading}
-      className={`text-xs px-3 py-1 rounded-full font-medium transition-all border ${
+      className={`font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 border transition-colors ${
         following
-          ? dark ? 'border-zinc-600 text-zinc-400 hover:border-red-500/50 hover:text-red-400' : 'border-zinc-300 text-zinc-500 hover:border-red-300 hover:text-red-500'
-          : 'border-indigo-500 text-indigo-400 hover:bg-indigo-500 hover:text-white'
+          ? 'border-paper-rule text-paper-ink-sub hover:border-accent/50 hover:text-accent'
+          : 'border-accent text-accent hover:bg-accent hover:text-paper-bg'
       }`}
     >
       {loading ? '...' : following ? 'Following' : '+ Follow'}
@@ -86,7 +92,7 @@ function FollowButton({ targetUserId, targetName, currentUser, dark }) {
   );
 }
 
-function CommentSection({ postId, dark, currentUser, onSignIn }) {
+function CommentSection({ postId, currentUser, onSignIn }) {
   const [comments, setComments] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [input, setInput] = useState('');
@@ -119,30 +125,23 @@ function CommentSection({ postId, dark, currentUser, onSignIn }) {
     setSubmitting(false);
   };
 
-  const ui = {
-    input: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400',
-    comment: dark ? 'bg-[#222226]' : 'bg-zinc-50',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-  };
-
   return (
-    <div className="mt-3 space-y-3">
+    <div className="mt-3 pl-4 border-l border-paper-rule space-y-3">
       {!loaded ? (
-        <p className={`text-xs ${ui.sub}`}>Loading comments...</p>
+        <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">LOADING COMMENTS…</p>
       ) : comments.length === 0 ? (
-        <p className={`text-xs ${ui.sub}`}>No comments yet. Be the first!</p>
+        <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">NO COMMENTS YET. BE THE FIRST!</p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {comments.map((c) => (
-            <div key={c.id} className={`flex gap-2.5 p-3 rounded-xl ${ui.comment}`}>
+            <div key={c.id} className="flex gap-2.5">
               <Avatar name={c.user_name} avatar={c.user_avatar} size="sm" />
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-1.5">
-                  <span className={`text-xs font-semibold ${ui.text}`}>{c.user_name}</span>
-                  <span className={`text-xs ${ui.sub}`}>{timeAgo(c.created_at)}</span>
+                  <span className="text-[13px] font-medium text-paper-ink">{c.user_name}</span>
+                  <span className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">{timeAgo(c.created_at)}</span>
                 </div>
-                <p className={`text-xs mt-0.5 leading-relaxed ${ui.sub}`}>{c.content}</p>
+                <p className="text-[13px] mt-0.5 leading-[1.5] text-paper-ink-dim">{c.content}</p>
               </div>
             </div>
           ))}
@@ -150,7 +149,7 @@ function CommentSection({ postId, dark, currentUser, onSignIn }) {
       )}
 
       {currentUser ? (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-start">
           <Avatar name={currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]} avatar={currentUser.user_metadata?.avatar_url} size="sm" />
           <div className="flex-1 flex gap-2">
             <input
@@ -158,42 +157,30 @@ function CommentSection({ postId, dark, currentUser, onSignIn }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
               placeholder="Write a comment..."
-              className={`flex-1 px-3 py-1.5 rounded-xl border text-xs outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all ${ui.input}`}
+              className="flex-1 px-3 py-1.5 bg-paper-bg border border-paper-rule text-paper-ink placeholder:text-paper-ink-sub text-[13px] outline-none focus:border-accent transition-colors"
             />
-            <button
-              onClick={submit}
-              disabled={!input.trim() || submitting}
-              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-medium transition-all"
-            >
+            <Btn variant="secondary" as="button" onClick={submit} disabled={!input.trim() || submitting} className="!px-4 !py-1.5 !text-[12px]">
               {submitting ? '...' : 'Post'}
-            </button>
+            </Btn>
           </div>
         </div>
       ) : (
-        <button onClick={() => onSignIn?.()} className={`text-xs ${ui.sub} hover:text-indigo-400 transition-colors`}>Sign in to comment</button>
+        <button onClick={() => onSignIn?.()} className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub hover:text-accent transition-colors">
+          SIGN IN TO COMMENT
+        </button>
       )}
     </div>
   );
 }
 
-function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
+function PostCard({ post, currentUser, likedIds, onLike, onSignIn }) {
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [localLikeCount, setLocalLikeCount] = useState(post.like_count || 0);
-  const [localCommentCount, setLocalCommentCount] = useState(post.comment_count || 0);
+  const [localCommentCount] = useState(post.comment_count || 0);
   const isLiked = likedIds.has(post.id);
   const isLong = post.content.length > 300;
   const typeInfo = POST_TYPES.find((t) => t.value === post.post_type) || POST_TYPES[0];
-
-  const ui = {
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    divider: dark ? 'border-[#1e1e2e]' : 'border-zinc-100',
-    action: (active) => active
-      ? 'text-indigo-400'
-      : dark ? 'text-zinc-500 hover:text-zinc-300' : 'text-zinc-400 hover:text-zinc-600',
-  };
 
   const handleLike = async () => {
     if (!currentUser) return;
@@ -210,20 +197,20 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
   };
 
   return (
-    <div className={`rounded-2xl border p-5 transition-all ${ui.card}`}>
+    <div className="border border-paper-rule bg-paper-bg hover:bg-paper-bg-alt transition-colors p-5">
       {/* Author row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5">
           <Avatar name={post.user_name} avatar={post.user_avatar} />
           <div>
             <div className="flex items-center gap-2">
-              <span className={`text-sm font-semibold ${ui.text}`}>{post.user_name}</span>
+              <span className="text-[13px] font-medium text-paper-ink">{post.user_name}</span>
               {VERIFIED_EMAILS.has(post.user_email) && <VerifiedBadge />}
-              <FollowButton targetUserId={post.user_id} targetName={post.user_name} currentUser={currentUser} dark={dark} />
+              <FollowButton targetUserId={post.user_id} targetName={post.user_name} currentUser={currentUser} />
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={`text-xs ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
-              <span className={`text-xs ${ui.sub}`}>· {timeAgo(post.created_at)}</span>
+            <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub">
+              <span>{typeInfo.label}</span>
+              <span>· {timeAgo(post.created_at)}</span>
             </div>
           </div>
         </div>
@@ -231,14 +218,14 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
 
       {/* Title */}
       {post.title && (
-        <h3 className={`text-base font-bold mb-2 leading-snug ${ui.text}`}>{post.title}</h3>
+        <h3 className="font-display text-[20px] leading-[1.2] mb-2 text-paper-ink">{post.title}</h3>
       )}
 
       {/* Content */}
-      <p className={`text-sm leading-relaxed ${ui.sub}`}>
+      <p className="text-[13px] leading-[1.55] text-paper-ink-dim">
         {isLong && !expanded ? post.content.slice(0, 300) + '...' : post.content}
         {isLong && (
-          <button onClick={() => setExpanded(!expanded)} className="ml-1 text-indigo-400 hover:text-indigo-300 text-xs font-medium">
+          <button onClick={() => setExpanded(!expanded)} className="ml-1 text-accent hover:text-accent/80 font-mono text-[10px] tracking-[0.1em] uppercase">
             {expanded ? 'show less' : 'read more'}
           </button>
         )}
@@ -248,7 +235,7 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
       {post.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-3">
           {post.tags.map((tag) => (
-            <span key={tag} className={`text-xs px-2 py-0.5 rounded-full ${dark ? 'bg-[#1a1a2e] text-zinc-400' : 'bg-zinc-100 text-zinc-500'}`}>
+            <span key={tag} className="font-mono text-[10px] tracking-[0.1em] px-2 py-0.5 border border-paper-rule text-paper-ink-sub">
               #{tag}
             </span>
           ))}
@@ -256,20 +243,20 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
       )}
 
       {/* Action bar */}
-      <div className={`flex items-center gap-4 mt-4 pt-3 border-t ${ui.divider}`}>
+      <div className="flex items-center gap-5 mt-4 pt-3 border-t border-paper-rule">
         <button
           onClick={handleLike}
-          className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${ui.action(isLiked)} ${!currentUser ? 'opacity-50 cursor-default' : ''}`}
+          className={`flex items-center gap-1.5 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors ${isLiked ? 'text-accent' : 'text-paper-ink-sub hover:text-paper-ink'} ${!currentUser ? 'opacity-50 cursor-default' : ''}`}
         >
-          <span className={isLiked ? 'text-red-400' : ''}>{isLiked ? '❤️' : '🤍'}</span>
+          <span>{isLiked ? '●' : '○'}</span>
           {localLikeCount > 0 && <span>{localLikeCount}</span>}
           <span>Like</span>
         </button>
         <button
           onClick={() => setShowComments(!showComments)}
-          className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${ui.action(showComments)}`}
+          className={`flex items-center gap-1.5 font-mono text-[10px] tracking-[0.1em] uppercase transition-colors ${showComments ? 'text-accent' : 'text-paper-ink-sub hover:text-paper-ink'}`}
         >
-          <span>💬</span>
+          <span>▢</span>
           {localCommentCount > 0 && <span>{localCommentCount}</span>}
           <span>{showComments ? 'Hide' : 'Comment'}</span>
         </button>
@@ -279,7 +266,6 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
       {showComments && (
         <CommentSection
           postId={post.id}
-          dark={dark}
           currentUser={currentUser}
           onSignIn={onSignIn}
         />
@@ -288,21 +274,13 @@ function PostCard({ post, dark, currentUser, likedIds, onLike, onSignIn }) {
   );
 }
 
-function CreatePost({ dark, currentUser, onPost, onSignIn }) {
+function CreatePost({ currentUser, onPost, onSignIn }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [postType, setPostType] = useState('story');
   const [tags, setTags] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const ui = {
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    input: dark ? 'bg-[#1a1a2e] border-[#2a2a3e] text-zinc-100 placeholder-zinc-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 placeholder-zinc-400',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-    pill: (a) => a ? 'bg-indigo-600 text-white border-indigo-600' : dark ? 'bg-[#1a1a2e] text-zinc-400 border-[#3a3a3e]' : 'bg-white text-zinc-500 border-zinc-200',
-  };
 
   const submit = async () => {
     if (!content.trim()) return;
@@ -329,9 +307,9 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
 
   if (!currentUser) {
     return (
-      <div className={`rounded-2xl border p-4 flex items-center gap-3 ${ui.card}`}>
-        <div className="w-9 h-9 rounded-full bg-zinc-300 dark:bg-zinc-700 flex-shrink-0" />
-        <button onClick={() => onSignIn?.()} className={`flex-1 text-left text-sm px-4 py-2.5 rounded-xl border transition-all ${ui.input}`}>
+      <div className="border border-paper-rule bg-paper-bg p-4 flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-paper-rule flex-shrink-0" />
+        <button onClick={() => onSignIn?.()} className="flex-1 text-left text-[13px] px-4 py-2.5 bg-paper-bg border border-paper-rule text-paper-ink-sub hover:border-accent/60 transition-colors">
           Share your story, post a job, ask a question...
         </button>
       </div>
@@ -339,24 +317,24 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
   }
 
   return (
-    <div className={`rounded-2xl border ${ui.card}`}>
+    <div className="border border-paper-rule bg-paper-bg">
       <div className="p-4 flex items-center gap-3">
         <Avatar name={currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]} avatar={currentUser.user_metadata?.avatar_url} />
         <button
           onClick={() => setOpen(true)}
-          className={`flex-1 text-left text-sm px-4 py-2.5 rounded-xl border transition-all ${ui.input}`}
+          className="flex-1 text-left text-[13px] px-4 py-2.5 bg-paper-bg border border-paper-rule text-paper-ink-sub hover:border-accent/60 transition-colors"
         >
           Share your story, post a job, ask a question...
         </button>
       </div>
 
       {open && (
-        <div className={`px-4 pb-4 space-y-3 border-t ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'} pt-4`}>
+        <div className="px-4 pb-4 space-y-3 border-t border-paper-rule pt-4">
           {/* Post type */}
           <div className="flex gap-2 flex-wrap">
             {POST_TYPES.map((t) => (
               <button key={t.value} onClick={() => setPostType(t.value)}
-                className={`px-3 py-1 rounded-full text-xs border font-medium transition-all ${ui.pill(postType === t.value)}`}>
+                className={`font-mono text-[10px] tracking-[0.1em] uppercase px-3 py-1 border transition-colors ${postType === t.value ? 'bg-paper-ink text-paper-bg border-paper-ink' : 'border-paper-rule text-paper-ink-sub hover:border-accent/50'}`}>
                 {t.label}
               </button>
             ))}
@@ -366,30 +344,28 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Title (optional)"
-            className={`w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`}
+            className="w-full px-3 py-2 bg-paper-bg border border-paper-rule text-paper-ink placeholder:text-paper-ink-sub text-[13px] outline-none focus:border-accent transition-colors"
           />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="What's on your mind?"
             rows={4}
-            className={`w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none ${ui.input}`}
+            className="w-full px-3 py-2 bg-paper-bg border border-paper-rule text-paper-ink placeholder:text-paper-ink-sub text-[13px] outline-none focus:border-accent transition-colors resize-none"
           />
           <input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             placeholder="Tags (comma separated): visa, canada, tech..."
-            className={`w-full px-3 py-2 rounded-xl border text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 ${ui.input}`}
+            className="w-full px-3 py-2 bg-paper-bg border border-paper-rule text-paper-ink placeholder:text-paper-ink-sub text-[13px] outline-none focus:border-accent transition-colors"
           />
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setOpen(false)}
-              className={`px-4 py-2 rounded-xl text-sm border font-medium transition-all ${dark ? 'border-[#2a2a3e] text-zinc-400 hover:bg-[#1a1a2e]' : 'border-zinc-200 text-zinc-500 hover:bg-zinc-50'}`}>
+            <Btn variant="secondary" as="button" onClick={() => setOpen(false)}>
               Cancel
-            </button>
-            <button onClick={submit} disabled={!content.trim() || submitting}
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-semibold transition-all">
+            </Btn>
+            <Btn variant="primary" as="button" onClick={submit} disabled={!content.trim() || submitting}>
               {submitting ? 'Posting...' : 'Post'}
-            </button>
+            </Btn>
           </div>
         </div>
       )}
@@ -398,7 +374,7 @@ function CreatePost({ dark, currentUser, onPost, onSignIn }) {
 }
 
 export default function CommunityPage() {
-  const { dark, toggleDark } = useTheme();
+  useScrollReveal();
   const [user, setUser] = useState(null);
   const [showAuth, setShowAuth] = useState(false);
   const [posts, setPosts] = useState([]);
@@ -407,13 +383,6 @@ export default function CommunityPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const PER_PAGE = 20;
-
-  const ui = {
-    bg: dark ? 'bg-[#080810]' : 'bg-[#f5f5f7]',
-    card: dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200',
-    text: dark ? 'text-zinc-100' : 'text-zinc-900',
-    sub: dark ? 'text-zinc-400' : 'text-zinc-500',
-  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -463,124 +432,119 @@ export default function CommunityPage() {
     loadPosts(nextPage * PER_PAGE);
   };
 
+  const hero = HERO_COPY.community;
+
   return (
-    <div className={`min-h-screen ${ui.bg} transition-colors duration-300`}>
-      {showAuth && <AuthModal dark={dark} onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
+      <Navbar />
 
-      {/* Gradient header */}
-      <div className={`relative overflow-hidden border-b ${dark ? 'border-[#1e1e2e]' : 'border-zinc-200'}`}>
-        {dark && (
-          <>
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-950/50 via-[#080810] to-indigo-950/40 pointer-events-none" />
-            <div className="absolute -top-10 right-10 w-64 h-64 bg-purple-600/8 rounded-full blur-3xl pointer-events-none" />
-          </>
-        )}
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-10">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4 text-xs font-medium ${dark ? 'border-purple-500/30 bg-purple-500/10 text-purple-400' : 'border-purple-200 bg-purple-50 text-purple-600'}`}>
-            🌍 Global Community
-          </div>
-          <h1 className={`text-3xl font-black mb-2 ${dark ? 'gradient-text' : 'text-zinc-900'}`}>Community</h1>
-          <p className={`text-sm max-w-xl ${ui.sub}`}>Share stories, post jobs, ask questions — connect with people navigating global careers</p>
-        </div>
-      </div>
+      <EditorialHero
+        kicker={hero.kicker}
+        title={hero.title}
+        titleItalic={hero.italic}
+        titleTail={hero.tail}
+        sub={hero.sub}
+        meta={['STORIES + JOBS + QUESTIONS', 'NO RECRUITERS, NO PITCHES', 'LIKES, COMMENTS, FOLLOWS']}
+      />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
+        <div className="py-14">
+          <div className="flex flex-col lg:flex-row gap-10">
+            {/* Main feed */}
+            <div className="flex-1 min-w-0 space-y-4">
+              {/* Create post */}
+              <CreatePost currentUser={user} onPost={handlePost} onSignIn={() => setShowAuth(true)} />
 
-        <div className="flex gap-6">
-          {/* Main feed */}
-          <div className="flex-1 min-w-0 space-y-4">
-            {/* Create post */}
-            <CreatePost dark={dark} currentUser={user} onPost={handlePost} onSignIn={() => setShowAuth(true)} />
-
-            {/* Post feed */}
-            {loading && posts.length === 0 ? (
-              <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className={`rounded-2xl border p-5 ${ui.card}`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`w-9 h-9 rounded-full ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                      <div className="space-y-1.5 flex-1">
-                        <div className={`h-3 w-1/4 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                        <div className={`h-2.5 w-1/3 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+              {/* Post feed */}
+              {loading && posts.length === 0 ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="border border-paper-rule bg-paper-bg p-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-full bg-paper-rule animate-pulse" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-3 w-1/4 bg-paper-rule animate-pulse" />
+                          <div className="h-2.5 w-1/3 bg-paper-rule animate-pulse" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-3 w-full bg-paper-rule animate-pulse" />
+                        <div className="h-3 w-3/4 bg-paper-rule animate-pulse" />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className={`h-3 w-full rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
-                      <div className={`h-3 w-3/4 rounded ${dark ? 'bg-zinc-800' : 'bg-zinc-200'} animate-pulse`} />
+                  ))}
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="border border-paper-rule bg-paper-bg-alt p-12 text-center">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// NO POSTS YET</div>
+                  <p className="font-display text-[24px] leading-[1.15] text-paper-ink">Be the first to share your story.</p>
+                </div>
+              ) : (
+                <>
+                  {posts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      currentUser={user}
+                      likedIds={likedIds}
+                      onLike={handleLike}
+                      onSignIn={() => setShowAuth(true)}
+                    />
+                  ))}
+                  {hasMore && (
+                    <div className="text-center pt-2">
+                      <Btn variant="secondary" as="button" onClick={loadMore} disabled={loading}>
+                        {loading ? 'Loading...' : 'Load more'}
+                      </Btn>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : posts.length === 0 ? (
-              <div className={`rounded-2xl border p-12 text-center ${ui.card}`}>
-                <p className="text-3xl mb-3">🌍</p>
-                <p className={`text-sm font-semibold ${ui.text}`}>No posts yet</p>
-                <p className={`text-xs mt-1 ${ui.sub}`}>Be the first to share your story!</p>
-              </div>
-            ) : (
-              <>
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    dark={dark}
-                    currentUser={user}
-                    likedIds={likedIds}
-                    onLike={handleLike}
-                    onSignIn={() => setShowAuth(true)}
-                  />
-                ))}
-                {hasMore && (
-                  <div className="text-center pt-2">
-                    <button onClick={loadMore} disabled={loading}
-                      className={`px-6 py-2.5 rounded-xl border text-sm font-medium transition-all ${dark ? 'border-[#1e1e2e] text-zinc-300 hover:bg-[#0e0e18]' : 'border-zinc-200 text-zinc-700 hover:bg-white'}`}>
-                      {loading ? 'Loading...' : 'Load more'}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Right sidebar */}
-          <div className="hidden lg:block w-64 flex-shrink-0 space-y-4">
-            {/* About */}
-            <div className={`rounded-2xl border p-4 ${ui.card}`}>
-              <h3 className={`text-sm font-bold mb-2 ${ui.text}`}>About Community</h3>
-              <p className={`text-xs leading-relaxed ${ui.sub}`}>
-                Share career stories, job opportunities, visa experiences, and advice for working globally.
-                Connect with people on the same journey.
-              </p>
-              <div className={`mt-3 pt-3 border-t ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'} space-y-1`}>
-                {POST_TYPES.map((t) => (
-                  <div key={t.value} className="flex items-center gap-2">
-                    <span className={`text-xs ${t.color}`}>{t.label}</span>
-                  </div>
-                ))}
-              </div>
+                  )}
+                </>
+              )}
             </div>
 
-            {/* User stats */}
-            {user && <UserStats user={user} dark={dark} ui={ui} />}
-            {!user && (
-              <div className={`rounded-2xl border p-4 text-center ${ui.card}`}>
-                <p className="text-2xl mb-2">✨</p>
-                <p className={`text-xs font-semibold mb-3 ${ui.text}`}>Join the community</p>
-                <p className={`text-xs mb-3 ${ui.sub}`}>Sign in to post, comment, like, and follow others.</p>
-                <button onClick={() => setShowAuth(true)} className="w-full px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
-                  Sign in / Sign up
-                </button>
+            {/* Right sidebar */}
+            <div className="lg:w-64 flex-shrink-0 space-y-4">
+              {/* About */}
+              <div className="border border-paper-rule bg-paper-bg p-4">
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-2">// ABOUT</div>
+                <h3 className="font-display text-[18px] leading-[1.2] mb-2 text-paper-ink">Community</h3>
+                <p className="text-[12px] leading-[1.55] text-paper-ink-dim">
+                  Share career stories, job opportunities, visa experiences, and advice for working globally.
+                  Connect with people on the same journey.
+                </p>
+                <div className="mt-3 pt-3 border-t border-paper-rule space-y-1.5">
+                  {POST_TYPES.map((t) => (
+                    <div key={t.value} className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">
+                      {t.label}
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+
+              {/* User stats */}
+              {user && <UserStats user={user} />}
+              {!user && (
+                <div className="border border-paper-rule bg-paper-bg-alt p-4 text-center">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// JOIN</div>
+                  <p className="font-display text-[18px] leading-[1.2] mb-3 text-paper-ink">Join the community.</p>
+                  <p className="text-[12px] mb-3 text-paper-ink-dim">Sign in to post, comment, like, and follow others.</p>
+                  <Btn variant="primary" as="button" onClick={() => setShowAuth(true)} className="w-full justify-center">
+                    Sign in / Sign up
+                  </Btn>
+                </div>
+              )}
+            </div>
           </div>
+
+          <Footnote>{FOOTNOTES.community}</Footnote>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-function UserStats({ user, dark, ui }) {
+function UserStats({ user }) {
   const [stats, setStats] = useState({ followers: 0, following: 0 });
 
   useEffect(() => {
@@ -591,22 +555,22 @@ function UserStats({ user, dark, ui }) {
   }, [user]);
 
   return (
-    <div className={`rounded-2xl border p-4 ${ui.card}`}>
+    <div className="border border-paper-rule bg-paper-bg p-4">
       <div className="flex items-center gap-2.5 mb-3">
         <Avatar name={user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]} avatar={user.user_metadata?.avatar_url} />
-        <div>
-          <p className={`text-sm font-semibold ${ui.text}`}>{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}</p>
-          <p className={`text-xs ${ui.sub}`}>{user.email}</p>
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium text-paper-ink truncate">{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}</p>
+          <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub truncate">{user.email}</p>
         </div>
       </div>
-      <div className={`flex gap-4 pt-3 border-t ${dark ? 'border-[#1e1e2e]' : 'border-zinc-100'}`}>
+      <div className="flex gap-6 pt-3 border-t border-paper-rule">
         <div>
-          <p className={`text-sm font-bold ${ui.text}`}>{stats.followers}</p>
-          <p className={`text-xs ${ui.sub}`}>Followers</p>
+          <p className="font-display text-[20px] leading-none text-paper-ink">{stats.followers}</p>
+          <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub mt-1">FOLLOWERS</p>
         </div>
         <div>
-          <p className={`text-sm font-bold ${ui.text}`}>{stats.following}</p>
-          <p className={`text-xs ${ui.sub}`}>Following</p>
+          <p className="font-display text-[20px] leading-none text-paper-ink">{stats.following}</p>
+          <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub mt-1">FOLLOWING</p>
         </div>
       </div>
     </div>

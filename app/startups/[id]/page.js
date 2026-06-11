@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../components/Navbar';
-import { useTheme } from '../../hooks/useTheme';
+import Btn from '../../components/ui/Btn';
+import Footnote from '../../components/ui/Footnote';
+import { FOOTNOTES } from '../../lib/pageCopy';
 import { createClient } from '../../../lib/supabase-browser';
 
 const SECTOR_EMOJIS = {
@@ -22,7 +24,6 @@ function formatRaise(amount) {
 export default function StartupDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { dark, toggleDark } = useTheme();
   const [startup, setStartup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -68,28 +69,24 @@ export default function StartupDetailPage() {
     setInterestLoading(false);
   };
 
-  const bg = dark ? 'bg-[#080810]' : 'bg-[#f8f8fc]';
-  const text = dark ? 'text-zinc-100' : 'text-zinc-900';
-  const sub = dark ? 'text-zinc-400' : 'text-zinc-500';
-  const card = dark ? 'bg-[#0e0e18] border-[#1e1e2e]' : 'bg-white border-zinc-200';
-  const divider = dark ? 'border-[#1e1e2e]' : 'border-zinc-200';
-
   if (loading) return (
-    <div className={`min-h-screen ${bg}`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
       <div className="flex items-center justify-center h-64">
-        <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <div className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">
+          LOADING STARTUP…
+        </div>
       </div>
     </div>
   );
 
   if (!startup) return (
-    <div className={`min-h-screen ${bg}`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
       <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <p className="text-3xl">🔍</p>
-        <p className={`text-sm ${text}`}>Startup not found</p>
-        <Link href="/startups" className="text-indigo-400 text-xs">← Back to startups</Link>
+        <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub">// NOT FOUND</div>
+        <p className="text-[14px] text-paper-ink-dim">Startup not found</p>
+        <Link href="/startups" className="font-mono text-[11px] tracking-[0.1em] text-accent">← Back to startups</Link>
       </div>
     </div>
   );
@@ -97,55 +94,67 @@ export default function StartupDetailPage() {
   const emoji = SECTOR_EMOJIS[startup.sector] || '💡';
   const isOwner = user?.id === startup.user_id;
 
+  const stats = [
+    { label: 'STAGE', value: startup.stage },
+    { label: 'SECTOR', value: startup.sector },
+    startup.location ? { label: 'LOCATION', value: startup.location } : null,
+    startup.team_size ? { label: 'TEAM', value: `${startup.team_size} people` } : null,
+    startup.raise_amount ? { label: 'RAISING', value: formatRaise(startup.raise_amount), accent: true } : null,
+    startup.equity_offered ? { label: 'EQUITY', value: `${startup.equity_offered}%` } : null,
+  ].filter(Boolean);
+
   return (
-    <div className={`min-h-screen ${bg} transition-colors duration-300`}>
-      <Navbar dark={dark} onToggleDark={toggleDark} />
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8">
-        <Link href="/startups" className={`text-xs mb-6 block ${sub} hover:text-indigo-400 transition-colors`}>← Back to startups</Link>
+      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-14">
+        <Link href="/startups" className="font-mono text-[11px] tracking-[0.1em] text-paper-ink-sub hover:text-accent transition-colors mb-6 inline-block">
+          ← Back to startups
+        </Link>
+        <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-3">
+          § STARTUP · {startup.stage} {emoji}
+        </div>
+        <h1 className="font-display text-[48px] sm:text-[64px] leading-[1.02] text-paper-ink">{startup.name}</h1>
+        {startup.tagline && (
+          <p className="text-[15px] sm:text-[17px] text-paper-ink-dim leading-[1.5] mt-4 max-w-[68ch]">{startup.tagline}</p>
+        )}
+      </section>
 
-        <div className="flex gap-8 flex-col lg:flex-row">
+      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 py-14">
           {/* Main content */}
-          <div className="flex-1 min-w-0 space-y-5">
-            {/* Header */}
-            <div className="flex gap-4 items-start">
-              <div className={`w-14 h-14 rounded-2xl flex-shrink-0 flex items-center justify-center text-2xl ${dark ? 'bg-[#1a1a28] border border-[#2a2a3e]' : 'bg-indigo-50 border border-indigo-100'}`}>
-                {emoji}
-              </div>
-              <div>
-                <h1 className={`text-2xl font-black tracking-tight ${text}`}>{startup.name}</h1>
-                <p className={`text-sm mt-1 ${sub}`}>{startup.tagline}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded border font-medium ${dark ? 'bg-indigo-950 text-indigo-300 border-indigo-800' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}`}>{startup.stage}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded ${dark ? 'bg-[#1a1a1a] text-zinc-500' : 'bg-zinc-100 text-zinc-500'}`}>{startup.sector}</span>
-                  {startup.location && <span className={`text-xs px-2 py-0.5 rounded ${dark ? 'bg-[#1a1a1a] text-zinc-500' : 'bg-zinc-100 text-zinc-500'}`}>{startup.location}{startup.team_size ? ` · ${startup.team_size} people` : ''}</span>}
+          <div className="lg:col-span-2 space-y-10">
+            {/* Stat grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
+              {stats.map((s) => (
+                <div key={s.label} className="bg-paper-bg px-4 py-4">
+                  <div className="font-mono text-[9px] tracking-[0.12em] text-paper-ink-sub mb-1.5">{s.label}</div>
+                  <div className={`text-[14px] font-medium ${s.accent ? 'text-accent' : 'text-paper-ink'}`}>{s.value}</div>
                 </div>
-              </div>
+              ))}
             </div>
 
             {/* About */}
-            <div className={`rounded-xl border p-5 ${card}`}>
-              <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${sub}`}>About</p>
-              <p className={`text-sm leading-relaxed ${text}`}>{startup.description}</p>
+            <div>
+              <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// ABOUT</div>
+              <p className="text-[14px] sm:text-[15px] leading-[1.7] text-paper-ink-dim max-w-[68ch]">{startup.description}</p>
             </div>
 
             {/* Pitch deck */}
             {startup.pitch_deck_url ? (
-              <div className={`rounded-xl border p-5 ${card}`}>
-                <p className={`text-xs font-semibold uppercase tracking-widest mb-3 ${sub}`}>Pitch Deck</p>
+              <div>
+                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// PITCH DECK</div>
                 {interested || isOwner ? (
-                  <a href={startup.pitch_deck_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all w-fit">
+                  <Btn as="a" href={startup.pitch_deck_url} target="_blank" rel="noopener noreferrer" variant="primary">
                     📊 View Pitch Deck →
-                  </a>
+                  </Btn>
                 ) : (
-                  <div className={`text-center py-6 rounded-xl border-2 border-dashed ${dark ? 'border-[#2a2a3e]' : 'border-zinc-300'}`}>
-                    <p className="text-2xl mb-2">🔒</p>
-                    <p className={`text-xs ${sub}`}>Express interest to unlock the pitch deck</p>
-                    <button onClick={handleInterest}
-                      className="mt-3 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+                  <div className="border border-dashed border-paper-rule p-8 text-center max-w-[420px]">
+                    <p className="text-[24px] mb-2">🔒</p>
+                    <p className="text-[13px] text-paper-ink-sub mb-4">Express interest to unlock the pitch deck</p>
+                    <Btn as="button" variant="secondary" onClick={handleInterest} disabled={interestLoading}>
                       Express Interest to Unlock
-                    </button>
+                    </Btn>
                   </div>
                 )}
               </div>
@@ -153,61 +162,75 @@ export default function StartupDetailPage() {
           </div>
 
           {/* Right panel */}
-          <div className="lg:w-56 flex-shrink-0 space-y-3">
+          <div className="space-y-3">
             {/* Funding info */}
-            <div className={`rounded-xl border p-4 ${card}`}>
+            <div className="border border-paper-rule p-5">
               {startup.raise_amount ? (
                 <>
-                  <p className="text-2xl font-black text-emerald-400">{formatRaise(startup.raise_amount)}</p>
-                  <p className={`text-xs ${sub}`}>raising</p>
+                  <p className="font-display text-[36px] leading-none text-accent">{formatRaise(startup.raise_amount)}</p>
+                  <p className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mt-2">RAISING</p>
                   {startup.equity_offered && (
-                    <>
-                      <p className={`text-lg font-bold mt-3 ${text}`}>{startup.equity_offered}% equity</p>
-                    </>
+                    <p className="text-[15px] font-medium text-paper-ink mt-3">{startup.equity_offered}% equity</p>
                   )}
                 </>
               ) : (
-                <p className={`text-xs ${sub}`}>Funding ask not disclosed</p>
+                <p className="text-[13px] text-paper-ink-sub">Funding ask not disclosed</p>
               )}
-              <button onClick={handleUpvote} disabled={upvoting || !user}
-                className={`mt-3 w-full py-2 rounded-xl border text-sm font-semibold transition-all ${
+              <button
+                onClick={handleUpvote}
+                disabled={upvoting || !user}
+                className={`mt-4 w-full py-2.5 font-mono text-[12px] tracking-[0.08em] transition-colors ${
                   upvoted
-                    ? dark ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-indigo-600 border-indigo-600 text-white'
-                    : dark ? 'border-[#2a2a3e] text-zinc-400 hover:border-indigo-500 hover:text-indigo-400' : 'border-zinc-300 text-zinc-500 hover:border-indigo-400'
-                }`}>
-                ▲ {upvoteCount} {upvoted ? 'Upvoted' : 'Upvote'}
+                    ? 'bg-paper-ink text-paper-bg'
+                    : 'border border-paper-rule text-paper-ink hover:bg-paper-bg-alt'
+                } disabled:opacity-50`}
+              >
+                ▲ <span className="text-accent">{upvoteCount}</span> {upvoted ? 'Upvoted' : 'Upvote'}
               </button>
             </div>
 
             {/* Actions */}
             {!isOwner && (
               <>
-                <Link href={`/messages?startup=${id}&with=${startup.user_id}`}
-                  className="block w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold text-center transition-all">
+                <Btn
+                  as="a"
+                  href={`/messages?startup=${id}&with=${startup.user_id}`}
+                  variant="primary"
+                  className="w-full justify-center"
+                >
                   💬 Message Founder
-                </Link>
-                <button onClick={handleInterest} disabled={interestLoading}
-                  className={`w-full py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                </Btn>
+                <button
+                  onClick={handleInterest}
+                  disabled={interestLoading}
+                  className={`w-full py-2.5 font-mono text-[12px] tracking-[0.08em] transition-colors ${
                     interested
-                      ? dark ? 'border-indigo-500/50 text-indigo-400 bg-indigo-500/10' : 'border-indigo-300 text-indigo-600 bg-indigo-50'
-                      : dark ? 'border-[#2a2a3e] text-zinc-400 hover:border-indigo-500' : 'border-zinc-300 text-zinc-500 hover:border-indigo-400'
-                  }`}>
-                  {interested ? '⭐ Interested' : '⭐ Express Interest'} {interestCount > 0 ? `· ${interestCount}` : ''}
+                      ? 'bg-paper-ink text-paper-bg'
+                      : 'border border-paper-rule text-paper-ink hover:bg-paper-bg-alt'
+                  } disabled:opacity-50`}
+                >
+                  {interested ? '⭐ Interested' : '⭐ Express Interest'} {interestCount > 0 ? <span className="text-accent">· {interestCount}</span> : ''}
                 </button>
               </>
             )}
             {startup.website && (
-              <a href={startup.website} target="_blank" rel="noopener noreferrer"
-                className={`block w-full py-2.5 rounded-xl border text-sm font-semibold text-center transition-all ${dark ? 'border-[#2a2a3e] text-zinc-400 hover:border-zinc-600' : 'border-zinc-300 text-zinc-500 hover:border-zinc-400'}`}>
+              <a
+                href={startup.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full py-2.5 border border-paper-rule text-paper-ink hover:bg-paper-bg-alt transition-colors text-center font-mono text-[12px] tracking-[0.08em]"
+              >
                 🔗 Visit Website
               </a>
             )}
-            <p className={`text-xs text-center ${sub}`}>
+            <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub text-center pt-2">
               Posted by {startup.user_name}
             </p>
           </div>
         </div>
-      </div>
+
+        <Footnote>{FOOTNOTES.startups}</Footnote>
+      </main>
     </div>
   );
 }
