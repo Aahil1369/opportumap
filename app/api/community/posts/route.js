@@ -32,7 +32,10 @@ export async function POST(request) {
   const { title, content, post_type, tags } = await request.json();
   if (!content?.trim()) return Response.json({ error: 'Content required' }, { status: 400 });
 
-  const { data, error } = await supabase
+  // Write via the cookie-aware authenticated client so the request carries the
+  // user JWT and the RLS INSERT check (auth.uid() = user_id) passes. The bare
+  // anon client carries no JWT and would be rejected once RLS is locked down.
+  const { data, error } = await authClient
     .from('posts')
     .insert({
       user_id: user.id,

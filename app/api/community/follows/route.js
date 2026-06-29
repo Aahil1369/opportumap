@@ -38,11 +38,13 @@ export async function POST(request) {
   const { data: existing } = await supabase
     .from('follows').select('follower_id').eq('follower_id', user.id).eq('following_id', following_id).single();
 
+  // Write via the authenticated client so the RLS INSERT/DELETE check
+  // (auth.uid() = follower_id) passes once RLS is locked down.
   if (existing) {
-    await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', following_id);
+    await authClient.from('follows').delete().eq('follower_id', user.id).eq('following_id', following_id);
     return Response.json({ following: false });
   } else {
-    await supabase.from('follows').insert({
+    await authClient.from('follows').insert({
       follower_id: user.id,
       following_id,
       follower_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',

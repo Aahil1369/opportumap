@@ -17,13 +17,17 @@ export async function POST(request) {
   const { data: post } = await supabase.from('posts').select('like_count').eq('id', post_id).single();
   const currentCount = post?.like_count || 0;
 
+  // Toggle the like via the authenticated client so the RLS INSERT/DELETE check
+  // (auth.uid() = user_id) passes once RLS is locked down. posts.like_count is
+  // maintained by an AFTER INSERT/DELETE trigger on `post_likes` (the liker is
+  // not the post owner, so an owner-only posts UPDATE policy would reject a
+  // manual count bump). The returned count is optimistic for immediate UI
+  // feedback; the trigger is the source of truth for the stored value.
   if (existing) {
-    await supabase.from('post_likes').delete().eq('user_id', user.id).eq('post_id', post_id);
-    await supabase.from('posts').update({ like_count: Math.max(0, currentCount - 1) }).eq('id', post_id);
+    await authClient.from('post_likes').delete().eq('user_id', user.id).eq('post_id', post_id);
     return Response.json({ liked: false, like_count: Math.max(0, currentCount - 1) });
   } else {
-    await supabase.from('post_likes').insert({ user_id: user.id, post_id });
-    await supabase.from('posts').update({ like_count: currentCount + 1 }).eq('id', post_id);
+    await authClient.from('post_likes').insert({ user_id: user.id, post_id });
     return Response.json({ liked: true, like_count: currentCount + 1 });
   }
 }

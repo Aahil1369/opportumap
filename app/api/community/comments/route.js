@@ -27,7 +27,9 @@ export async function POST(request) {
   const { post_id, content } = await request.json();
   if (!content?.trim() || !post_id) return Response.json({ error: 'Missing fields' }, { status: 400 });
 
-  const { data, error } = await supabase
+  // Write via the authenticated client so the RLS INSERT check
+  // (auth.uid() = user_id) passes once RLS is locked down.
+  const { data, error } = await authClient
     .from('comments')
     .insert({
       post_id,
@@ -41,8 +43,8 @@ export async function POST(request) {
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
-  const { data: post } = await supabase.from('posts').select('comment_count').eq('id', post_id).single();
-  await supabase.from('posts').update({ comment_count: (post?.comment_count || 0) + 1 }).eq('id', post_id);
-
+  // posts.comment_count is maintained by an AFTER INSERT/DELETE trigger on
+  // `comments` (a commenter is not the post owner, so an owner-only posts
+  // UPDATE policy would reject a manual count bump here). Do not touch it.
   return Response.json({ comment: data });
 }
