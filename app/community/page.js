@@ -10,7 +10,9 @@ import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
 
-const VERIFIED_EMAILS = new Set(['aahilakbar567@gmail.com']);
+// Match on user_id (a public, non-PII UUID) instead of email, so the posts API
+// no longer needs to expose user_email. ID is aahilakbar567@gmail.com's auth uid.
+const VERIFIED_USER_IDS = new Set(['3c60e96c-18e0-4990-91b4-834acd70579e']);
 
 function VerifiedBadge() {
   return (
@@ -205,7 +207,7 @@ function PostCard({ post, currentUser, likedIds, onLike, onSignIn }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-medium text-paper-ink">{post.user_name}</span>
-              {VERIFIED_EMAILS.has(post.user_email) && <VerifiedBadge />}
+              {VERIFIED_USER_IDS.has(post.user_id) && <VerifiedBadge />}
               <FollowButton targetUserId={post.user_id} targetName={post.user_name} currentUser={currentUser} />
             </div>
             <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub">
