@@ -1,6 +1,11 @@
 import { createClient } from '../../../../lib/supabase-server.js';
 import { supabase, hasSupabase } from '../../../../lib/supabase.js';
 
+// Columns returned to clients. Deliberately excludes user_email: it is no longer
+// stored or exposed (public SELECT would let anyone with the anon key scrape every
+// user's email). The verified badge now matches on user_id instead.
+const POST_FIELDS = 'id, user_id, user_name, user_avatar, title, content, post_type, tags, like_count, comment_count, created_at';
+
 export async function GET(request) {
   if (!hasSupabase) return Response.json({ posts: [] });
   const { searchParams } = new URL(request.url);
@@ -10,7 +15,7 @@ export async function GET(request) {
 
   let query = supabase
     .from('posts')
-    .select('*')
+    .select(POST_FIELDS)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -41,13 +46,12 @@ export async function POST(request) {
       user_id: user.id,
       user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
       user_avatar: user.user_metadata?.avatar_url || '',
-      user_email: user.email || '',
       title: title?.trim() || null,
       content: content.trim(),
       post_type: post_type || 'story',
       tags: tags || [],
     })
-    .select()
+    .select(POST_FIELDS)
     .single();
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
