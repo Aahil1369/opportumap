@@ -27,7 +27,9 @@ export async function GET() {
     supabase.from('comments').select('*', { count: 'exact', head: true }),
     supabase.from('posts').select('id, title, user_name, created_at, type').order('created_at', { ascending: false }).limit(10),
     supabase.from('posts').select('id, title, user_name, like_count, comment_count').order('like_count', { ascending: false }).limit(5),
-    supabase.rpc('get_admin_stats'),
+    // Authenticated (admin) client: get_admin_stats is locked to the admin JWT and
+    // no longer callable by the anon role.
+    serverSupabase.rpc('get_admin_stats'),
   ]);
 
   return Response.json({
