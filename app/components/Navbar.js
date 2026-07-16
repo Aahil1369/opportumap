@@ -3,9 +3,14 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { createClient } from '../../lib/supabase-browser';
-import AuthModal from './AuthModal';
-import ProfileModal from './ProfileModal';
+import dynamic from 'next/dynamic';
+
+// Keep Supabase and these interaction-gated modals out of the initial bundle.
+// supabase-js is ~67KB gzipped and was previously loaded on every page just to
+// read auth state; deferring it to an idle import speeds up first load on slow
+// connections (logged-out visitors never download it until they open AuthModal).
+const AuthModal = dynamic(() => import('./AuthModal'), { ssr: false });
+const ProfileModal = dynamic(() => import('./ProfileModal'), { ssr: false });
 
 const NAV_LINKS = [
   { href: '/jobs',      label: 'Jobs' },
@@ -50,31 +55,42 @@ export default function Navbar() {
   const toolsRef = useRef(null);
   const userMenuRef = useRef(null);
   const prevUserRef = useRef(null);
-  const supabase = createClient();
+  const supabaseRef = useRef(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    let active = true;
+    let subscription;
+    (async () => {
+      // Load supabase-js lazily so it stays out of the initial page bundle.
+      const { createClient } = await import('../../lib/supabase-browser');
+      const supabase = createClient();
+      supabaseRef.current = supabase;
+
+      const { data } = await supabase.auth.getUser();
+      if (!active) return;
       setUser(data.user);
       prevUserRef.current = data.user;
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_e, session) => {
-      const newUser = session?.user ?? null;
-      const prevUser = prevUserRef.current;
-      prevUserRef.current = newUser;
-      setUser(newUser);
-      if (newUser && !prevUser) {
-        try {
-          const res = await fetch('/api/user-profile');
-          const { profile } = await res.json();
-          if (!profile) {
-            const name = newUser.user_metadata?.full_name || newUser.user_metadata?.name || '';
-            setProfileSetupData({ name, nationality: '', currentCountry: '', experience: '', jobTypes: [], skills: '', preferredCountries: [] });
-            setShowProfileSetup(true);
-          }
-        } catch {}
-      }
-    });
-    return () => subscription.unsubscribe();
+
+      const sub = supabase.auth.onAuthStateChange(async (_e, session) => {
+        const newUser = session?.user ?? null;
+        const prevUser = prevUserRef.current;
+        prevUserRef.current = newUser;
+        setUser(newUser);
+        if (newUser && !prevUser) {
+          try {
+            const res = await fetch('/api/user-profile');
+            const { profile } = await res.json();
+            if (!profile) {
+              const name = newUser.user_metadata?.full_name || newUser.user_metadata?.name || '';
+              setProfileSetupData({ name, nationality: '', currentCountry: '', experience: '', jobTypes: [], skills: '', preferredCountries: [] });
+              setShowProfileSetup(true);
+            }
+          } catch {}
+        }
+      });
+      subscription = sub.data.subscription;
+    })();
+    return () => { active = false; subscription?.unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -94,7 +110,7 @@ export default function Navbar() {
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabaseRef.current?.auth.signOut();
     setUserMenuOpen(false);
     router.push('/');
   };
