@@ -9,7 +9,8 @@ import JobCard from '../components/JobCard';
 import JobDetailPanel from '../components/JobDetailPanel';
 import Btn from '../components/ui/Btn';
 import Footnote from '../components/ui/Footnote';
-import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
+import Stagger from '../components/motion/Stagger';
+import StaggerItem from '../components/motion/StaggerItem';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 import { scoreJob } from '../data/matchJobs';
 import { FOOTNOTES } from '../lib/pageCopy';
@@ -74,7 +75,6 @@ function buildQueryFromProfile(profile) {
 }
 
 export default function JobsPage() {
-  useScrollReveal();
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showRelocation, setShowRelocation] = useState(false);
@@ -512,19 +512,19 @@ export default function JobsPage() {
               </div>
             ) : (
               <>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <Stagger className="grid sm:grid-cols-2 gap-3">
                   {paginated.map((job) => (
-                    <JobCard
-                      key={job.id}
-                      className="reveal"
-                      job={job}
-                      profile={profile}
-                      selected={selectedJob?.id === job.id}
-                      predictedSalary={predictedSalaries[job.id]}
-                      onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
-                    />
+                    <StaggerItem key={job.id}>
+                      <JobCard
+                        job={job}
+                        profile={profile}
+                        selected={selectedJob?.id === job.id}
+                        predictedSalary={predictedSalaries[job.id]}
+                        onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
+                      />
+                    </StaggerItem>
                   ))}
-                </div>
+                </Stagger>
                 {paginated.length < filtered.length && (
                   <div className="text-center pt-5">
                     <button onClick={() => setPage((p) => p + 1)}
