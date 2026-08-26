@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import EditorialHero from './components/ui/EditorialHero';
@@ -11,6 +12,10 @@ import Btn from './components/ui/Btn';
 import Glyph from './components/ui/Glyph';
 import Footnote from './components/ui/Footnote';
 import MonoRow from './components/ui/MonoRow';
+import Reveal from './components/motion/Reveal';
+import Stagger from './components/motion/Stagger';
+import StaggerItem from './components/motion/StaggerItem';
+import CountUp from './components/motion/CountUp';
 import { useScrollReveal } from './components/ui/hooks/useScrollReveal';
 import { HERO_COPY, FOOTNOTES } from './lib/pageCopy';
 
@@ -26,6 +31,12 @@ const HOW_IT_WORKS = [
   { n: '02', title: 'Get matched',       body: 'We surface the jobs that fit your skills and visa needs.' },
   { n: '03', title: 'Prepare',           body: 'Visa guides, resume grade, interview prep — all tailored.' },
   { n: '04', title: 'Go',                body: 'Apply with confidence. Real jobs, real visa paths.' },
+];
+
+const STATS = [
+  { value: 100,   label: 'Countries mapped' },
+  { value: 33664, label: 'Live roles', live: true },
+  { value: 6,     label: 'Continents' },
 ];
 
 const TESTIMONIALS = [
@@ -46,6 +57,12 @@ export default function Home() {
   useScrollReveal();
   const [profile, setProfile] = useState(null);
   const [checking, setChecking] = useState(true);
+
+  // Scroll-drawn connector line for the "how it works" row.
+  const howRef = useRef(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress: howProgress } = useScroll({ target: howRef, offset: ['start 85%', 'end 60%'] });
+  const lineScale = useTransform(howProgress, [0, 1], [0, 1]);
 
   useEffect(() => {
     fetch('/api/user-profile')
@@ -70,6 +87,7 @@ export default function Home() {
       <Navbar />
 
       <EditorialHero
+        animate
         kicker={hero.kicker}
         title={hero.title}
         titleItalic={hero.italic}
@@ -93,59 +111,90 @@ export default function Home() {
         }
       />
 
+      <Reveal as="section" className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12 border-t border-paper-rule">
+        <div className="grid grid-cols-3 gap-6 sm:gap-10">
+          {STATS.map((s) => (
+            <div key={s.label} className="flex flex-col">
+              <div className="font-display text-[40px] sm:text-[56px] leading-none text-paper-ink tabular-nums flex items-center gap-3">
+                <CountUp value={s.value} />
+                {s.live && <span className="om-live-dot" aria-hidden />}
+              </div>
+              <div className="mt-3 font-mono text-[10px] tracking-[0.14em] uppercase text-paper-ink-sub">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+
       <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
-        <SectionHead
-          number={1}
-          kicker="TOOLS"
-          title="Your global career toolkit."
-          sub="Three career tools plus our visa & relocation sibling, Migrova."
-        />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 mt-14 border-t border-l border-paper-rule">
+        <Reveal>
+          <SectionHead
+            number={1}
+            kicker="TOOLS"
+            title="Your global career toolkit."
+            sub="Three career tools plus our visa & relocation sibling, Migrova."
+          />
+        </Reveal>
+        <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 mt-14 border-t border-l border-paper-rule">
           {TOOLS.map((t) => {
             const Cmp = t.external ? 'a' : Link;
             const extra = t.external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
             return (
-              <Cmp key={t.href} href={t.href} {...extra}
-                className="tool-card-underline group block p-8 border-r border-b border-paper-rule bg-paper-bg hover:bg-paper-bg-alt transition-colors">
-                <div className="text-paper-ink mb-6"><Glyph name={t.glyph} size={36} /></div>
-                <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-2">№ {t.n} — {t.tag}</div>
-                <div className="font-display text-[22px] leading-[1.15] mb-2">{t.name}</div>
-                <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{t.desc}</div>
-              </Cmp>
+              <StaggerItem key={t.href} className="border-r border-b border-paper-rule">
+                <Cmp href={t.href} {...extra}
+                  className="tool-card-underline group block h-full p-8 bg-paper-bg hover:bg-paper-bg-alt hover:-translate-y-1 transition-[background-color,transform] duration-300 will-change-transform">
+                  <div className="text-paper-ink mb-6"><Glyph name={t.glyph} size={36} /></div>
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-2">№ {t.n} — {t.tag}</div>
+                  <div className="font-display text-[22px] leading-[1.15] mb-2">{t.name}</div>
+                  <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{t.desc}</div>
+                </Cmp>
+              </StaggerItem>
             );
           })}
+        </Stagger>
+      </section>
+
+      <section ref={howRef} className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
+        <Reveal>
+          <SectionHead number={2} kicker="HOW IT WORKS" title="Set up in two minutes." />
+        </Reveal>
+        <div className="relative mt-14">
+          {!reduceMotion && (
+            <motion.div
+              aria-hidden
+              className="absolute left-0 right-0 top-0 h-px bg-accent origin-left z-10"
+              style={{ scaleX: lineScale }}
+            />
+          )}
+          <Stagger as="ol" className="grid grid-cols-1 md:grid-cols-4 gap-0 border-t border-l border-paper-rule">
+            {HOW_IT_WORKS.map((s) => (
+              <StaggerItem as="li" key={s.n} className="p-8 border-r border-b border-paper-rule">
+                <div className="font-display italic text-[32px] text-accent mb-3">№{s.n}</div>
+                <div className="font-display text-[20px] mb-2">{s.title}</div>
+                <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{s.body}</div>
+              </StaggerItem>
+            ))}
+          </Stagger>
         </div>
       </section>
 
       <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
-        <SectionHead number={2} kicker="HOW IT WORKS" title="Set up in two minutes." />
-        <ol className="mt-14 grid grid-cols-1 md:grid-cols-4 gap-0 border-t border-l border-paper-rule">
-          {HOW_IT_WORKS.map((s) => (
-            <li key={s.n} className="p-8 border-r border-b border-paper-rule">
-              <div className="font-display italic text-[32px] text-accent mb-3">№{s.n}</div>
-              <div className="font-display text-[20px] mb-2">{s.title}</div>
-              <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{s.body}</div>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
-        <SectionHead number={3} kicker="FIELD REPORTS" title="What readers have done." />
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-paper-rule">
+        <Reveal>
+          <SectionHead number={3} kicker="FIELD REPORTS" title="What readers have done." />
+        </Reveal>
+        <Stagger className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-paper-rule">
           {TESTIMONIALS.map((t) => (
-            <figure key={t.name} className="p-8 border-r border-b border-paper-rule">
+            <StaggerItem as="figure" key={t.name} className="p-8 border-r border-b border-paper-rule">
               <blockquote className="font-display text-[20px] leading-[1.35] text-paper-ink mb-6">&ldquo;{t.quote}&rdquo;</blockquote>
               <figcaption className="font-mono text-[11px] tracking-[0.08em] text-paper-ink-sub">
                 {t.name.toUpperCase()} · {t.role.toUpperCase()} · {t.move}
               </figcaption>
-            </figure>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-28 border-t border-paper-rule">
-        <div className="max-w-[780px]">
+        <Reveal className="max-w-[780px]">
           <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-6">§ 04 · BEGIN</div>
           <h2 className="font-display text-[48px] sm:text-[64px] leading-[1.02] tracking-[-0.015em] mb-8">
             60 seconds from here to <em className="italic text-accent">somewhere new</em>.
@@ -155,7 +204,7 @@ export default function Home() {
             <Btn variant="ghost" href="/jobs">Browse jobs</Btn>
           </div>
           <Footnote>{FOOTNOTES.home}</Footnote>
-        </div>
+        </Reveal>
       </section>
 
       <footer className="border-t border-paper-rule px-6 sm:px-10 py-10 font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub flex flex-wrap justify-between gap-4 max-w-[1280px] mx-auto">
