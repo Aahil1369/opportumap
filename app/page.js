@@ -56,7 +56,6 @@ const LIVE_JOBS = [
 export default function Home() {
   useScrollReveal();
   const [profile, setProfile] = useState(null);
-  const [checking, setChecking] = useState(true);
 
   // Scroll-drawn connector line for the "how it works" row.
   const howRef = useRef(null);
@@ -68,11 +67,11 @@ export default function Home() {
     fetch('/api/user-profile')
       .then((r) => r.json())
       .then((d) => { if (d.profile?.nationality) setProfile(d.profile); })
-      .catch(() => {})
-      .finally(() => setChecking(false));
+      .catch(() => {});
   }, []);
 
-  if (checking) return <div className="min-h-screen bg-paper-bg"><Navbar /></div>;
+  // Render the marketing homepage immediately (server-rendered into the HTML so it
+  // paints instantly). Swap to the personalized dashboard only if a profile loads.
   if (profile) return (
     <div className="min-h-screen bg-paper-bg text-paper-ink">
       <Navbar />
