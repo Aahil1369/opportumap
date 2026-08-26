@@ -188,4 +188,19 @@ body {
   }
   .reveal { opacity: 1; transform: none; }
   .italic-draw { background-size: 100% 1.5px; }
+  .om-live-dot { animation: none !important; }
+}
+
+/* ─── Live status dot (stats strip) ─── */
+@keyframes om-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.72); }
+}
+.om-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--accent);
+  animation: om-pulse 1.6s ease-in-out infinite;
 }
