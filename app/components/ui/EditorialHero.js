@@ -14,7 +14,7 @@ const item = {
 
 export default function EditorialHero({
   kicker, title, titleItalic, titleTail, sub, meta = [],
-  cta, secondaryCta, rightPanel, className = '', animate = false,
+  cta, secondaryCta, rightPanel, className = '', animate = true,
 }) {
   const italicRef = useItalicReveal();
   const reduce = useReducedMotion();

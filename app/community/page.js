@@ -199,7 +199,7 @@ function PostCard({ post, currentUser, likedIds, onLike, onSignIn }) {
   };
 
   return (
-    <div className="border border-paper-rule bg-paper-bg hover:bg-paper-bg-alt transition-colors p-5">
+    <div className="reveal border border-paper-rule bg-paper-bg hover:bg-paper-bg-alt transition-colors p-5">
       {/* Author row */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5">

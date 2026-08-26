@@ -174,7 +174,7 @@ export default function InterviewPage() {
               {activeTab === 'bank' && (
                 <div className="space-y-3">
                   {questions.map((q, i) => (
-                    <div key={q.id} className="border border-paper-rule">
+                    <div key={q.id} className="reveal border border-paper-rule">
                       <button className="w-full p-4 text-left hover:bg-paper-bg-alt transition-colors" onClick={() => setExpandedQ(expandedQ === i ? null : i)}>
                         <div className="flex items-start gap-3">
                           <span className="font-mono text-[10px] tracking-[0.1em] uppercase border border-paper-rule px-2 py-0.5 flex-shrink-0 mt-0.5 text-paper-ink-sub">
@@ -301,7 +301,7 @@ export default function InterviewPage() {
 
               {/* Mock Interview — complete */}
               {activeTab === 'mock' && mockDone && (
-                <div className="border border-paper-rule p-8 text-center">
+                <div className="reveal border border-paper-rule p-8 text-center">
                   <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-4">// MOCK INTERVIEW COMPLETE</div>
                   <h2 className="font-display text-[28px] leading-[1.15] mb-2 text-paper-ink">Nice work.</h2>
                   {avgScore !== null && (
