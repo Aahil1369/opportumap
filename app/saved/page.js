@@ -5,10 +5,12 @@ import Navbar from '../components/Navbar';
 import JobCard from '../components/JobCard';
 import JobDetailPanel from '../components/JobDetailPanel';
 import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { scoreJob } from '../data/matchJobs';
 import { FOOTNOTES } from '../lib/pageCopy';
 
 export default function SavedJobsPage() {
+  useScrollReveal();
   const [savedIds, setSavedIds] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [profile, setProfile] = useState(null);
@@ -171,7 +173,7 @@ export default function SavedJobsPage() {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {jobs.map((job) => (
-                <div key={job.id} className="relative group/saved">
+                <div key={job.id} className="reveal relative group/saved">
                   <JobCard
                     job={job}
                     profile={profile}

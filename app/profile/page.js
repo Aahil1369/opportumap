@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../components/Navbar';
 import Btn from '../components/ui/Btn';
 import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
 
@@ -37,7 +38,7 @@ function PostCard({ post }) {
     return d < 30 ? `${d}d ago` : new Date(dateStr).toLocaleDateString();
   }
   return (
-    <div className="border border-paper-rule p-4">
+    <div className="reveal border border-paper-rule p-4">
       <div className="flex items-center gap-2 mb-2">
         <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub">
           {POST_TYPE_LABELS[post.post_type] || post.post_type}
@@ -59,6 +60,7 @@ function PostCard({ post }) {
 }
 
 export default function ProfilePage() {
+  useScrollReveal();
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ followers: 0, following: 0, posts: 0 });
@@ -122,7 +124,7 @@ export default function ProfilePage() {
       <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
         <div className="py-14 max-w-3xl">
           {/* Profile header card */}
-          <div className="border border-paper-rule p-6 mb-6">
+          <div className="reveal border border-paper-rule p-6 mb-6">
             <div className="flex items-start gap-5">
               {/* Avatar */}
               <div className="flex-shrink-0">
@@ -151,14 +153,14 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-px bg-paper-rule border border-paper-rule mb-6">
+          <div className="reveal grid grid-cols-3 gap-px bg-paper-rule border border-paper-rule mb-6">
             <StatBox label="FOLLOWERS" value={stats.followers} />
             <StatBox label="FOLLOWING" value={stats.following} />
             <StatBox label="POSTS" value={stats.posts} />
           </div>
 
           {/* Account info */}
-          <div className="border border-paper-rule p-5 mb-6">
+          <div className="reveal border border-paper-rule p-5 mb-6">
             <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-4">// ACCOUNT DETAILS</div>
             <div className="space-y-0">
               <div className="flex justify-between py-2.5 border-b border-paper-rule text-[13px]">

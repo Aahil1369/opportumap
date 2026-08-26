@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Navbar from '../../components/Navbar';
 import Btn from '../../components/ui/Btn';
 import Footnote from '../../components/ui/Footnote';
+import { useScrollReveal } from '../../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../../lib/pageCopy';
 import { createClient } from '../../../lib/supabase-browser';
 
@@ -22,6 +23,7 @@ function formatRaise(amount) {
 }
 
 export default function StartupDetailPage() {
+  useScrollReveal();
   const { id } = useParams();
   const router = useRouter();
   const [startup, setStartup] = useState(null);
@@ -125,7 +127,7 @@ export default function StartupDetailPage() {
           {/* Main content */}
           <div className="lg:col-span-2 space-y-10">
             {/* Stat grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
+            <div className="reveal grid grid-cols-2 sm:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
               {stats.map((s) => (
                 <div key={s.label} className="bg-paper-bg px-4 py-4">
                   <div className="font-mono text-[9px] tracking-[0.12em] text-paper-ink-sub mb-1.5">{s.label}</div>
@@ -135,7 +137,7 @@ export default function StartupDetailPage() {
             </div>
 
             {/* About */}
-            <div>
+            <div className="reveal">
               <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// ABOUT</div>
               <p className="text-[14px] sm:text-[15px] leading-[1.7] text-paper-ink-dim max-w-[68ch]">{startup.description}</p>
             </div>
@@ -164,7 +166,7 @@ export default function StartupDetailPage() {
           {/* Right panel */}
           <div className="space-y-3">
             {/* Funding info */}
-            <div className="border border-paper-rule p-5">
+            <div className="reveal border border-paper-rule p-5">
               {startup.raise_amount ? (
                 <>
                   <p className="font-display text-[36px] leading-none text-accent">{formatRaise(startup.raise_amount)}</p>
