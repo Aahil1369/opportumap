@@ -7,6 +7,9 @@ import StartupModal from '../components/StartupModal';
 import EditorialHero from '../components/ui/EditorialHero';
 import Btn from '../components/ui/Btn';
 import Footnote from '../components/ui/Footnote';
+import Reveal from '../components/motion/Reveal';
+import Stagger from '../components/motion/Stagger';
+import StaggerItem from '../components/motion/StaggerItem';
 import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
@@ -117,13 +120,13 @@ export default function StartupsPage() {
               ) : (
                 <div className="space-y-3">
                   {featured && (
-                    <StartupCard startup={featured} featured />
+                    <Reveal><StartupCard startup={featured} featured /></Reveal>
                   )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Stagger className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {startups.filter((s) => s.id !== featured?.id).map((s) => (
-                      <StartupCard key={s.id} startup={s} />
+                      <StaggerItem key={s.id}><StartupCard startup={s} /></StaggerItem>
                     ))}
-                  </div>
+                  </Stagger>
                 </div>
               )}
             </div>

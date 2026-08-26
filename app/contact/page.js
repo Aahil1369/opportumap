@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Btn from '../components/ui/Btn';
 import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../lib/pageCopy';
 
 export default function ContactPage() {
+  useScrollReveal();
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -89,7 +91,7 @@ export default function ContactPage() {
           )}
 
           {/* Contact info */}
-          <div className="mt-10 grid sm:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
+          <div className="reveal mt-10 grid sm:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
             {[
               { label: 'Email', value: 'hello@opportumap.com' },
               { label: 'Twitter', value: '@opportumap' },

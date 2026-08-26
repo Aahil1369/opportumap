@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
 
@@ -36,6 +37,7 @@ const TYPE_LABELS = {
 };
 
 export default function AdminPage() {
+  useScrollReveal();
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState(null);
   const [recentPosts, setRecentPosts] = useState([]);
@@ -128,7 +130,7 @@ export default function AdminPage() {
           )}
 
           {/* Stats grid — platform metrics */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
+          <div className="reveal grid grid-cols-2 lg:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
             <div className="bg-paper-bg p-5">
               <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-3">TOTAL USERS</div>
               <p className="font-display text-[40px] leading-none text-accent">{stats?.totalUsers?.toLocaleString() ?? '—'}</p>
@@ -148,14 +150,14 @@ export default function AdminPage() {
           </div>
 
           {/* Community stats grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-paper-rule border border-paper-rule">
+          <div className="reveal grid grid-cols-2 lg:grid-cols-4 gap-px bg-paper-rule border border-paper-rule">
             <StatCard label="POSTS" value={stats?.posts} />
             <StatCard label="LIKES" value={stats?.likes} />
             <StatCard label="FOLLOWS" value={stats?.follows} />
             <StatCard label="COMMENTS" value={stats?.comments} />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-5">
+          <div className="reveal grid lg:grid-cols-2 gap-5">
             {/* Recent posts */}
             <div className="border border-paper-rule p-5">
               <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-4">// RECENT POSTS</div>
