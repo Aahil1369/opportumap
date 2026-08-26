@@ -15,7 +15,8 @@ const instrumentSerif = Instrument_Serif({
 const inter = Inter({
   variable: '--font-inter',
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  // No explicit weights → next/font serves Inter's variable font (one file for the
+  // whole 400–700 range we use, instead of four static weight files).
   display: 'swap',
 });
 
