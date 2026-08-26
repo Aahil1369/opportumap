@@ -160,13 +160,13 @@ export default function CoverLetterPage() {
           {result && (
             <div className="space-y-5">
               {result.subjectLine && (
-                <div className="border border-paper-rule bg-paper-bg-alt p-4">
+                <div className="reveal border border-paper-rule bg-paper-bg-alt p-4">
                   <p className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-1">SUGGESTED EMAIL SUBJECT</p>
                   <p className="text-sm font-medium text-paper-ink">{result.subjectLine}</p>
                 </div>
               )}
 
-              <div className="border border-paper-rule bg-paper-bg-alt p-6 sm:p-8">
+              <div className="reveal border border-paper-rule bg-paper-bg-alt p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-display text-[22px] leading-[1.15] text-paper-ink">Your Cover Letter</h3>
                   <div className="flex gap-2">
@@ -190,7 +190,7 @@ export default function CoverLetterPage() {
               </div>
 
               {result.tailoringNotes?.length > 0 && (
-                <div className="border border-paper-rule bg-paper-bg-alt p-5 sm:p-6">
+                <div className="reveal border border-paper-rule bg-paper-bg-alt p-5 sm:p-6">
                   <h3 className="font-display text-[20px] leading-[1.15] text-paper-ink mb-3">How This Was Tailored</h3>
                   <ul className="space-y-1.5">
                     {result.tailoringNotes.map((note, i) => (

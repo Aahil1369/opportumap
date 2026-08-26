@@ -9,6 +9,7 @@ import JobCard from '../components/JobCard';
 import JobDetailPanel from '../components/JobDetailPanel';
 import Btn from '../components/ui/Btn';
 import Footnote from '../components/ui/Footnote';
+import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { ADZUNA_COUNTRIES } from '../data/countries';
 import { scoreJob } from '../data/matchJobs';
 import { FOOTNOTES } from '../lib/pageCopy';
@@ -73,6 +74,7 @@ function buildQueryFromProfile(profile) {
 }
 
 export default function JobsPage() {
+  useScrollReveal();
   const [profile, setProfile] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showRelocation, setShowRelocation] = useState(false);
@@ -514,6 +516,7 @@ export default function JobsPage() {
                   {paginated.map((job) => (
                     <JobCard
                       key={job.id}
+                      className="reveal"
                       job={job}
                       profile={profile}
                       selected={selectedJob?.id === job.id}

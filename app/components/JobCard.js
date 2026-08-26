@@ -57,7 +57,7 @@ function getJobFreshness(job) {
   return 'fresh';
 }
 
-export default function JobCard({ job, profile, selected, onClick, predictedSalary }) {
+export default function JobCard({ job, profile, selected, onClick, predictedSalary, className = '' }) {
   const [saved, setSaved] = useState(() => {
     try {
       const s = JSON.parse(localStorage.getItem('opportumap_saved') || '[]');
@@ -89,7 +89,7 @@ export default function JobCard({ job, profile, selected, onClick, predictedSala
   return (
     <div
       onClick={onClick}
-      className={`group border cursor-pointer transition-colors p-5 ${
+      className={`${className} group border cursor-pointer transition-colors p-5 ${
         selected ? 'border-accent bg-paper-bg-alt' : 'border-paper-rule bg-paper-bg hover:bg-paper-bg-alt'
       } ${freshness === 'expired' ? 'opacity-50' : ''}`}
     >

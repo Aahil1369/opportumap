@@ -160,7 +160,7 @@ export default function ResumePage() {
               </div>
 
               {/* Score card */}
-              <div className="border border-paper-rule p-7">
+              <div className="reveal border border-paper-rule p-7">
                 <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-10">
                   <ScoreRing score={result.score} size={130} />
                   <div className="flex-1 text-center sm:text-left">
@@ -186,7 +186,7 @@ export default function ResumePage() {
               </div>
 
               {/* Two-col layout */}
-              <div className="grid sm:grid-cols-2 gap-5">
+              <div className="reveal grid sm:grid-cols-2 gap-5">
                 {/* Strengths */}
                 <div className="border border-paper-rule p-6">
                   <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// WHAT'S WORKING</div>
@@ -217,7 +217,7 @@ export default function ResumePage() {
               </div>
 
               {/* Improvements */}
-              <div className="border border-paper-rule p-6">
+              <div className="reveal border border-paper-rule p-6">
                 <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-4">// WHAT TO FIX</div>
                 <div className="space-y-3">
                   {result.improvements?.map((item, i) => (
@@ -289,7 +289,7 @@ export default function ResumePage() {
               )}
 
               {/* Job matches */}
-              <div className="border border-paper-rule p-6">
+              <div className="reveal border border-paper-rule p-6">
                 <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-1">// JOBS YOU QUALIFY FOR</div>
                 <p className="text-[13px] text-paper-ink-dim mb-4 mt-2">Based on your resume, here are roles you match well for right now:</p>
                 <div className="grid sm:grid-cols-2 gap-3">
