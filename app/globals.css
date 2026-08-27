@@ -92,6 +92,14 @@ body {
 .hero-anim > *:nth-child(4) { animation-delay: 0.28s; }
 .hero-anim > *:nth-child(5) { animation-delay: 0.36s; }
 
+/* ─── Visa-stamp "thunk" (lands with a back-out overshoot after the headline) ─── */
+@keyframes stamp-in {
+  0%   { opacity: 0;    transform: scale(1.9) rotate(-26deg); }
+  55%  { opacity: 0.95; transform: scale(0.92) rotate(-5deg); }
+  100% { opacity: 0.92; transform: scale(1) rotate(-8deg); }
+}
+.visa-stamp { animation: stamp-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s both; }
+
 /* ─── Italic draw-in ─── */
 .italic-draw {
   background-image: linear-gradient(var(--accent), var(--accent));
@@ -202,6 +210,7 @@ body {
   .italic-draw { background-size: 100% 1.5px; }
   .om-live-dot { animation: none !important; }
   .hero-anim > * { animation: none !important; opacity: 1; transform: none; }
+  .visa-stamp { animation: none !important; opacity: 0.92; transform: rotate(-8deg); }
 }
 
 /* ─── Live status dot (stats strip) ─── */
