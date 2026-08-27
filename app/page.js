@@ -5,13 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
-import EditorialHero from './components/ui/EditorialHero';
-import TerminalPanel from './components/ui/TerminalPanel';
+import PassportHero from './components/ui/PassportHero';
 import SectionHead from './components/ui/SectionHead';
 import Btn from './components/ui/Btn';
 import Glyph from './components/ui/Glyph';
 import Footnote from './components/ui/Footnote';
-import MonoRow from './components/ui/MonoRow';
 import Reveal from './components/motion/Reveal';
 import Stagger from './components/motion/Stagger';
 import StaggerItem from './components/motion/StaggerItem';
@@ -43,14 +41,6 @@ const TESTIMONIALS = [
   { quote: 'OpportuMap helped me land a role in Berlin I never would have found on LinkedIn. The sponsorship signals saved me hours.', name: 'Priya S.',  role: 'Data Engineer',      move: 'IN → DE' },
   { quote: 'The AI resume matching is insane. It told me exactly which jobs fit my background.',                                       name: 'Marcus W.', role: 'Software Engineer',  move: 'BR → NL' },
   { quote: 'The resume grader was brutal — and right. Fixed what it flagged and started getting callbacks.',                           name: 'Amara O.',  role: 'ML Engineer',        move: 'NG → CA' },
-];
-
-const LIVE_JOBS = [
-  { role: 'senior.engineer',   co: 'spotify',  loc: 'stockholm 🇸🇪', amt: '$120k' },
-  { role: 'data.scientist',    co: 'deepmind', loc: 'london 🇬🇧',    amt: '$140k' },
-  { role: 'product.manager',   co: 'grab',     loc: 'singapore 🇸🇬', amt: '$110k' },
-  { role: 'ml.engineer',       co: 'deepl',    loc: 'berlin 🇩🇪',    amt: '$105k' },
-  { role: 'frontend.engineer', co: 'klarna',   loc: 'stockholm 🇸🇪', amt: '$95k'  },
 ];
 
 export default function Home() {
@@ -85,29 +75,14 @@ export default function Home() {
     <div className="min-h-screen bg-paper-bg text-paper-ink">
       <Navbar />
 
-      <EditorialHero
-        animate
+      <PassportHero
         kicker={hero.kicker}
         title={hero.title}
         titleItalic={hero.italic}
         titleTail={hero.tail}
         sub={hero.sub}
-        meta={['OPPORTUMAP · EST. 2026', 'V 0.4 · GROWING', 'DALLAS → THE WORLD']}
         cta={<Btn variant="primary" href="/jobs" magnetic>Browse jobs →</Btn>}
         secondaryCta={<Btn variant="secondary" href="/map">Spin the map</Btn>}
-        rightPanel={
-          <TerminalPanel label="// LIVE FEED · /JOBS" right="∞">
-            {LIVE_JOBS.map((j, i) => (
-              <MonoRow
-                key={i}
-                label={<><span>{j.role}</span><br /><span className="text-term-ink-sub text-[10px]">{j.co} · {j.loc}</span></>}
-                meta="VISA ✓"
-                value={j.amt}
-                accent
-              />
-            ))}
-          </TerminalPanel>
-        }
       />
 
       <Reveal as="section" className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12 border-t border-paper-rule">
