@@ -34,6 +34,8 @@ export async function POST(request) {
     // Strip any markdown code fences
     const cleaned = raw.replace(/```json?/g, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleaned);
+    // "bold sentence" makes gpt-oss wrap it in **markdown**; the UI renders plain text.
+    if (typeof result.headline === 'string') result.headline = result.headline.replace(/\*+/g, '').trim();
     return Response.json(result);
   } catch (err) {
     return Response.json({
