@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { GROQ_FAST_OPTIONS } from '../../../lib/ai.js';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -14,8 +15,8 @@ export async function POST(request) {
     const jobSummary = `Title: ${job.title}. Company: ${job.company}. Location: ${job.location}. Salary: ${job.salary}. Description: ${(job.description || '').replace(/<[^>]+>/g, ' ').slice(0, 500)}`;
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      max_tokens: 300,
+      ...GROQ_FAST_OPTIONS,
+      max_tokens: 600, // gpt-oss reasoning tokens count toward this
       temperature: 0.7,
       messages: [
         {

@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { GROQ_FAST_OPTIONS } from '../../../lib/ai.js';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const CACHE = new Map();
@@ -10,7 +11,7 @@ export async function POST(request) {
     if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      ...GROQ_FAST_OPTIONS,
       messages: [
         {
           role: 'user',
@@ -25,7 +26,7 @@ Country: ${country}
 Base on real market data. Be realistic.`,
         },
       ],
-      max_tokens: 100,
+      max_tokens: 300, // gpt-oss reasoning tokens count toward this
     });
 
     const text = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();

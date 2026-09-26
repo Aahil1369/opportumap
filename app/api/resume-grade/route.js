@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { GROQ_OPTIONS } from '../../../lib/ai.js';
 export const runtime = 'nodejs';
 
 
@@ -16,7 +17,7 @@ export async function POST(request) {
     const { text: resumeText } = await pdfParse(buffer);
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      ...GROQ_OPTIONS,
       messages: [
         {
           role: 'user',

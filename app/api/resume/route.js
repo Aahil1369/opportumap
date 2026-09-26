@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { GROQ_FAST_OPTIONS } from '../../../lib/ai.js';
 export const runtime = 'nodejs';
 
 
@@ -16,7 +17,7 @@ export async function POST(request) {
     const { text: resumeText } = await pdfParse(buffer);
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      ...GROQ_FAST_OPTIONS,
       messages: [
         {
           role: 'user',
@@ -31,7 +32,7 @@ RESUME TEXT:
 ${resumeText.slice(0, 4000)}`,
         },
       ],
-      max_tokens: 256,
+      max_tokens: 600, // gpt-oss reasoning tokens count toward this
     });
 
     const raw = completion.choices[0].message.content.trim().replace(/```json|```/g, '').trim();

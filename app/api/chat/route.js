@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk';
+import { GROQ_OPTIONS } from '../../../lib/ai.js';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -35,9 +36,9 @@ Be friendly, concise, and practical. Give actionable advice. Keep responses unde
     ];
 
     const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
+      ...GROQ_OPTIONS,
       messages: groqMessages,
-      max_tokens: 512,
+      max_tokens: 1200, // gpt-oss replies run ~700-850 tokens; 512 cut them off
     });
 
     return Response.json({ reply: completion.choices[0].message.content });
