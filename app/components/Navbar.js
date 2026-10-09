@@ -224,7 +224,6 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center gap-4 font-mono text-[11px]">
-            <span className="hidden lg:inline-block bg-paper-ink text-data px-[10px] py-[5px] tracking-[0.05em]">100 CTRY · 33,664 LIVE</span>
             {user ? (
               <div className="relative hidden md:block" ref={userMenuRef}>
                 <button onClick={() => setUserMenuOpen(!userMenuOpen)}
