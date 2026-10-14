@@ -11,7 +11,7 @@ export const FOOTNOTES = {
   saved:        'Saved jobs expire 60 days after we last saw them live.',
   admin:        'You’re looking at a live snapshot. Metrics reset every midnight UTC.',
   profile:      'Your profile stays on this device unless you check the Remember box.',
-  contact:      'We read every email. Response time is usually within 48 hours.',
+  contact:      'Messages go straight to the founder’s inbox. You’ll get a reply by email.',
   auth:         'Sign-in requires a verified email. We don’t sell data. We don’t spam.',
 };
 
