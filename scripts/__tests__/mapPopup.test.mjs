@@ -81,9 +81,16 @@ test('Map.js: popups use setDOMContent and no HTML template string', () => {
 });
 
 test('api/jobs: entity decoding applied to title, company, location, description', () => {
-  const src = read('app/api/jobs/route.js');
+  // The feeds moved to lib/jobsFeed.js (shared with the homepage); the route serves both paths from it.
+  const route = read('app/api/jobs/route.js');
+  assert.match(route, /from '\.\.\/\.\.\/\.\.\/lib\/jobsFeed\.js'/);
+  assert.match(route, /fetchDbJobs\(/);
+  assert.match(route, /fetchLiveJobs\(/);
+  const src = read('lib/jobsFeed.js');
   assert.match(src, /decodeEntities/);
   for (const f of ['title', 'company', 'location', 'description']) {
     assert.match(src, new RegExp(`${f}:\\s*decodeEntities\\(job\\.${f}\\)`), `${f} decoded`);
   }
+  assert.match(src, /return data\.map\(cleanJobText\)/, 'db jobs decoded');
+  assert.match(src, /\]\.map\(cleanJobText\)/, 'live jobs decoded');
 });
