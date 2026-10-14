@@ -1,0 +1,493 @@
+/* ─── /resume — security X-ray ───────────────────────────────────────────────────────────────
+   The belt (drop zone), the scan (the PDF tile rides through the X-ray frame), the verdict plate
+   and the inspection report. Palette from app/globals.css; mono labels in --font-board.
+   Motion: transform and opacity only; reduced motion shows every final state at once. */
+
+.rs { display: grid; gap: 14px; }
+
+/* ─── Buttons ─── */
+.rs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 16px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
+}
+.rs-btn:hover { transform: translateY(-1px); }
+.rs-btn:active { transform: scale(0.98); }
+.rs-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
+.rs-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+.rs-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+
+/* ─── The belt, waiting: a drop zone around a real button ─── */
+.rs-drop {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 28px 18px 26px;
+  text-align: center;
+  background: var(--hall-2);
+  border: 1.5px dashed var(--rule);
+  border-radius: 14px;
+}
+.rs-drop[data-drag] { border-style: solid; border-color: var(--sign); background: var(--hall-3); }
+.rs-drop-art { position: relative; display: block; padding: 0 34px 12px; margin-bottom: 6px; }
+.rs-drop-art .rs-doc { transform: rotate(-4deg); }
+.rs-drop-art::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, var(--hall-3) 0 18px, #2a2e35 18px 24px);
+  box-shadow: inset 0 1px 0 var(--rule);
+}
+.rs-drop-t {
+  font: 800 22px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  cursor: pointer;
+}
+.rs-drop-s { margin: 0; max-width: 44ch; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.rs-drop .rs-btn { margin-top: 8px; }
+
+/* ─── The PDF tile (and its X-ray twin) ─── */
+.rs-doc {
+  position: relative;
+  display: block;
+  width: 84px;
+  height: 106px;
+  padding: 24px 10px 0;
+  border-radius: 6px;
+  background: var(--ink);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+  text-align: left;
+}
+.rs-doc-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--warn);
+  color: var(--sign-ink);
+  font: 700 8px/1.3 var(--font-board);
+  letter-spacing: 0.08em;
+}
+.rs-doc-l { display: block; height: 4px; margin-top: 7px; border-radius: 2px; background: #c9c5b8; }
+.rs-doc-n {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 7px;
+  overflow: hidden;
+  font: 500 8px/1.2 var(--font-board);
+  color: #5d6168;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-doc-x { background: #08131d; box-shadow: inset 0 0 0 1px var(--info); }
+.rs-doc-x .rs-doc-tag { background: transparent; color: var(--info); box-shadow: inset 0 0 0 1px var(--info); }
+.rs-doc-x .rs-doc-l { background: var(--info); opacity: 0.5; }
+.rs-doc-x .rs-doc-hit { background: var(--amber); opacity: 1; }
+.rs-doc-x .rs-doc-n { color: var(--info); }
+
+/* ─── The scan: the tile rides the belt through the X-ray frame ───
+   Two identical tracks move in step: one under the frame (the tile as it is), one inside the
+   frame's window (the tile as the X-ray sees it). The window's inner track is placed so its
+   coordinates are the belt's (cqi of the belt), so the two tiles line up exactly. */
+.rs-scan {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.rs-belt { position: relative; height: 176px; overflow: hidden; container-type: inline-size; }
+.rs-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  height: 10px;
+  overflow: hidden;
+  background: var(--hall-3);
+  box-shadow: inset 0 1px 0 var(--rule), inset 0 -1px 0 var(--rule);
+}
+.rs-rail-run {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -24px;
+  right: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 18px, #2a2e35 18px 24px);
+}
+.rs-track { position: absolute; top: 0; left: 0; bottom: 28px; width: 100%; transform: translateX(calc(50% + 54px)); }
+.rs-track > .rs-doc { position: absolute; bottom: 0; left: -96px; }
+.rs-frame {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  bottom: 14px;
+  left: calc(50% - 66px);
+  width: 132px;
+  border-radius: 18px 18px 4px 4px;
+  background: var(--hall-3);
+  box-shadow: 0 0 0 1px var(--rule), 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+.rs-frame-label {
+  position: absolute;
+  z-index: 2;
+  top: -9px;
+  left: 50%;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 10px/1.3 var(--font-board);
+  letter-spacing: 0.2em;
+  transform: translateX(-50%);
+}
+.rs-lamp {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  right: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--amber);
+}
+.rs-window {
+  position: absolute;
+  inset: 7px 7px 0;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background: #050608;
+}
+.rs-window::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 10px;
+  background: rgba(159, 200, 255, 0.12);
+}
+/* Window left edge = belt 50% - 59px; window top = 19px; the rail top sits 14px above its bottom. */
+.rs-track.rs-track-x { top: -19px; bottom: 14px; left: calc(59px - 50cqi); width: 100cqi; }
+.rs-beam {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--info);
+  box-shadow: 0 0 14px 3px rgba(159, 200, 255, 0.45);
+  opacity: 0.85;
+}
+.rs-scan-s { margin: 0 16px; font-size: 16px; line-height: 1.5; color: var(--ink-dim); overflow-wrap: anywhere; }
+.rs-scan-s:focus { outline: none; }
+.rs-scan-w { margin-right: 4px; font: 600 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--info); }
+
+/* ─── Alarms (errors) ─── */
+.rs-error {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 107, 74, 0.55);
+  border-radius: 10px;
+  background: var(--hall-2);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.rs-error-w { margin-right: 4px; font: 600 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--warn); }
+
+/* ─── After the scan ─── */
+.rs-again {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 14px;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+}
+.rs-again-f {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-again-k { margin-right: 4px; font: 500 11px/1.4 var(--font-board); letter-spacing: 0.16em; color: var(--ink-sub); }
+.rs-again .rs-btn { flex: none; min-height: 44px; padding: 0 16px; }
+
+.rs-result { display: grid; gap: 14px; }
+
+/* The verdict plate: CLEARED 81 / BAG CHECK 47. The plate text sizes from the plate's width, so
+   the longest verdict (BAG CHECK 100: 12 tiles and a gap) always fits on one line. */
+.rs-plate {
+  --tone: var(--ok);
+  container-type: inline-size;
+  padding: 18px 18px 22px;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--tone);
+  border-radius: 14px;
+}
+.rs-plate[data-tone='amber'] { --tone: var(--amber); }
+.rs-kicker {
+  margin: 0;
+  font: 500 12px/1.4 var(--font-board);
+  letter-spacing: 0.16em;
+  color: var(--ink-sub);
+}
+.rs-verdict {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.5em;
+  margin: 14px 0 0;
+  font-family: var(--font-board);
+  font-weight: 500;
+  font-size: clamp(22px, 12.4cqi - 5px, 64px);
+  line-height: 1.42;
+}
+.rs-verdict:focus { outline: none; } /* focused only to be read out; it is not a control */
+.rs-verdict .flap-plain { display: inline-block; }
+.rs-v-label { color: var(--tone); }
+.rs-v-score { color: var(--ink); }
+.rs-v-note { max-width: 60ch; margin: 12px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.rs-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+.rs-tag {
+  padding: 4px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--hall-3);
+  font: 500 12px/1.4 var(--font-board);
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+}
+.rs-tag b { font-weight: 700; color: var(--ink); }
+.rs-summary { max-width: 68ch; margin: 14px 0 0; font-size: 16px; line-height: 1.6; color: var(--ink); }
+
+/* Report cards */
+.rs-card {
+  min-width: 0;
+  padding: 18px 18px 20px;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+}
+.rs-h { margin: 0 0 14px; font: 600 12px/1.5 var(--font-board); letter-spacing: 0.18em; color: var(--sign); }
+.rs-h-sub {
+  margin-left: 6px;
+  font: 400 14px/1.5 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+  color: var(--ink-sub);
+}
+.rs-lead { margin: -4px 0 14px; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.rs-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+
+/* Section bars: they grow once, when first seen (scaleX from the left). */
+.rs-bars { display: grid; gap: 16px 28px; margin: 0; padding: 0; list-style: none; }
+.rs-bar { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px 12px; }
+.rs-bar-k { font: 500 12px/1.3 var(--font-board); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.rs-bar-n { font: 600 15px/1 var(--font-board); color: var(--ink); }
+.rs-bar-track {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--hall-3);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.rs-bar-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: var(--ok);
+  transform: scaleX(var(--v));
+  transform-origin: left center;
+}
+.rs-bar-fill[data-tone='amber'] { background: var(--amber); }
+.rs-bars[data-armed] .rs-bar-fill { transform: scaleX(0); }
+.rs-bars[data-armed][data-play] .rs-bar-fill {
+  transform: scaleX(var(--v));
+  transition: transform 1s cubic-bezier(.22, 1, .36, 1) calc(var(--i, 0) * 90ms + 120ms);
+}
+
+/* Alarms: red flags, each with a lamp that blinks a few times when first seen. */
+.rs-alarms { border-color: rgba(255, 107, 74, 0.45); }
+.rs-alarm { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 10px; font-size: 16px; line-height: 1.5; }
+.rs-alarm-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.18);
+}
+.rs-alarm-w { font: 600 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--warn); }
+.rs-alarm-t { grid-column: 2; color: var(--ink); }
+
+/* Prohibited items: clichés, struck through behind a no-entry mark. */
+.rs-items { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rs-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 11px 6px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall-3);
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+}
+.rs-item s { text-decoration-color: var(--warn); text-decoration-thickness: 2px; }
+.rs-no { position: relative; flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--warn); }
+.rs-no::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  right: 2px;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--warn);
+  transform: rotate(-45deg);
+}
+
+/* Inspection notes */
+.rs-note { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 12px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.rs-note:first-child { padding-top: 0; border-top: 0; }
+.rs-prio {
+  min-width: 66px;
+  margin-top: 2px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--hall-3);
+  box-shadow: inset 0 0 0 1px currentColor;
+  font: 600 11px/1.3 var(--font-board);
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+.rs-prio[data-p='high'] { color: var(--warn); }
+.rs-prio[data-p='medium'] { color: var(--amber); }
+.rs-prio[data-p='low'] { color: var(--info); }
+.rs-note-issue { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.5; color: var(--ink); }
+.rs-note-fix { margin: 4px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-dim); }
+.rs-note-fix b { font-weight: 600; color: var(--ink); }
+
+/* Rewrites */
+.rs-rewrite { padding: 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--hall-3); }
+.rs-ba { margin: 0 0 4px; font: 600 11px/1.3 var(--font-board); letter-spacing: 0.16em; color: var(--ink-sub); }
+.rs-ba-after { margin-top: 12px; color: var(--ok); }
+.rs-before { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-sub); text-decoration: line-through; text-decoration-color: rgba(154, 160, 168, 0.6); }
+.rs-after { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink); }
+
+/* Cleared items + not declared */
+.rs-pair { display: grid; gap: 14px; }
+.rs-ok { display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 16px; line-height: 1.5; color: var(--ink); }
+.rs-ok-mark { font: 700 15px/1.6 var(--font-board); color: var(--ok); }
+.rs-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.rs-chip {
+  max-width: 100%;
+  padding: 5px 10px;
+  border: 1px dashed var(--rule);
+  border-radius: 6px;
+  background: var(--hall-3);
+  font: 500 16px/1.35 var(--font-board);
+  color: var(--info);
+  overflow-wrap: anywhere;
+}
+
+/* Roles: each searches the board */
+.rs-roles { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rs-role {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
+}
+.rs-role:hover { border-color: var(--ink-sub); transform: translateY(-2px); }
+.rs-role:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+.rs-role-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.rs-role-t { font-size: 16px; font-weight: 700; line-height: 1.35; }
+.rs-role-m { flex: none; font: 600 14px/1 var(--font-board); color: var(--sign); }
+.rs-role-track { position: relative; height: 4px; overflow: hidden; border-radius: 2px; background: var(--hall-2); }
+.rs-role-fill { position: absolute; inset: 0; background: var(--sign); transform: scaleX(var(--v)); transform-origin: left center; }
+.rs-role-r { font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.rs-role-go { margin-top: auto; padding-top: 2px; font: 600 11px/1.3 var(--font-board); letter-spacing: 0.16em; color: var(--sign); }
+
+.rs-foot { max-width: 60ch; margin: 40px 0 0; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 16px; line-height: 1.55; color: var(--ink-sub); }
+
+@media (min-width: 640px) {
+  .rs-drop { padding: 40px 24px 36px; }
+  .rs-drop-t { font-size: 26px; }
+  .rs-plate { padding: 24px 26px 26px; }
+  .rs-card { padding: 22px 24px 24px; }
+  .rs-bars { grid-template-columns: 1fr 1fr; }
+  .rs-roles { grid-template-columns: 1fr 1fr; }
+  .rs-belt { height: 196px; }
+}
+@media (min-width: 760px) {
+  .rs-pair { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── Motion ─── */
+@media (prefers-reduced-motion: no-preference) {
+  .rs-track { animation: rs-ride 3.4s linear infinite; }
+  .rs-rail-run { animation: rs-run 0.5s linear infinite; }
+  .rs-lamp { animation: rs-blink 1.2s ease-in-out infinite; }
+  .rs-belt[data-off] .rs-track,
+  .rs-belt[data-off] .rs-rail-run,
+  .rs-belt[data-off] .rs-lamp { animation-play-state: paused; }
+  .rs-list[data-play] .rs-alarm-lamp { animation: rs-blink 0.8s ease-in-out calc(var(--i, 0) * 140ms) 4; }
+}
+@keyframes rs-ride {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100% + 96px)); }
+}
+@keyframes rs-run {
+  to { transform: translateX(24px); }
+}
+@keyframes rs-blink {
+  50% { opacity: 0.2; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rs-btn,
+  .rs-role { transition: none; }
+  .rs-btn:hover,
+  .rs-btn:active,
+  .rs-role:hover { transform: none; }
+  .rs-bars[data-armed] .rs-bar-fill { transform: scaleX(var(--v)); transition: none; }
+}

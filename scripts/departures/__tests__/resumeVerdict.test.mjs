@@ -1,7 +1,11 @@
 // /resume — security X-ray (Task 9): the verdict plate, the upload rules both sides enforce,
-// the image-only PDF check and the grade the page renders.
+// the image-only PDF check, the grade the page renders, and the copy rules on its files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as espree from 'espree';
 
 const {
   CLEARED_AT,
@@ -176,4 +180,107 @@ test('job matches search the board by role', () => {
   assert.equal(jobsHref('  C++ / Qt Developer '), '/jobs?q=C%2B%2B%20%2F%20Qt%20Developer');
   assert.equal(jobsHref(''), '/jobs');
   assert.equal(jobsHref(undefined), '/jobs');
+});
+
+// ── Copy and motion rules on the /resume files ──────────────────────────────────────────────
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const show = (f) => relative(ROOT, f).split(sep).join('/');
+function walk(rel) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) return [];
+  if (!statSync(abs).isDirectory()) return [abs];
+  return readdirSync(abs).flatMap((name) => walk(join(rel, name)));
+}
+const SURFACE = ['app/resume', 'app/components/resume', 'app/api/resume-grade', 'lib/departures/resumeVerdict.js']
+  .flatMap(walk)
+  .filter((f) => /\.(?:js|mjs)$/.test(f));
+
+function visibleStrings(src, file) {
+  let ast;
+  try {
+    ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+  } catch (e) {
+    throw new Error(`${show(file)}: ${e.message}`);
+  }
+  const out = [];
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
+    else if (node.type === 'TemplateElement') out.push(node.value.cooked ?? node.value.raw);
+    else if (node.type === 'JSXText') out.push(node.value);
+    for (const key of Object.keys(node)) {
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(ast);
+  return out;
+}
+
+test('the /resume surface is scanned', () => {
+  const names = SURFACE.map(show);
+  for (const f of ['app/resume/page.js', 'app/components/resume/Scanner.js', 'app/api/resume-grade/route.js']) {
+    assert.ok(names.includes(f), `${f} is scanned`);
+  }
+});
+
+test('no "flight"/"fare" and no job totals in the /resume copy', () => {
+  const found = [];
+  for (const f of SURFACE) {
+    const src = readFileSync(f, 'utf8');
+    if (/\b\d{1,3},\d{3}\s*(?:jobs|roles|departures)\b/i.test(src)) found.push(`${show(f)}: a job total`);
+    for (const s of visibleStrings(src, f)) {
+      if (/\b(?:flights?|fares?)\b/i.test(s)) found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      if (/\b\d[\d,.]*\s*[kKmM]?\+?\s*(?:countries|jobs|roles|listings|openings|departures)\b/i.test(s)) {
+        found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      }
+    }
+  }
+  assert.deepEqual(found, []);
+});
+
+test('the page is a server page with its own title, without the retired hero', () => {
+  const page = readFileSync(join(ROOT, 'app/resume/page.js'), 'utf8');
+  assert.ok(!/^\s*['"]use client['"]/.test(page), 'page.js is a server component');
+  assert.match(page, /export const metadata\s*=\s*\{[\s\S]*?title:\s*'[^']+ — OpportuMap'/);
+  for (const f of SURFACE) {
+    const src = readFileSync(f, 'utf8');
+    assert.ok(!/EditorialHero|useScrollReveal/.test(src), `${show(f)} uses a retired hero`);
+  }
+});
+
+test('the scanner checks res.ok before reading the answer, and the picker is a real button', () => {
+  const src = readFileSync(join(ROOT, 'app/components/resume/Scanner.js'), 'utf8');
+  const ok = src.indexOf('res.ok');
+  const json = src.indexOf('res.json()');
+  assert.ok(ok > -1 && json > ok, 'res.ok is checked before res.json()');
+  assert.match(src, /<button[^>]*type="button"/);
+  assert.match(src, /type="file"/);
+  assert.match(src, /\.value = ''/); // the same file can be picked again
+  assert.match(src, /validateResumeFile\(/);
+});
+
+test('resume.css moves only transform and opacity', () => {
+  const css = readFileSync(join(ROOT, 'app/components/resume/resume.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  // Split a transition list on its top-level commas only (cubic-bezier() has its own).
+  const topLevel = (v) => {
+    let flat = v;
+    while (/\([^()]*\)/.test(flat)) flat = flat.replace(/\([^()]*\)/g, '');
+    return flat.split(',');
+  };
+  for (const m of css.matchAll(/transition(?:-property)?\s*:\s*([^;}]+)/g)) {
+    for (const part of topLevel(m[1])) {
+      const prop = part.trim().split(/\s+/)[0];
+      assert.ok(['transform', 'opacity', 'none'].includes(prop), `transition on ${prop}`);
+    }
+  }
+  for (const m of css.matchAll(/@keyframes\s+[\w-]+\s*\{((?:[^{}]*\{[^{}]*\})*)[^{}]*\}/g)) {
+    for (const d of m[1].matchAll(/([\w-]+)\s*:/g)) {
+      assert.ok(['transform', 'opacity'].includes(d[1]), `keyframes animate ${d[1]}`);
+    }
+  }
+  assert.ok(!/backdrop-filter|\bfilter\s*:/.test(css), 'no filters');
+  assert.ok(!/\b\d+(?:\.\d+)?vh\b/.test(css), 'svh/dvh, not vh');
 });
