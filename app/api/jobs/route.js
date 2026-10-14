@@ -1,3 +1,5 @@
+import { decodeEntities } from '../../../lib/htmlEntities.js';
+
 // Countries with Adzuna API support
 const ADZUNA_COUNTRIES = ['us', 'gb', 'ca', 'au', 'de', 'fr', 'in', 'it', 'nl', 'sg', 'br', 'mx', 'nz', 'za', 'pl', 'at', 'be', 'es', 'se', 'ch', 'ru'];
 
@@ -34,6 +36,18 @@ const REMOTE_COORDS = ALL_COUNTRIES.map((code) => {
   const [lng, lat] = COUNTRY_COORDS[code] || [0, 0];
   return { lng, lat, country: code };
 });
+
+// Feeds send HTML-escaped text (e.g. "Partners &amp; Logistics"). Decode it once,
+// here on the server; every place that shows job text renders it as plain text.
+function cleanJobText(job) {
+  return {
+    ...job,
+    title: decodeEntities(job.title),
+    company: decodeEntities(job.company),
+    location: decodeEntities(job.location),
+    description: decodeEntities(job.description),
+  };
+}
 
 async function fetchAdzunaJobs(query, countries) {
   const results = await Promise.allSettled(
@@ -305,7 +319,8 @@ export async function GET(request) {
     // Try Supabase first (fast, 100K+ jobs)
     const dbJobs = await fetchFromSupabase(query, requestedCountries);
     if (dbJobs && dbJobs.length > 0) {
-      return Response.json({ jobs: dbJobs, total: dbJobs.length, source: 'db' });
+      const cleaned = dbJobs.map(cleanJobText);
+      return Response.json({ jobs: cleaned, total: cleaned.length, source: 'db' });
     }
 
     // Fall back to live APIs
@@ -323,7 +338,7 @@ export async function GET(request) {
       ...(remotiveJobs.status === 'fulfilled' ? remotiveJobs.value : []),
       ...(arbeitnowJobs.status === 'fulfilled' ? arbeitnowJobs.value : []),
       ...(himalayasJobs.status === 'fulfilled' ? himalayasJobs.value : []),
-    ];
+    ].map(cleanJobText);
 
     // Deduplicate by title+company
     const seen = new Set();

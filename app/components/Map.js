@@ -4,6 +4,7 @@ import { useEffect, useRef, useImperativeHandle } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { getVisaStatus, VISA_COLORS } from '../data/visaData';
+import { buildJobPopup } from './mapPopup.js';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -33,16 +34,7 @@ function addMarkers(mapInstance, jobs, dark, nationality, markerMap) {
       closeButton: false,
       maxWidth: '240px',
       className: dark ? 'popup-dark' : 'popup-light',
-    }).setHTML(`
-      <div class="popup-inner">
-        <p class="popup-title">${job.title}</p>
-        <p class="popup-company">${job.company}</p>
-        <p class="popup-location">${job.location}</p>
-        <p class="popup-salary">${job.salary}</p>
-        ${nationality ? `<p class="popup-visa">${emoji} ${label}${score > 0 ? ` · <span style="color:#6366f1">${score}% match</span>` : ''}</p>` : ''}
-        ${job.url ? `<a class="popup-link" href="${job.url}" target="_blank" rel="noopener noreferrer">View job →</a>` : ''}
-      </div>
-    `);
+    }).setDOMContent(buildJobPopup(document, job, { nationality, emoji, label, score }));
 
     const marker = new mapboxgl.Marker({ element: el })
       .setLngLat([job.lng, job.lat])
