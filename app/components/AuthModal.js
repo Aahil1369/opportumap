@@ -22,10 +22,13 @@ export default function AuthModal({ onClose, onSuccess }) {
 
     try {
       if (mode === 'signup') {
+        const fullName = name.trim();
+        if (!fullName) throw new Error('Please enter your name.');
+        if (fullName.includes('@')) throw new Error('Please enter your name, not an email address. It is shown publicly.');
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name } },
+          options: { data: { full_name: fullName } },
         });
         if (error) throw error;
         setSent(true);
@@ -93,7 +96,7 @@ export default function AuthModal({ onClose, onSuccess }) {
               <form onSubmit={handleSubmit} className="space-y-3">
                 {mode === 'signup' && (
                   <input value={name} onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder="Your name" required maxLength={60} autoComplete="name"
                     className="w-full px-3 py-2.5 bg-paper-bg border border-paper-rule text-paper-ink text-sm outline-none focus:border-accent transition-colors" />
                 )}
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}

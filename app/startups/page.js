@@ -13,6 +13,7 @@ import StaggerItem from '../components/motion/StaggerItem';
 import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
+import { fetchJson } from '../../lib/fetchJson.js';
 
 const STAGES = ['idea', 'pre-seed', 'seed', 'series-a', 'series-b+'];
 const SECTORS = ['AI', 'Fintech', 'HealthTech', 'CleanTech', 'SaaS', 'EdTech', 'Other'];
@@ -23,6 +24,7 @@ export default function StartupsPage() {
   useScrollReveal();
   const [startups, setStartups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [stage, setStage] = useState('');
   const [sector, setSector] = useState('');
   const [sort, setSort] = useState('newest');
@@ -40,17 +42,21 @@ export default function StartupsPage() {
     if (stage) params.set('stage', stage);
     if (sector) params.set('sector', sector);
     params.set('sort', sort);
-    fetch(`/api/startups?${params}`)
-      .then((r) => r.json())
+    let active = true;
+    fetchJson(`/api/startups?${params}`)
       .then((d) => {
+        if (!active) return;
+        setLoadError(false);
         const list = d.startups ?? [];
         setStartups(list);
         // compute sector counts
         const counts = { ...SECTOR_COUNTS };
         list.forEach((s) => { if (counts[s.sector] !== undefined) counts[s.sector]++; });
         setSectorCounts(counts);
-        setLoading(false);
-      });
+      })
+      .catch(() => { if (active) { setStartups([]); setLoadError(true); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [stage, sector, sort]);
 
   const pillBase = 'font-mono text-[11px] px-3 py-1.5 transition-colors cursor-pointer';
@@ -109,6 +115,12 @@ export default function StartupsPage() {
                   <div className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">
                     LOADING STARTUPS…
                   </div>
+                </div>
+              ) : loadError ? (
+                <div role="alert" className="border border-paper-rule bg-paper-bg-alt p-10 text-center max-w-[520px]">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-4">{'// COULD NOT LOAD'}</div>
+                  <h2 className="font-display text-[24px] leading-[1.15] mb-3">Startups didn&apos;t load.</h2>
+                  <p className="text-[13px] text-paper-ink-dim leading-[1.5]">Something went wrong on our side. Please refresh the page in a moment.</p>
                 </div>
               ) : startups.length === 0 ? (
                 <div className="border border-paper-rule bg-paper-bg-alt p-10 text-center max-w-[520px]">

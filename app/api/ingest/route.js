@@ -1,8 +1,9 @@
 // Job ingestion pipeline — stores jobs to Supabase for 100K+ job support
-// POST /api/ingest   (protected by INGEST_SECRET header or admin email)
+// POST /api/ingest   (protected by INGEST_SECRET header or the admin's session, by user id)
 // GET  /api/ingest   returns current DB count
 // Netlify scheduled function calls this daily at 2am UTC
 
+import { isAdminUser } from '../../../lib/admin.js';
 import { supabase, hasSupabase } from '../../../lib/supabase';
 
 const INGEST_SECRET = process.env.INGEST_SECRET || '';
@@ -261,7 +262,7 @@ export async function POST(request) {
     const { createClient } = await import('../../../lib/supabase-server.js');
     const serverClient = await createClient();
     const { data: { user } } = await serverClient.auth.getUser();
-    if (!user || user.email !== 'aahilakbar567@gmail.com') {
+    if (!isAdminUser(user)) {
       return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
   }

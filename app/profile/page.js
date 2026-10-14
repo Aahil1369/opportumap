@@ -8,8 +8,8 @@ import Footnote from '../components/ui/Footnote';
 import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
-
-const VERIFIED_EMAILS = new Set(['aahilakbar567@gmail.com']);
+import { displayName } from '../../lib/displayName.js';
+import { isVerifiedUserId } from '../../lib/admin.js';
 
 function StatBox({ label, value }) {
   return (
@@ -104,7 +104,7 @@ export default function ProfilePage() {
     );
   }
 
-  const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+  const name = displayName(user);
   const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   const joinDate = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '';
@@ -138,11 +138,10 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-display text-[24px] leading-[1.15] text-paper-ink">{name}</h2>
-                  {VERIFIED_EMAILS.has(user.email) && (
+                  {isVerifiedUserId(user.id) && (
                     <span title="Verified" className="inline-flex items-center justify-center w-5 h-5 border border-accent text-accent flex-shrink-0" style={{ fontSize: 10 }}>✓</span>
                   )}
                 </div>
-                <p className="text-[13px] text-paper-ink-dim mt-0.5">{user.email}</p>
                 {joinDate && <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub mt-1">JOINED {joinDate.toUpperCase()}</p>}
                 <div className="flex gap-3 mt-4">
                   <Btn variant="primary" href="/community">+ New Post</Btn>
@@ -163,10 +162,6 @@ export default function ProfilePage() {
           <div className="reveal border border-paper-rule p-5 mb-6">
             <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-4">// ACCOUNT DETAILS</div>
             <div className="space-y-0">
-              <div className="flex justify-between py-2.5 border-b border-paper-rule text-[13px]">
-                <span className="text-paper-ink-sub">Email</span>
-                <span className="text-paper-ink">{user.email}</span>
-              </div>
               <div className="flex justify-between py-2.5 border-b border-paper-rule text-[13px]">
                 <span className="text-paper-ink-sub">Sign-in method</span>
                 <span className="text-paper-ink">{user.app_metadata?.provider === 'google' ? 'Google' : 'Email'}</span>

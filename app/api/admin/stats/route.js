@@ -1,14 +1,13 @@
 import { createClient } from '../../../../lib/supabase-server.js';
 import { supabase, hasSupabase } from '../../../../lib/supabase.js';
-
-const ADMIN_EMAIL = 'aahilakbar567@gmail.com';
+import { isAdminUser } from '../../../../lib/admin.js';
 
 export async function GET() {
   if (!hasSupabase) return Response.json({ error: 'Not configured' }, { status: 503 });
 
   const serverSupabase = await createClient();
   const { data: { user } } = await serverSupabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!isAdminUser(user)) {
     return Response.json({ error: 'Unauthorized' }, { status: 403 });
   }
 

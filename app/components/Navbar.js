@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { displayName } from '../../lib/displayName.js';
+import { isAdminUser } from '../../lib/admin.js';
 
 // Keep Supabase and these interaction-gated modals out of the initial bundle.
 // supabase-js is ~67KB gzipped and was previously loaded on every page just to
@@ -26,10 +28,8 @@ const TOOL_LINKS = [
   { href: '/interview',    label: 'Interview Prep' },
 ];
 
-const ADMIN_EMAIL = 'aahilakbar567@gmail.com';
-
 function UserAvatar({ user, size = 'sm' }) {
-  const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || '?';
+  const name = displayName(user);
   const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
   const sz = size === 'lg' ? 'w-10 h-10 text-[12px]' : 'w-7 h-7 text-[10px]';
@@ -115,10 +115,10 @@ export default function Navbar() {
     router.push('/');
   };
 
-  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Account';
+  const userName = user ? displayName(user) : 'Account';
   const progressPct = Math.min(100, (toolsUsed / TOOL_LINKS.length) * 100);
   const isToolActive = TOOL_LINKS.some((t) => pathname === t.href);
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminUser(user);
 
   return (
     <>
@@ -167,7 +167,7 @@ export default function Navbar() {
                     <UserAvatar user={user} size="lg" />
                     <div className="min-w-0">
                       <p className="font-display italic text-[16px] leading-tight text-paper-ink truncate">{userName}</p>
-                      <p className="font-mono text-[10px] text-paper-ink-sub truncate">{user.email}</p>
+                      <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub truncate">Signed in</p>
                     </div>
                   </div>
                   <Link href="/profile" className="block font-mono text-[11px] tracking-[0.1em] uppercase text-paper-ink-dim hover:text-accent">Profile</Link>
@@ -235,7 +235,7 @@ export default function Navbar() {
                   <div className="absolute right-0 top-full mt-3 w-[220px] bg-paper-bg-alt border border-paper-rule">
                     <div className="px-4 py-3 border-b border-paper-rule">
                       <p className="font-display italic text-[15px] leading-tight text-paper-ink truncate">{userName}</p>
-                      <p className="text-[10px] text-paper-ink-sub truncate mt-1">{user.email}</p>
+                      <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub truncate mt-1">Signed in</p>
                     </div>
                     <div className="py-1 font-sans normal-case tracking-normal">
                       <Link href="/profile" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-paper-ink hover:bg-paper-bg">Profile</Link>

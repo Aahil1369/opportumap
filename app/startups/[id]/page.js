@@ -9,6 +9,7 @@ import Footnote from '../../components/ui/Footnote';
 import { useScrollReveal } from '../../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../../lib/pageCopy';
 import { createClient } from '../../../lib/supabase-browser';
+import { fetchJson } from '../../../lib/fetchJson.js';
 
 const SECTOR_EMOJIS = {
   'AI': '🤖', 'Fintech': '💳', 'HealthTech': '🏥', 'CleanTech': '🌱',
@@ -28,6 +29,8 @@ export default function StartupDetailPage() {
   const router = useRouter();
   const [startup, setStartup] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [actionError, setActionError] = useState('');
   const [user, setUser] = useState(null);
   const [upvoted, setUpvoted] = useState(false);
   const [upvoteCount, setUpvoteCount] = useState(0);
@@ -41,34 +44,45 @@ export default function StartupDetailPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/startups/${id}`)
-      .then((r) => r.json())
+    fetchJson(`/api/startups/${id}`)
       .then((d) => {
         if (d.startup) {
           setStartup(d.startup);
           setUpvoteCount(d.startup.upvote_count ?? 0);
           setInterestCount(d.startup.interest_count ?? 0);
         }
-        setLoading(false);
-      });
+      })
+      // A 404 is "not found"; anything else is a load error.
+      .catch((err) => { if (err?.status !== 404) setLoadError(true); })
+      .finally(() => setLoading(false));
   }, [id]);
 
   const handleUpvote = async () => {
     if (!user) return;
     setUpvoting(true);
-    const res = await fetch(`/api/startups/${id}/upvote`, { method: 'POST' });
-    const data = await res.json();
-    if (data.count !== undefined) { setUpvoted(data.upvoted); setUpvoteCount(data.count); }
-    setUpvoting(false);
+    setActionError('');
+    try {
+      const data = await fetchJson(`/api/startups/${id}/upvote`, { method: 'POST' });
+      if (data.count !== undefined) { setUpvoted(data.upvoted); setUpvoteCount(data.count); }
+    } catch {
+      setActionError('Could not save your upvote. Please try again.');
+    } finally {
+      setUpvoting(false);
+    }
   };
 
   const handleInterest = async () => {
     if (!user) return;
     setInterestLoading(true);
-    const res = await fetch(`/api/startups/${id}/interest`, { method: 'POST' });
-    const data = await res.json();
-    if (data.count !== undefined) { setInterested(data.interested); setInterestCount(data.count); }
-    setInterestLoading(false);
+    setActionError('');
+    try {
+      const data = await fetchJson(`/api/startups/${id}/interest`, { method: 'POST' });
+      if (data.count !== undefined) { setInterested(data.interested); setInterestCount(data.count); }
+    } catch {
+      setActionError('Could not save your interest. Please try again.');
+    } finally {
+      setInterestLoading(false);
+    }
   };
 
   if (loading) return (
@@ -78,6 +92,17 @@ export default function StartupDetailPage() {
         <div className="font-mono text-[11px] tracking-[0.12em] text-paper-ink-sub animate-pulse">
           LOADING STARTUP…
         </div>
+      </div>
+    </div>
+  );
+
+  if (loadError) return (
+    <div className="min-h-screen bg-paper-bg text-paper-ink">
+      <Navbar />
+      <div role="alert" className="flex flex-col items-center justify-center h-64 gap-3">
+        <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub">{'// COULD NOT LOAD'}</div>
+        <p className="text-[14px] text-paper-ink-dim">This startup didn&apos;t load. Please refresh in a moment.</p>
+        <Link href="/startups" className="font-mono text-[11px] tracking-[0.1em] text-accent">← Back to startups</Link>
       </div>
     </div>
   );
@@ -225,6 +250,7 @@ export default function StartupDetailPage() {
                 🔗 Visit Website
               </a>
             )}
+            {actionError && <p role="alert" className="font-mono text-[11px] text-accent text-center">{actionError}</p>}
             <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub text-center pt-2">
               Posted by {startup.user_name}
             </p>

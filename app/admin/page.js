@@ -6,8 +6,7 @@ import Footnote from '../components/ui/Footnote';
 import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
-
-const ADMIN_EMAIL = 'aahilakbar567@gmail.com';
+import { isAdminUser } from '../../lib/admin.js';
 
 function StatCard({ label, value }) {
   return (
@@ -54,7 +53,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (user === undefined) return;
     if (user === null) { setLoading(false); return; }
-    if (user.email !== ADMIN_EMAIL) { setLoading(false); return; }
+    if (!isAdminUser(user)) { setLoading(false); return; }
 
     fetch('/api/admin/stats')
       .then((r) => r.json())
@@ -70,7 +69,7 @@ export default function AdminPage() {
 
   // Auto-refresh live users every 30s
   useEffect(() => {
-    if (!user || user.email !== ADMIN_EMAIL) return;
+    if (!isAdminUser(user)) return;
     const interval = setInterval(() => {
       setLiveRefreshing(true);
       fetch('/api/admin/stats')
@@ -95,7 +94,7 @@ export default function AdminPage() {
     );
   }
 
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (!isAdminUser(user)) {
     return (
       <div className="min-h-screen bg-paper-bg text-paper-ink">
         <Navbar />

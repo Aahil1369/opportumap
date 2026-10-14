@@ -1,5 +1,6 @@
 import { createClient } from '../../../../lib/supabase-server.js';
 import { supabase, hasSupabase } from '../../../../lib/supabase.js';
+import { displayName } from '../../../../lib/displayName.js';
 
 // Columns returned to clients. Deliberately excludes user_email: it is no longer
 // stored or exposed (public SELECT would let anyone with the anon key scrape every
@@ -44,7 +45,7 @@ export async function POST(request) {
     .from('posts')
     .insert({
       user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+      user_name: displayName(user),
       user_avatar: user.user_metadata?.avatar_url || '',
       title: title?.trim() || null,
       content: content.trim(),

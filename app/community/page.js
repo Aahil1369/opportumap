@@ -9,10 +9,12 @@ import Footnote from '../components/ui/Footnote';
 import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { HERO_COPY, FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
+import { displayName } from '../../lib/displayName.js';
+import { isVerifiedUserId } from '../../lib/admin.js';
+import { fetchJson } from '../../lib/fetchJson.js';
 
-// Match on user_id (a public, non-PII UUID) instead of email, so the posts API
-// no longer needs to expose user_email. ID is aahilakbar567@gmail.com's auth uid.
-const VERIFIED_USER_IDS = new Set(['3c60e96c-18e0-4990-91b4-834acd70579e']);
+// The verified badge matches on user_id (a public, non-PII UUID) via lib/admin.js,
+// so the posts API never needs to expose anyone's email.
 
 function VerifiedBadge() {
   return (
@@ -50,33 +52,33 @@ function Avatar({ name, avatar, size = 'md' }) {
   );
 }
 
-function FollowButton({ targetUserId, targetName, currentUser }) {
+function FollowButton({ targetUserId, currentUser }) {
   const [following, setFollowing] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!targetUserId || !currentUser) return;
-    fetch(`/api/community/follows?userId=${targetUserId}`)
-      .then((r) => r.json())
-      .then((d) => setFollowing(d.is_following));
+    fetchJson(`/api/community/follows?userId=${targetUserId}`)
+      .then((d) => setFollowing(d.is_following))
+      .catch(() => {});
   }, [targetUserId, currentUser]);
 
   if (!currentUser || currentUser.id === targetUserId) return null;
 
   const toggle = async () => {
     setLoading(true);
-    const res = await fetch('/api/community/follows', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        following_id: targetUserId,
-        following_name: targetName,
-        follower_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || '',
-      }),
-    });
-    const data = await res.json();
-    if (data.following !== undefined) setFollowing(data.following);
-    setLoading(false);
+    try {
+      const data = await fetchJson('/api/community/follows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ following_id: targetUserId }),
+      });
+      if (data.following !== undefined) setFollowing(data.following);
+    } catch {
+      // Leave the button as it was; the user can try again.
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,40 +99,46 @@ function FollowButton({ targetUserId, targetName, currentUser }) {
 function CommentSection({ postId, currentUser, onSignIn }) {
   const [comments, setComments] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [input, setInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/community/comments?postId=${postId}`)
-      .then((r) => r.json())
-      .then((d) => { setComments(d.comments || []); setLoaded(true); });
+    fetchJson(`/api/community/comments?postId=${postId}`)
+      .then((d) => setComments(d.comments || []))
+      .catch(() => setLoadError(true))
+      .finally(() => setLoaded(true));
   }, [postId]);
 
   const submit = async () => {
     if (!input.trim() || !currentUser) return;
     setSubmitting(true);
-    const res = await fetch('/api/community/comments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        post_id: postId,
-        content: input.trim(),
-        user_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Anonymous',
-        user_avatar: currentUser.user_metadata?.avatar_url || '',
-      }),
-    });
-    const data = await res.json();
-    if (data.comment) {
-      setComments((prev) => [...prev, data.comment]);
-      setInput('');
+    setSendError('');
+    try {
+      // The server sets the author name from the session (lib/displayName.js).
+      const data = await fetchJson('/api/community/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: postId, content: input.trim() }),
+      });
+      if (data.comment) {
+        setComments((prev) => [...prev, data.comment]);
+        setInput('');
+      }
+    } catch {
+      setSendError('Could not post your comment. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
     <div className="mt-3 pl-4 border-l border-paper-rule space-y-3">
       {!loaded ? (
         <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">LOADING COMMENTS…</p>
+      ) : loadError ? (
+        <p role="alert" className="font-mono text-[10px] tracking-[0.1em] text-accent">COULD NOT LOAD COMMENTS. PLEASE REFRESH.</p>
       ) : comments.length === 0 ? (
         <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub">NO COMMENTS YET. BE THE FIRST!</p>
       ) : (
@@ -151,8 +159,9 @@ function CommentSection({ postId, currentUser, onSignIn }) {
       )}
 
       {currentUser ? (
+        <>
         <div className="flex gap-2 items-start">
-          <Avatar name={currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]} avatar={currentUser.user_metadata?.avatar_url} size="sm" />
+          <Avatar name={displayName(currentUser)} avatar={currentUser.user_metadata?.avatar_url} size="sm" />
           <div className="flex-1 flex gap-2">
             <input
               value={input}
@@ -166,6 +175,8 @@ function CommentSection({ postId, currentUser, onSignIn }) {
             </Btn>
           </div>
         </div>
+        {sendError && <p role="alert" className="font-mono text-[10px] text-accent">{sendError}</p>}
+        </>
       ) : (
         <button onClick={() => onSignIn?.()} className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub hover:text-accent transition-colors">
           SIGN IN TO COMMENT
@@ -186,15 +197,18 @@ function PostCard({ post, currentUser, likedIds, onLike, onSignIn }) {
 
   const handleLike = async () => {
     if (!currentUser) return;
-    const res = await fetch('/api/community/likes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ post_id: post.id }),
-    });
-    const data = await res.json();
-    if (data.like_count !== undefined) {
-      setLocalLikeCount(data.like_count);
-      onLike(post.id, data.liked);
+    try {
+      const data = await fetchJson('/api/community/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: post.id }),
+      });
+      if (data.like_count !== undefined) {
+        setLocalLikeCount(data.like_count);
+        onLike(post.id, data.liked);
+      }
+    } catch {
+      // Like state stays as it was.
     }
   };
 
@@ -207,8 +221,8 @@ function PostCard({ post, currentUser, likedIds, onLike, onSignIn }) {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-medium text-paper-ink">{post.user_name}</span>
-              {VERIFIED_USER_IDS.has(post.user_id) && <VerifiedBadge />}
-              <FollowButton targetUserId={post.user_id} targetName={post.user_name} currentUser={currentUser} />
+              {isVerifiedUserId(post.user_id) && <VerifiedBadge />}
+              <FollowButton targetUserId={post.user_id} currentUser={currentUser} />
             </div>
             <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub">
               <span>{typeInfo.label}</span>
@@ -283,28 +297,33 @@ function CreatePost({ currentUser, onPost, onSignIn }) {
   const [postType, setPostType] = useState('story');
   const [tags, setTags] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [postError, setPostError] = useState('');
 
   const submit = async () => {
     if (!content.trim()) return;
     setSubmitting(true);
-    const res = await fetch('/api/community/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: title.trim() || undefined,
-        content: content.trim(),
-        post_type: postType,
-        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-        user_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0] || 'Anonymous',
-        user_avatar: currentUser.user_metadata?.avatar_url || '',
-      }),
-    });
-    const data = await res.json();
-    if (data.post) {
-      onPost(data.post);
-      setTitle(''); setContent(''); setTags(''); setPostType('story'); setOpen(false);
+    setPostError('');
+    try {
+      // The server sets the author name from the session (lib/displayName.js).
+      const data = await fetchJson('/api/community/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim() || undefined,
+          content: content.trim(),
+          post_type: postType,
+          tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+        }),
+      });
+      if (data.post) {
+        onPost(data.post);
+        setTitle(''); setContent(''); setTags(''); setPostType('story'); setOpen(false);
+      }
+    } catch {
+      setPostError('Could not publish your post. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   if (!currentUser) {
@@ -321,7 +340,7 @@ function CreatePost({ currentUser, onPost, onSignIn }) {
   return (
     <div className="border border-paper-rule bg-paper-bg">
       <div className="p-4 flex items-center gap-3">
-        <Avatar name={currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || currentUser.email?.split('@')[0]} avatar={currentUser.user_metadata?.avatar_url} />
+        <Avatar name={displayName(currentUser)} avatar={currentUser.user_metadata?.avatar_url} />
         <button
           onClick={() => setOpen(true)}
           className="flex-1 text-left text-[13px] px-4 py-2.5 bg-paper-bg border border-paper-rule text-paper-ink-sub hover:border-accent/60 transition-colors"
@@ -361,6 +380,7 @@ function CreatePost({ currentUser, onPost, onSignIn }) {
             placeholder="Tags (comma separated): visa, canada, tech..."
             className="w-full px-3 py-2 bg-paper-bg border border-paper-rule text-paper-ink placeholder:text-paper-ink-sub text-[13px] outline-none focus:border-accent transition-colors"
           />
+          {postError && <p role="alert" className="font-mono text-[11px] text-accent">{postError}</p>}
           <div className="flex gap-2 justify-end">
             <Btn variant="secondary" as="button" onClick={() => setOpen(false)}>
               Cancel
@@ -384,6 +404,7 @@ export default function CommunityPage() {
   const [likedIds, setLikedIds] = useState(new Set());
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const PER_PAGE = 20;
 
   useEffect(() => {
@@ -395,24 +416,28 @@ export default function CommunityPage() {
 
   const loadPosts = useCallback(async (offset = 0) => {
     setLoading(true);
-    const res = await fetch(`/api/community/posts?limit=${PER_PAGE}&offset=${offset}`);
-    const data = await res.json();
-    const newPosts = data.posts || [];
-    if (offset === 0) setPosts(newPosts);
-    else setPosts((prev) => [...prev, ...newPosts]);
-    setHasMore(newPosts.length === PER_PAGE);
-    setLoading(false);
+    setLoadError(false);
+    try {
+      const data = await fetchJson(`/api/community/posts?limit=${PER_PAGE}&offset=${offset}`);
+      const newPosts = data.posts || [];
+      if (offset === 0) setPosts(newPosts);
+      else setPosts((prev) => [...prev, ...newPosts]);
+      setHasMore(newPosts.length === PER_PAGE);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadPosts(0); }, [loadPosts]);
 
   // Load liked post IDs for current user
   useEffect(() => {
     if (!user) return;
-    fetch('/api/community/likes')
-      .then((r) => r.json())
-      .then((d) => setLikedIds(new Set(d.liked_post_ids || [])));
+    fetchJson('/api/community/likes')
+      .then((d) => setLikedIds(new Set(d.liked_post_ids || [])))
+      .catch(() => {});
   }, [user]);
 
   const handlePost = (newPost) => {
@@ -477,6 +502,12 @@ export default function CommunityPage() {
                     </div>
                   ))}
                 </div>
+              ) : loadError && posts.length === 0 ? (
+                <div role="alert" className="border border-paper-rule bg-paper-bg-alt p-12 text-center">
+                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">{'// COULD NOT LOAD POSTS'}</div>
+                  <p className="font-display text-[24px] leading-[1.15] text-paper-ink mb-5">Something went wrong loading the feed.</p>
+                  <Btn variant="secondary" as="button" onClick={() => loadPosts(0)}>Try again</Btn>
+                </div>
               ) : posts.length === 0 ? (
                 <div className="border border-paper-rule bg-paper-bg-alt p-12 text-center">
                   <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">// NO POSTS YET</div>
@@ -494,6 +525,9 @@ export default function CommunityPage() {
                       onSignIn={() => setShowAuth(true)}
                     />
                   ))}
+                  {loadError && (
+                    <p role="alert" className="font-mono text-[11px] text-accent text-center">Could not load more posts. Please try again.</p>
+                  )}
                   {hasMore && (
                     <div className="text-center pt-2">
                       <Btn variant="secondary" as="button" onClick={loadMore} disabled={loading}>
@@ -551,18 +585,18 @@ function UserStats({ user }) {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/community/follows?userId=${user.id}`)
-      .then((r) => r.json())
-      .then((d) => setStats({ followers: d.followers || 0, following: d.following || 0 }));
+    fetchJson(`/api/community/follows?userId=${user.id}`)
+      .then((d) => setStats({ followers: d.followers || 0, following: d.following || 0 }))
+      .catch(() => {});
   }, [user]);
 
   return (
     <div className="border border-paper-rule bg-paper-bg p-4">
       <div className="flex items-center gap-2.5 mb-3">
-        <Avatar name={user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]} avatar={user.user_metadata?.avatar_url} />
+        <Avatar name={displayName(user)} avatar={user.user_metadata?.avatar_url} />
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-paper-ink truncate">{user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}</p>
-          <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub truncate">{user.email}</p>
+          <p className="text-[13px] font-medium text-paper-ink truncate">{displayName(user)}</p>
+          <p className="font-mono text-[10px] tracking-[0.1em] text-paper-ink-sub truncate">SIGNED IN</p>
         </div>
       </div>
       <div className="flex gap-6 pt-3 border-t border-paper-rule">

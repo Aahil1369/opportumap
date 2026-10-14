@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '../../lib/supabase-browser';
 import Btn from './ui/Btn';
+import { fetchJson } from '../../lib/fetchJson.js';
 
 const STAGES = ['idea', 'pre-seed', 'seed', 'series-a', 'series-b+'];
 const SECTORS = ['AI', 'Fintech', 'HealthTech', 'CleanTech', 'SaaS', 'EdTech', 'Other'];
@@ -19,6 +20,7 @@ export default function StartupModal({ onClose, onSuccess }) {
   const [step, setStep] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     name: '', tagline: '', description: '',
     stage: '', sector: '',
@@ -30,37 +32,57 @@ export default function StartupModal({ onClose, onSuccess }) {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
   const handlePitchDeck = async (file) => {
-    if (!file || file.type !== 'application/pdf') return;
+    if (!file) return;
+    setError('');
+    if (file.type !== 'application/pdf') { setError('Pitch deck must be a PDF.'); return; }
     setUploading(true);
     try {
       const supabase = createClient();
-      const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-      const { data, error } = await supabase.storage.from('pitch-decks').upload(fileName, file, { upsert: true });
-      if (!error && data) {
-        const { data: { publicUrl } } = supabase.storage.from('pitch-decks').getPublicUrl(data.path);
-        set('pitch_deck_url', publicUrl);
-      }
-    } catch {}
-    setUploading(false);
+      const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(-80);
+      const fileName = `${Date.now()}-${safeName}`;
+      // upsert:false — never overwrite an existing object (no UPDATE policy on storage).
+      const { data, error: uploadError } = await supabase.storage.from('pitch-decks').upload(fileName, file, { upsert: false });
+      if (uploadError || !data) throw uploadError || new Error('Upload failed');
+      const { data: { publicUrl } } = supabase.storage.from('pitch-decks').getPublicUrl(data.path);
+      set('pitch_deck_url', publicUrl);
+    } catch (err) {
+      set('pitch_deck_url', '');
+      setError(`Pitch deck upload failed${err?.message ? `: ${err.message}` : ''}. You can post without it or try again.`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setError('');
     try {
-      const res = await fetch('/api/startups', {
+      // Only the startup's own fields: the server sets user_id from the session and
+      // the database sets the founder name and the counters.
+      const data = await fetchJson('/api/startups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
+          name: form.name,
+          tagline: form.tagline,
+          description: form.description,
+          stage: form.stage,
+          sector: form.sector,
+          location: form.location,
+          website: form.website,
+          pitch_deck_url: form.pitch_deck_url,
           raise_amount: form.raise_amount ? Number(form.raise_amount) : null,
           equity_offered: form.equity_offered ? Number(form.equity_offered) : null,
           team_size: form.team_size ? Number(form.team_size) : null,
         }),
       });
-      const data = await res.json();
       if (data.startup) { onSuccess(data.startup); onClose(); }
-    } catch {}
-    setSubmitting(false);
+      else setError('Could not post your startup. Please try again.');
+    } catch (err) {
+      setError(err?.message || 'Could not post your startup. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -87,17 +109,17 @@ export default function StartupModal({ onClose, onSuccess }) {
               <p className="text-[13px] text-paper-ink-dim">What's your startup called?</p>
               <div>
                 <label className={labelClass}>STARTUP NAME</label>
-                <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. NeuralHire"
+                <input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="e.g. NeuralHire" maxLength={120}
                   className={inputClass} />
               </div>
               <div>
                 <label className={labelClass}>ONE-LINE TAGLINE</label>
-                <input value={form.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="e.g. AI recruiter that replaces the whole hiring funnel"
+                <input value={form.tagline} onChange={(e) => set('tagline', e.target.value)} placeholder="e.g. AI recruiter that replaces the whole hiring funnel" maxLength={200}
                   className={inputClass} />
               </div>
               <div>
                 <label className={labelClass}>DESCRIPTION (2-4 SENTENCES)</label>
-                <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} placeholder="What problem do you solve? How? What's your traction?"
+                <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} maxLength={5000} placeholder="What problem do you solve? How? What's your traction?"
                   className={`${inputClass} resize-none`} />
               </div>
             </>
@@ -202,6 +224,10 @@ export default function StartupModal({ onClose, onSuccess }) {
             </>
           )}
         </div>
+
+        {error && (
+          <p role="alert" className="px-6 pb-3 font-mono text-[11px] text-accent">{error}</p>
+        )}
 
         {/* Footer */}
         <div className="px-6 pb-6 flex gap-3">

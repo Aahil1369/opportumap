@@ -7,6 +7,7 @@ import StartupChat from '../components/StartupChat';
 import Footnote from '../components/ui/Footnote';
 import { FOOTNOTES } from '../lib/pageCopy';
 import { createClient } from '../../lib/supabase-browser';
+import { fetchJson } from '../../lib/fetchJson.js';
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -24,6 +25,7 @@ function MessagesInner() {
   const [user, setUser] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [active, setActive] = useState(null); // { startup_id, other_user_id, startup_name }
 
   useEffect(() => {
@@ -32,8 +34,7 @@ function MessagesInner() {
 
   useEffect(() => {
     if (!user) return;
-    fetch('/api/messages')
-      .then((r) => r.json())
+    fetchJson('/api/messages')
       .then((d) => {
         const convs = d.conversations ?? [];
         setConversations(convs);
@@ -46,8 +47,9 @@ function MessagesInner() {
         } else if (convs.length > 0) {
           setActive(convs[0]);
         }
-        setLoading(false);
-      });
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, [user, searchParams]);
 
   if (!user) return (
@@ -86,7 +88,12 @@ function MessagesInner() {
                     <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub animate-pulse">LOADING…</div>
                   </div>
                 )}
-                {!loading && conversations.length === 0 && (
+                {!loading && loadError && (
+                  <p role="alert" className="text-[12px] text-center py-8 px-4 text-accent leading-[1.5]">
+                    Could not load your conversations. Please refresh.
+                  </p>
+                )}
+                {!loading && !loadError && conversations.length === 0 && (
                   <p className="text-[12px] text-center py-8 px-4 text-paper-ink-sub leading-[1.5]">
                     No messages yet. Find a startup and say hello!
                   </p>
@@ -127,6 +134,7 @@ function MessagesInner() {
                     </div>
                   </div>
                   <StartupChat
+                    key={`${active.startup_id}::${active.other_user_id}`}
                     startupId={active.startup_id}
                     receiverId={active.other_user_id}
                     currentUser={user}
