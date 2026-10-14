@@ -2,6 +2,7 @@ import Groq from 'groq-sdk';
 import { GROQ_OPTIONS } from '../../../lib/ai.js';
 import {
   MAX_RESUME_BYTES,
+  OVER_LIMIT,
   UNREADABLE_PDF,
   hasReadableText,
   normalizeGrade,
@@ -12,7 +13,10 @@ export const runtime = 'nodejs';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const TOO_BIG = 'That PDF is over the 10 MB limit. Export a lighter copy (fewer images), then scan it.';
+// OVER_LIMIT is said only when the file is known to be over the limit (from its declared length,
+// its size or its bytes). A form cut off in transit was too large to arrive, but the file itself
+// may be just under the limit, so that answer names no limit.
+const NOT_RECEIVED = 'That PDF was too large for the scanner to receive. Export a lighter copy (fewer images), then scan it.';
 // The multipart framing around the file (boundaries, part headers) stays far below this.
 const FRAMING_BYTES = 64 * 1024;
 const STATUS_FOR = { size: 413, type: 415, empty: 400, missing: 400 };
@@ -22,14 +26,14 @@ const fail = (status, error) => Response.json({ error }, { status });
 export async function POST(request) {
   // Refuse an oversized upload from its declared length, before buffering any of it.
   const declared = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declared) && declared > MAX_RESUME_BYTES + FRAMING_BYTES) return fail(413, TOO_BIG);
+  if (Number.isFinite(declared) && declared > MAX_RESUME_BYTES + FRAMING_BYTES) return fail(413, OVER_LIMIT);
 
   let file;
   try {
     file = (await request.formData()).get('resume');
   } catch {
-    // Next's proxy hands on only the first 10 MB of a body, so a cut-off form was too large.
-    if (Number.isFinite(declared) && declared > MAX_RESUME_BYTES) return fail(413, TOO_BIG);
+    // Something on the way passed on only part of a body this large, so the form was cut off.
+    if (Number.isFinite(declared) && declared > MAX_RESUME_BYTES) return fail(413, NOT_RECEIVED);
     return fail(400, 'The upload didn’t arrive in one piece. Try again.');
   }
   if (!file || typeof file === 'string') return fail(400, 'Choose a PDF of your resume to scan.');
@@ -38,7 +42,7 @@ export async function POST(request) {
   if (!check.ok) return fail(STATUS_FOR[check.reason] ?? 400, check.error);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  if (buffer.length > MAX_RESUME_BYTES) return fail(413, TOO_BIG);
+  if (buffer.length > MAX_RESUME_BYTES) return fail(413, OVER_LIMIT);
 
   let resumeText;
   try {

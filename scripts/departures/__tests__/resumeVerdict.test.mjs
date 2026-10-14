@@ -10,11 +10,14 @@ import * as espree from 'espree';
 const {
   CLEARED_AT,
   MAX_RESUME_BYTES,
+  MAX_RESUME_LABEL,
   MIN_RESUME_TEXT,
   UNREADABLE_PDF,
   normalizeScore,
   resumeVerdict,
   validateResumeFile,
+  scanErrorFor,
+  sizeLabel,
   hasReadableText,
   normalizeGrade,
   jobsHref,
@@ -55,24 +58,84 @@ test('no usable score is never CLEARED', () => {
 
 // ── Upload rules ────────────────────────────────────────────────────────────────────────────
 
-test('the limit is 10 MB (MiB, as the picker and Finder count it)', () => {
-  assert.equal(MAX_RESUME_BYTES, 10 * MB);
+// Netlify runs the API route as a Function: a buffered request body is at most 6 MB, and a binary
+// body arrives Base64-encoded (4 bytes per 3), so a PDF much over 4.5 MB never reaches the route.
+const NETLIFY_BUFFERED_BODY = 6_000_000;
+const FRAMING_BYTES = 64 * 1024; // the route's allowance for the multipart framing around the file
+const base64 = (bytes) => Math.ceil(bytes / 3) * 4;
+
+test('the limit is 4 MB (MiB), small enough for the deploy platform to deliver', () => {
+  assert.equal(MAX_RESUME_BYTES, 4 * MB);
+  assert.equal(MAX_RESUME_LABEL, '4 MB');
+  // The largest upload the page lets through still fits the platform's body ceiling once encoded.
+  assert.ok(
+    base64(MAX_RESUME_BYTES + FRAMING_BYTES) < NETLIFY_BUFFERED_BODY,
+    `${base64(MAX_RESUME_BYTES + FRAMING_BYTES)} bytes encoded is over ${NETLIFY_BUFFERED_BODY}`,
+  );
 });
 
-test('a PDF up to 10 MB is accepted', () => {
+test('a PDF up to 4 MB is accepted', () => {
   assert.deepEqual(validateResumeFile(pdf(200_000)), { ok: true });
-  assert.deepEqual(validateResumeFile(pdf(10 * MB)), { ok: true });
+  assert.deepEqual(validateResumeFile(pdf(3.5 * MB)), { ok: true });
+  assert.deepEqual(validateResumeFile(pdf(4 * MB)), { ok: true });
 });
 
-test('over 10 MB is refused with its size and the limit', () => {
-  const r = validateResumeFile(pdf(11 * MB));
-  assert.equal(r.ok, false);
-  assert.match(r.error, /11\.0 MB/);
-  assert.match(r.error, /10 MB/);
-  // One byte over still says more than 10 (rounded up, never "10.0 MB is over 10 MB").
-  const edge = validateResumeFile(pdf(10 * MB + 1));
+test('over 4 MB is refused with its size and the limit', () => {
+  for (const [size, shown] of [
+    [5 * MB, '5.0 MB'],
+    [8 * MB, '8.0 MB'], // the 6–10 MB band the platform would have refused after a full upload
+    [11 * MB, '11.0 MB'],
+  ]) {
+    const r = validateResumeFile(pdf(size));
+    assert.equal(r.ok, false, shown);
+    assert.equal(r.reason, 'size', shown);
+    assert.ok(r.error.includes(shown), `${r.error} names ${shown}`);
+    assert.match(r.error, /the limit is 4 MB/);
+    assert.doesNotMatch(r.error, /10 MB/);
+  }
+  // One byte over still says more than 4 (rounded up, never "4.0 MB is over 4 MB").
+  const edge = validateResumeFile(pdf(4 * MB + 1));
   assert.equal(edge.ok, false);
-  assert.match(edge.error, /10\.1 MB/);
+  assert.match(edge.error, /4\.1 MB/);
+});
+
+// ── What the page says when the scan answer is not OK ──────────────────────────────────────
+
+test('a 413 says the file was too large to receive, never a limit the file is under', () => {
+  // The page only uploads files within the limit, so a 413 means something between the page and
+  // the route refused it (the platform's body ceiling): its answer is not ours to quote.
+  const size = 3.6 * MB;
+  for (const body of [
+    undefined, // the platform's own HTML page
+    '',
+    'That PDF is over the 10 MB limit. Export a lighter copy (fewer images), then scan it.',
+    'Request Entity Too Large',
+  ]) {
+    const msg = scanErrorFor(413, body, size);
+    assert.match(msg, /too large for the scanner to receive/, String(body));
+    assert.match(msg, /3\.6 MB/, 'names the file’s real size');
+    assert.doesNotMatch(msg, /limit|\b10 MB|\b4 MB/, `${msg} quotes a limit`);
+    assert.match(msg, /lighter copy/);
+  }
+  // The same size the scan's status line showed for the file (nearest tenth; KB under 1 MB).
+  assert.equal(sizeLabel(3_774_874), '3.6 MB');
+  assert.match(scanErrorFor(413, undefined, 3_774_874), /\(3\.6 MB\)/);
+  assert.equal(sizeLabel(300 * 1024), '300 KB');
+  assert.match(scanErrorFor(413, undefined, 300 * 1024), /\(300 KB\)/);
+  const unsized = scanErrorFor(413, undefined, undefined);
+  assert.match(unsized, /too large for the scanner to receive/);
+  assert.doesNotMatch(unsized, /\d/, 'no made-up size');
+});
+
+test('other answers keep the route’s own message, or a plain one for the status', () => {
+  assert.equal(scanErrorFor(422, UNREADABLE_PDF, 5000), UNREADABLE_PDF);
+  assert.equal(scanErrorFor(422, undefined, 5000), UNREADABLE_PDF);
+  assert.equal(scanErrorFor(415, ' That isn’t a PDF. ', 5000), 'That isn’t a PDF.');
+  assert.match(scanErrorFor(415, undefined, 5000), /isn’t a PDF/);
+  assert.match(scanErrorFor(429, undefined, 5000), /busy/);
+  assert.match(scanErrorFor(503, undefined, 5000), /busy/);
+  assert.match(scanErrorFor(500, undefined, 5000), /scanner hit a problem/);
+  assert.match(scanErrorFor(502, 42, 5000), /scanner hit a problem/); // not a string: ignored
 });
 
 test('only PDFs: by type, or by .pdf name when the browser gives no type', () => {
@@ -260,6 +323,19 @@ test('the scanner checks res.ok before reading the answer, and the picker is a r
   assert.match(src, /type="file"/);
   assert.match(src, /\.value = ''/); // the same file can be picked again
   assert.match(src, /validateResumeFile\(/);
+});
+
+test('the limit is stated from one constant, and the page words a 413 with scanErrorFor', () => {
+  for (const f of SURFACE) {
+    for (const s of visibleStrings(readFileSync(f, 'utf8'), f)) {
+      assert.ok(!/\b\d+(?:\.\d+)?\s*MB\b/.test(s), `${show(f)} hard-codes a size: ${JSON.stringify(s.trim().slice(0, 80))}`);
+    }
+  }
+  const scanner = readFileSync(join(ROOT, 'app/components/resume/Scanner.js'), 'utf8');
+  assert.match(scanner, /up to \{MAX_RESUME_LABEL\}/, 'the hint quotes the shared limit');
+  assert.match(scanner, /scanErrorFor\(/, 'non-OK answers are worded by scanErrorFor');
+  assert.doesNotMatch(scanner, /\b413\s*:/, 'no page-local 413 message');
+  assert.doesNotMatch(scanner, /function sizeLabel/, 'the status line and the 413 message share sizeLabel');
 });
 
 test('resume.css moves only transform and opacity', () => {

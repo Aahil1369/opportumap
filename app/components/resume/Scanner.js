@@ -6,15 +6,17 @@
 // once seen, alarms (red flags), prohibited items (clichés), inspection notes, rewrites, and
 // roles that search the board.
 //
-// Files are checked here before any upload (PDF only, at most 10 MB) and again by the API.
+// Files are checked here before any upload (PDF only, at most 4 MB) and again by the API.
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  UNREADABLE_PDF,
+  MAX_RESUME_LABEL,
   jobsHref,
   normalizeGrade,
   resumeVerdict,
+  scanErrorFor,
+  sizeLabel,
   validateResumeFile,
 } from '../../../lib/departures/resumeVerdict';
 import { createLatest } from '../../../lib/departures/createLatest';
@@ -22,13 +24,6 @@ import SignatureMoment from '../kit/SignatureMoment';
 import './resume.css';
 
 const TIMEOUT_MS = 90_000;
-const FALLBACK = {
-  413: 'That PDF is over the 10 MB limit. Export a lighter copy (fewer images), then scan it.',
-  415: 'That isn’t a PDF. Export your resume as a PDF, then scan it.',
-  422: UNREADABLE_PDF,
-  429: 'The scanner is busy right now. Try again in a minute.',
-  503: 'The scanner is busy right now. Try again in a minute.',
-};
 const SECTION_LABEL = { ats_compatibility: 'ATS' };
 
 // The verdict plate's split-flap text is the board engine; it loads while the scan runs, so the
@@ -51,20 +46,15 @@ function warmGlyphs() {
   }
 }
 
-/** The answer's error text when it has one, else a plain one for its status. */
-async function errorFrom(response) {
+/** What to say about a non-OK answer (scanErrorFor): its error text, or a plain one for its status. */
+async function errorFrom(response, size) {
+  let error;
   try {
-    const body = await response.json();
-    if (body && typeof body.error === 'string' && body.error) return body.error;
+    error = (await response.json())?.error;
   } catch {
-    // not JSON (a platform error page): fall through
+    // not JSON (a platform error page): scanErrorFor words it from the status
   }
-  return FALLBACK[response.status] ?? 'The scanner hit a problem. Try again in a minute.';
-}
-
-function sizeLabel(bytes) {
-  if (!Number.isFinite(bytes)) return '';
-  return bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return scanErrorFor(response.status, error, size);
 }
 
 // ── The belt ────────────────────────────────────────────────────────────────────────────────
@@ -419,7 +409,7 @@ export default function Scanner() {
         form.append('resume', picked);
         const res = await fetch('/api/resume-grade', { method: 'POST', body: form, signal: ctrl.signal });
         if (!res.ok) {
-          problem = await errorFrom(res);
+          problem = await errorFrom(res, picked.size);
         } else {
           next = normalizeGrade(await res.json().catch(() => null));
           if (!next) problem = 'The grader sent back an unreadable answer. Try again.';
@@ -505,7 +495,7 @@ export default function Scanner() {
             Put your resume on the belt
           </label>
           <p className="rs-drop-s" id="rs-file-hint">
-            Drag a PDF here or choose one · PDF only, up to 10 MB · about 15 seconds
+            Drag a PDF here or choose one · PDF only, up to {MAX_RESUME_LABEL} · about 15 seconds
           </p>
           <button type="button" className="rs-btn" ref={pickRef} onClick={pick} aria-describedby="rs-file-hint">
             Choose a PDF
