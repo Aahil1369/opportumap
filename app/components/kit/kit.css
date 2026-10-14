@@ -1,0 +1,176 @@
+/* ─── Departures kit ───────────────────────────────────────────────────────────
+   Night-time airport palette + the split-flap board. Imported by the kit components, so it
+   only ships on pages that use them. (Task 3 maps the same tokens into Tailwind's @theme.) */
+:root {
+  --hall: #0a0b0d;
+  --hall-2: #111316;
+  --hall-3: #16181c;
+  --rule: #22262c;
+  --ink: #f4f1e6;
+  --ink-dim: #b9bdc4;
+  --ink-sub: #9aa0a8;
+  --sign: #ffc531;
+  --sign-ink: #0a0b0d;
+  --amber: #ffb547;
+  --ok: #3ce08a;
+  --new: #ffc531;
+  --info: #9fc8ff;
+  --warn: #ff6b4a;
+  /* Tile shading around --hall-3, lit from above, so each tile and its split read on the board. */
+  --flap-hi: #1d2026;
+  --flap-lo: #111316;
+  --flap-foot: #0d0f12;
+  --flap-edge: #2a2e35;
+}
+
+/* A page in the terminal hall. (No :has() here: it would re-check on every DOM change the
+   flaps make. A hall page paints <html> itself; Task 3 makes the whole site dark.) */
+.om-hall { background: var(--hall); color: var(--ink); min-height: 100svh; }
+
+/* ─── FlapText ───
+   Real text for screen readers (.flap-sr) + aria-hidden DOM tiles: one character on --hall-3,
+   lit from above, with a hairline split. Tiles mid-flip are painted on a canvas laid over them
+   (.flap-canvas, see FlapText.js); when a tile lands only its one character of text changes.
+
+   Performance rules (measured at 4x CPU): tile geometry is in em off one font size, never a
+   var() chain (resolving one per element cost ~0.5 ms); tiles are absolutely placed boxes of
+   fixed size with size+layout containment, i.e. relayout boundaries (a flex/grid item never
+   is), so a landing tile never re-lays out its row; no clip or paint containment per tile (each
+   one adds a paint chunk to re-layerize every frame). Tile: 0.6em + 2.5px wide (JetBrains Mono
+   advance is 0.6em), 1.42em tall, 1px apart. */
+.flap { position: relative; display: inline-flex; vertical-align: top; max-width: 100%; }
+.flap-tiles {
+  position: relative;
+  display: block;
+  flex: none;
+  width: calc(var(--n, 1) * (0.6em + 3.5px) - 1px);
+  height: 1.42em;
+  font-family: var(--font-jb-mono), ui-monospace, monospace;
+  font-weight: 500;
+}
+.flap-t {
+  position: absolute;
+  top: 0;
+  left: calc(var(--i, 0) * (0.6em + 3.5px));
+  width: calc(0.6em + 2.5px);
+  height: 1.42em;
+  line-height: 1.42em;
+  text-align: center;
+  white-space: pre;
+  border-radius: 2px;
+  contain: size layout style;
+  background: linear-gradient(var(--flap-hi), var(--hall-3) 50%, var(--flap-lo) 50%, var(--flap-foot));
+  box-shadow: inset 0 1px 0 var(--flap-edge), inset 0 -1px 0 #000;
+}
+.flap-t::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: #000;
+}
+.flap-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+.flap-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.flap-plain,
+.flap-sr {
+  font-family: var(--font-jb-mono), ui-monospace, monospace;
+  font-weight: 500;
+}
+.flap-plain { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+
+/* ─── FlapBoard ───
+   The board's tile font size comes from its own width, so a row always fits: FlapBoard sets
+   --fb-fs (and --fb-pfs on phones) to min(max, per line ((100cqi - fixed px) / tiles - 2.5px) / 0.6).
+   It lands in --flap-fs, a registered <length>, so it is computed to px once, on the table, and
+   every tile below just inherits a length. On phones, columns marked line 2 drop under the last
+   line-1 column. */
+@property --flap-fs {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 14px;
+}
+.fb {
+  container-type: inline-size;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 12px 10px 6px;
+}
+.fb-caption {
+  font: 600 11px/1.2 var(--font-jb-mono), ui-monospace, monospace;
+  letter-spacing: 0.22em;
+  color: var(--sign);
+  padding: 2px 0 12px;
+}
+.fb-table { position: relative; --flap-fs: var(--fb-fs); }
+.fb .flap-tiles,
+.fb .flap-sr,
+.fb .flap-plain { font-size: var(--flap-fs); }
+.fb-row {
+  display: grid;
+  grid-template-columns: var(--fb-cols);
+  column-gap: 12px;
+  row-gap: 5px;
+  align-items: center;
+}
+.fb-head .fb-row { padding-bottom: 8px; }
+.fb-body .fb-row { position: relative; padding: 7px 0; border-top: 1px solid var(--rule); }
+.fb-cell { display: flex; min-width: 0; color: var(--ink); }
+.fb-th {
+  font: 500 10.5px/1.2 var(--font-jb-mono), ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  color: var(--ink-sub);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fb-cell[data-tone='sign'] { color: var(--sign); }
+.fb-cell[data-tone='dim'] { color: var(--ink-dim); }
+.fb-cell[data-status='BOARDING'] { color: var(--ok); }
+.fb-cell[data-status='NEW'] { color: var(--new); }
+.fb-cell[data-status='ON TIME'],
+.fb-cell[data-status='ANY GATE'] { color: var(--info); }
+.fb-cell[data-status='CANCELLED'] { color: var(--warn); }
+.fb-link { position: absolute; inset: 0; z-index: 3; border-radius: 6px; }
+.fb-link:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+@media (max-width: 639px) {
+  .fb { padding: 10px 8px 4px; }
+  .fb-row { column-gap: 6px; }
+  .fb-table[data-phone] { --flap-fs: var(--fb-pfs); }
+  .fb-table[data-phone] .fb-row { grid-template-columns: var(--fb-pcols); }
+  .fb-table[data-phone] .fb-cell { grid-row: var(--pr); grid-column: var(--pc); }
+  .fb-th { font-size: 10px; }
+}
+
+/* Reduced motion: no tiles at all, the text simply sits in the board (FlapText also stops
+   rendering tiles once hydrated; this covers the first paint). */
+@media (prefers-reduced-motion: reduce) {
+  .flap-tiles { display: none; }
+  .flap-sr {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+}

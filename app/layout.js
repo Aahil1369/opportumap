@@ -3,6 +3,7 @@ import './globals.css';
 import PingTracker from './components/PingTracker';
 import PageTransition from './components/ui/PageTransition';
 import SmoothScroll from './components/motion/SmoothScroll';
+import FpsLoader from './components/FpsLoader';
 
 const instrumentSerif = Instrument_Serif({
   variable: '--font-instrument-serif',
@@ -51,6 +52,7 @@ export default function RootLayout({ children }) {
         <SmoothScroll />
         <PageTransition />
         <PingTracker />
+        <FpsLoader />
         {children}
       </body>
     </html>
