@@ -6,6 +6,9 @@
 // are radio chips. The pitch deck (optional PDF, under 10 MB) uploads when picked and never
 // overwrites (upsert: false). The body is postPayload(draft): the server takes the owner from
 // the session, the database sets the founder's name and the counters.
+// The deck note promises no restriction: the pitch-decks bucket is public and the startups API
+// returns pitch_deck_url to everyone (the stand only hides the link). Real gating — drop the URL
+// from public selects and serve signed URLs — is a separate follow-up.
 
 import { useState } from 'react';
 import Dialog from '../kit/Dialog';
@@ -174,9 +177,9 @@ export default function PostStartup({ open, onClose, onPosted, draft, setDraft, 
             />
             <p id="hg-deck-status" className="hg-deck-status" data-state={deck.state} aria-live="polite">
               {deck.state === 'uploading' && 'Uploading the deck…'}
-              {deck.state === 'done' && `✓ ${draft.deck_name || 'Pitch deck'} uploaded. Passengers on standby can open it.`}
+              {deck.state === 'done' && `✓ ${draft.deck_name || 'Pitch deck'} uploaded. It's public: anyone with the link can open it.`}
               {deck.state === 'error' && deck.message}
-              {deck.state === 'idle' && 'Passengers see it once they stand by.'}
+              {deck.state === 'idle' && 'Decks are public: anyone with the link can open one, so leave out anything confidential.'}
             </p>
           </div>
         </div>

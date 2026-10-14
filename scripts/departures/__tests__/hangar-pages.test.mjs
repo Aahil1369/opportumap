@@ -132,3 +132,16 @@ test('post form: kit Dialog, 16px inputs with labels, no counters or names sent,
   assert.match(src, /upsert:\s*false/);
   assert.ok(!/catch\s*\{\s*\}/.test(src), 'no silent catch {}');
 });
+
+// The pitch-decks bucket is public and GET /api/startups(/[id]) return pitch_deck_url to anyone,
+// so the form must not promise founders that only passengers on standby can open their deck.
+test('post form: the deck note says decks are public and makes no access promise', () => {
+  const file = join(ROOT, 'app/components/startups/PostStartup.js');
+  const strings = visibleStrings(readFileSync(file, 'utf8'), file).map((s) => s.trim()).filter(Boolean);
+  const promises = strings.filter((s) =>
+    /\bstand(?:s)?\s*by\b|\bon standby\b|passengers?\s+(?:see|can|get)|\bonly\b|\bprivate\b|\brestricted\b|\blocked\b/i.test(s),
+  );
+  assert.deepEqual(promises, [], 'no restriction claim about who can open the deck');
+  const notes = strings.filter((s) => /\bpublic\b/i.test(s) && /\bdeck|\bit\b/i.test(s));
+  assert.ok(notes.length >= 2, `both the idle and the uploaded note say the deck is public (${notes.length})`);
+});
