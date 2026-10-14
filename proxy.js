@@ -27,10 +27,8 @@ async function middleware(request) {
 
 export default middleware;
 
-// __forms.html is the Netlify Forms skeleton (see lib/contactForm.js); the contact
-// form POSTs to it, and that request must reach Netlify without a session refresh.
 export const config = {
   matcher: [
-    '/((?!__forms\\.html|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|woff2?|ttf)).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|woff2?|ttf)).*)',
   ],
 };

@@ -6,32 +6,34 @@ import Btn from '../components/ui/Btn';
 import Footnote from '../components/ui/Footnote';
 import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
 import { FOOTNOTES } from '../lib/pageCopy';
-import { submitContactForm, CONTACT_LIMITS } from '../../lib/contactForm.js';
+import { submitContact, validateContact, CONTACT_LIMITS, SEND_FAILED } from '../../lib/contactForm.js';
 
 const EMPTY = { name: '', email: '', subject: '', message: '' };
 
 export default function ContactPage() {
   useScrollReveal();
   const [form, setForm] = useState(EMPTY);
-  const [botField, setBotField] = useState('');
+  const [company, setCompany] = useState(''); // honeypot
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
-  // Netlify Forms: POST urlencoded to the static skeleton in public/__forms.html.
-  // On failure the visitor keeps what they typed and sees a real error.
+  // POST JSON to /api/contact (saved to the admin inbox in Supabase). On failure the
+  // visitor keeps what they typed and sees the server's friendly message.
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (sending) return;
+    const check = validateContact(form);
+    if (!check.ok) { setError(check.error); return; }
     setSending(true);
     setError('');
     try {
-      await submitContactForm({ ...form, botField });
+      await submitContact({ ...form, company });
       setSubmitted(true);
-    } catch {
-      setError('Could not send — please try again.');
+    } catch (err) {
+      setError(err?.message || SEND_FAILED);
     } finally {
       setSending(false);
     }
@@ -55,27 +57,27 @@ export default function ContactPage() {
       <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
         <div className="py-14 max-w-2xl">
           <p className="text-[14px] text-paper-ink-dim leading-[1.55] mb-8">
-            Have a question, feature idea, or want to partner with us? Your message goes straight to the
-            founder&apos;s inbox, and you&apos;ll get a reply by email.
+            Have a question, feature idea, or want to partner with us? Your message goes
+            straight to the founder, and you&apos;ll get a reply by email.
           </p>
 
           {submitted ? (
             <div className="border border-paper-rule bg-paper-bg-alt p-8 text-center" role="status">
               <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">{'// MESSAGE SENT'}</div>
               <h2 className="font-display text-[24px] leading-[1.15] text-paper-ink mb-2">Message sent.</h2>
-              <p className="text-[14px] text-paper-ink-dim mb-6">Thanks for reaching out. It&apos;s in the founder&apos;s inbox, and the reply will come to the email address you gave.</p>
-              <Btn variant="secondary" as="button" onClick={() => { setSubmitted(false); setForm(EMPTY); setBotField(''); }}>
+              <p className="text-[14px] text-paper-ink-dim mb-6">Thanks for reaching out. Your message went straight to the founder, and you&apos;ll get a reply by email at the address you gave.</p>
+              <Btn variant="secondary" as="button" onClick={() => { setSubmitted(false); setForm(EMPTY); setCompany(''); }}>
                 Send another message
               </Btn>
             </div>
           ) : (
             <div className="border border-paper-rule p-6 sm:p-8">
               <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Honeypot: hidden from people, filled only by bots; Netlify drops those. */}
+                {/* Honeypot: hidden from people, filled only by bots; the API drops those. */}
                 <p className="hidden" aria-hidden="true">
                   <label>
-                    Leave this empty
-                    <input name="bot-field" value={botField} onChange={(e) => setBotField(e.target.value)}
+                    Company (leave this empty)
+                    <input name="company" value={company} onChange={(e) => setCompany(e.target.value)}
                       tabIndex={-1} autoComplete="off" />
                   </label>
                 </p>
