@@ -153,7 +153,8 @@ test('upvote/interest routes: duplicate insert (23505) means "already done", ids
 });
 
 test('pages never spin forever: fetches go through fetchJson with an error state', () => {
-  for (const p of ['app/startups/page.js', 'app/startups/[id]/page.js', 'app/messages/page.js', 'app/components/StartupChat.js', 'app/community/page.js']) {
+  // /startups and /startups/[id] fetch in their client islands (app/components/startups/).
+  for (const p of ['app/components/startups/Hangar.js', 'app/components/startups/Stand.js', 'app/messages/page.js', 'app/components/StartupChat.js', 'app/community/page.js']) {
     const src = read(p);
     assert.match(src, /fetchJson\(/, `${p} uses fetchJson`);
     assert.match(src, /\.catch\(/, `${p} handles failures`);
@@ -161,8 +162,8 @@ test('pages never spin forever: fetches go through fetchJson with an error state
   }
 });
 
-test('StartupModal: pitch-deck upload does not overwrite and surfaces errors', () => {
-  const src = read('app/components/StartupModal.js');
+test('Post a startup: pitch-deck upload does not overwrite and surfaces errors', () => {
+  const src = read('app/components/startups/PostStartup.js');
   assert.match(src, /upsert:\s*false/);
   assert.ok(!/catch\s*\{\s*\}/.test(src), 'no silent catch {}');
   assert.match(src, /setError\(/);
