@@ -13,7 +13,7 @@ const EMPTY = { name: '', email: '', subject: '', message: '' };
 export default function ContactPage() {
   useScrollReveal();
   const [form, setForm] = useState(EMPTY);
-  const [company, setCompany] = useState(''); // honeypot
+  const [hpRef, setHpRef] = useState(''); // honeypot
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function ContactPage() {
     setSending(true);
     setError('');
     try {
-      await submitContact({ ...form, company });
+      await submitContact({ ...form, hp_ref: hpRef });
       setSubmitted(true);
     } catch (err) {
       setError(err?.message || SEND_FAILED);
@@ -77,7 +77,7 @@ export default function ContactPage() {
                 <p className="hidden" aria-hidden="true">
                   <label>
                     Company (leave this empty)
-                    <input name="company" value={company} onChange={(e) => setCompany(e.target.value)}
+                    <input name="hp_ref" value={hpRef} onChange={(e) => setHpRef(e.target.value)}
                       tabIndex={-1} autoComplete="off" />
                   </label>
                 </p>

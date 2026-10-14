@@ -22,7 +22,7 @@ const BUSY = "We're getting a lot of messages — please try again later.";
 
 test('validateContact: a valid message passes, every field trimmed, honeypot not in values', () => {
   const r = validateContact({
-    name: '  Ada  ', email: ' ada.private@mail.test\n', subject: '\tHi ', message: '\n  Line 1\n\nLine 2  \n', company: '',
+    name: '  Ada  ', email: ' ada.private@mail.test\n', subject: '\tHi ', message: '\n  Line 1\n\nLine 2  \n', hp_ref: '',
   });
   assert.deepEqual(r, {
     ok: true,
@@ -146,7 +146,7 @@ const quiet = () => {};
 
 test('handleContactSubmission: a valid message calls submit_contact once with trimmed args', async () => {
   const rpc = fakeRpc();
-  const res = await handleContactSubmission(JSON.stringify({ ...VALID, name: '  Ada ', company: '' }), rpc, quiet);
+  const res = await handleContactSubmission(JSON.stringify({ ...VALID, name: '  Ada ', hp_ref: '' }), rpc, quiet);
   assert.deepEqual(res, { status: 200, body: { ok: true } });
   assert.deepEqual(rpc.calls, [{
     p_name: 'Ada', p_email: 'ada.private@mail.test', p_subject: 'Hi', p_message: 'Secret message body 123', p_source: 'opportumap',
@@ -154,15 +154,15 @@ test('handleContactSubmission: a valid message calls submit_contact once with tr
 });
 
 test('handleContactSubmission: a filled honeypot gets a 200 and nothing is saved', async () => {
-  for (const company of ['Acme Inc', ' x ', 1, true]) {
+  for (const hp_ref of ['Acme Inc', ' x ', 1, true]) {
     const rpc = fakeRpc();
-    const res = await handleContactSubmission(JSON.stringify({ ...VALID, company }), rpc, quiet);
-    assert.deepEqual(res, { status: 200, body: { ok: true } }, `company=${JSON.stringify(company)}`);
+    const res = await handleContactSubmission(JSON.stringify({ ...VALID, hp_ref }), rpc, quiet);
+    assert.deepEqual(res, { status: 200, body: { ok: true } }, `hp_ref=${JSON.stringify(hp_ref)}`);
     assert.equal(rpc.calls.length, 0);
   }
   // Even when the rest is junk: bots get no signal.
   const rpc = fakeRpc();
-  assert.deepEqual(await handleContactSubmission(JSON.stringify({ company: 'Acme' }), rpc, quiet), { status: 200, body: { ok: true } });
+  assert.deepEqual(await handleContactSubmission(JSON.stringify({ hp_ref: 'Acme' }), rpc, quiet), { status: 200, body: { ok: true } });
   assert.equal(rpc.calls.length, 0);
 });
 
@@ -213,18 +213,18 @@ test('handleContactSubmission: no database configured is a logged 500', async ()
 
 // ---------- submitContact (browser side) ----------
 
-test('submitContact: POSTs JSON to /api/contact, honeypot sent as "company"', async () => {
+test('submitContact: POSTs JSON to /api/contact, honeypot sent as "hp_ref"', async () => {
   const calls = [];
   const fakeFetch = async (url, init) => { calls.push({ url, init }); return { ok: true, status: 200, json: async () => ({ ok: true }) }; };
-  await submitContact({ ...VALID, company: '' }, fakeFetch);
+  await submitContact({ ...VALID, hp_ref: '' }, fakeFetch);
   assert.equal(CONTACT_ENDPOINT, '/api/contact');
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, '/api/contact');
   assert.equal(calls[0].init.method, 'POST');
   assert.equal(calls[0].init.headers['Content-Type'], 'application/json');
   const sent = JSON.parse(calls[0].init.body);
-  assert.deepEqual(Object.keys(sent).sort(), ['company', 'email', 'message', 'name', 'subject']);
-  assert.equal(sent.company, '');
+  assert.deepEqual(Object.keys(sent).sort(), ['email', 'hp_ref', 'message', 'name', 'subject']);
+  assert.equal(sent.hp_ref, '');
   assert.equal(sent.message, VALID.message);
 });
 
@@ -264,13 +264,13 @@ test('api/contact route: the user-session server client + the shared handler', (
   assert.ok(!/service_role|SERVICE_ROLE/i.test(src));
 });
 
-test('contact page: JSON to /api/contact, "company" honeypot, limits, friendly errors, honest copy', () => {
+test('contact page: JSON to /api/contact, "hp_ref" honeypot, limits, friendly errors, honest copy', () => {
   const src = read('app/contact/page.js');
   assert.match(src, /submitContact\(/);
   assert.match(src, /validateContact\(/);
   assert.ok(!/urlencoded|__forms|data-netlify|bot-field|botField|Netlify/i.test(src), 'Netlify Forms path is gone');
   assert.ok(!/setTimeout\(r,\s*1200\)/.test(src), 'no simulated send');
-  assert.match(src, /name="company"/);
+  assert.match(src, /name="hp_ref"/);
   assert.match(src, /tabIndex=\{-1\}/);
   assert.match(src, /aria-hidden="true"/);
   for (const k of ['name', 'email', 'subject', 'message']) {
