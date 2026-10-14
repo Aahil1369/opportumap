@@ -139,24 +139,45 @@ function layerFor(strip) {
   canvas.className = 'flap-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   host.appendChild(canvas);
-  layer = { host, canvas, ctx: canvas.getContext('2d'), jobs: new Set(), w: 0, h: 0, dpr: 1, cssW: 0, cssH: 0 };
+  layer = {
+    host,
+    canvas,
+    ctx: canvas.getContext('2d'),
+    jobs: new Set(), // flipping now
+    queued: new Set(), // waiting for their turn, placed on the geometry they were queued on
+    w: 0,
+    h: 0,
+    dpr: 1,
+    cssW: 0,
+    cssH: 0,
+  };
   layers.set(host, layer);
   if (typeof ResizeObserver !== 'undefined') {
-    // The board changed size under the canvas (rotation, resize): land what is mid-flip; the
-    // canvas is re-fitted on the next flip. Sizes the last flip already fitted are not a change.
+    // The board changed size under the canvas (rotation, resize): every flip on it ends now;
+    // the canvas is re-fitted on the next flip. Sizes the last flip already fitted are not a change.
     new ResizeObserver(([entry]) => {
       const box = entry.borderBoxSize?.[0];
       const w = box ? box.inlineSize : entry.contentRect.width;
       const h = box ? box.blockSize : entry.contentRect.height;
       if (Math.abs(w - layer.cssW) < 0.5 && Math.abs(h - layer.cssH) < 0.5) return;
-      for (const job of [...layer.jobs]) land(job);
+      landLayer(layer);
       layer.w = 0;
     }).observe(host);
   }
   return layer;
 }
 
-/** Sizes the canvas to its host (a resize clears it, so tiles mid-flip land first). */
+/**
+ * Ends every flip on a layer, flipping or queued, on its final character. Not where a flip is:
+ * the cell's text already says the target (the next diff starts from it), so a tile left on a
+ * character of its walk would stay wrong until that cell's text next changed. Queued flips go
+ * too: they were placed on the old geometry.
+ */
+function landLayer(layer) {
+  for (const job of [...layer.jobs, ...layer.queued]) land(job, job.walk.at(-1));
+}
+
+/** Sizes the canvas to its host (a resize clears it, so every flip on it lands first). */
 function fitLayer(layer, hostRect) {
   const dpr = Math.min(3, window.devicePixelRatio || 1);
   const w = Math.round(hostRect.width * dpr);
@@ -164,7 +185,7 @@ function fitLayer(layer, hostRect) {
   layer.cssW = hostRect.width;
   layer.cssH = hostRect.height;
   if (w === layer.w && h === layer.h && dpr === layer.dpr) return;
-  for (const job of [...layer.jobs]) land(job);
+  landLayer(layer);
   layer.canvas.width = w;
   layer.canvas.height = h;
   layer.w = w;
@@ -229,13 +250,18 @@ function draw(job, oldCh, newCh, top, bottom, blankUnder = false) {
 function begin(job, now) {
   job.start = now;
   job.k = 0;
+  job.layer.queued.delete(job);
   job.layer.jobs.add(job);
   running.add(job);
 }
 
-/** Ends a job where it is: the canvas square clears and the tile shows the character it is on. */
-function land(job, ch = job.walk[job.k]) {
+/**
+ * Ends a job, by default where it is (a flip interrupted by the cell's next text walks on from
+ * there): the canvas square clears and the tile shows the character it is on.
+ */
+function land(job, ch = job.walk[job.k ?? 0]) {
   if (job.layer.jobs.delete(job)) job.layer.ctx.clearRect(job.x, job.y, job.st.w, job.st.h);
+  job.layer.queued.delete(job);
   running.delete(job);
   queue.cancel(job);
   faceOf(job.tile).nodeValue = ch;
@@ -274,6 +300,7 @@ function stopTile(tile) {
   if (running.has(job)) land(job);
   else {
     queue.cancel(job);
+    job.layer.queued.delete(job);
     tile.__flap = null;
   }
 }
@@ -330,6 +357,7 @@ function flapTo(strip, from, to, rowDelayMs) {
     };
     tile.__flap = job;
     queue.add(job);
+    layer.queued.add(job);
   }
   if (!raf) raf = requestAnimationFrame(frame);
 }
