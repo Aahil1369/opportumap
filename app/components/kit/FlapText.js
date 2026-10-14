@@ -15,8 +15,9 @@
 // CSS scaleY on DOM half-tiles never got p95 under ~85 ms per frame (style/layout/paint/
 // layerization per element), the canvas holds ~12 ms. Nothing in the DOM moves while it flips.
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFlapQueue, fitFlap, flapDiff, flapSchedule } from '../../../lib/departures/flap';
+import { usePrefersReducedMotion } from './useReducedMotion';
 import './kit.css';
 
 const MAX_ACTIVE = 120; // tiles flipping at once, page-wide; the rest wait their turn
@@ -45,6 +46,9 @@ function resetAtlases() {
 if (typeof document !== 'undefined' && document.fonts) {
   // Glyphs drawn before the web font arrived are fallback glyphs: redraw them once it has.
   document.fonts.addEventListener?.('loadingdone', resetAtlases);
+  // The drum walks through → and ✓ (FLAP_CHARS), which only the board glyph face has
+  // (globals.css): fetch it now, before the first flip paints them on the canvas.
+  document.fonts.load?.('500 16px "OM Board Glyphs"', '→✓')?.catch?.(() => {});
 }
 
 function cssVar(name, fallback) {
@@ -366,21 +370,9 @@ function stopAll(strip) {
   for (const tile of Array.from(strip.children)) stopTile(tile);
 }
 
-// ── Reduced motion ────────────────────────────────────────────────────────────────────────────
+// ── Reduced motion: plain text (the server renders tiles; CSS hides them under reduce) ────────
 
-const REDUCE = '(prefers-reduced-motion: reduce)';
-function subscribeReduced(onChange) {
-  const mq = window.matchMedia(REDUCE);
-  mq.addEventListener('change', onChange);
-  return () => mq.removeEventListener('change', onChange);
-}
-const reducedNow = () => window.matchMedia(REDUCE).matches;
-const reducedOnServer = () => false; // the server renders tiles; CSS hides them under reduce
-
-/** prefers-reduced-motion, live; false on the server and during hydration. */
-export function usePrefersReducedMotion() {
-  return useSyncExternalStore(subscribeReduced, reducedNow, reducedOnServer);
-}
+export { usePrefersReducedMotion };
 
 /** What the tiles show for `text`: board capitals, fitted to `width` tiles when given. */
 function tileText(text, width, upper = true) {

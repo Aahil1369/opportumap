@@ -1,22 +1,11 @@
 /* ─── Departures kit ───────────────────────────────────────────────────────────
-   Night-time airport palette + the split-flap board. Imported by the kit components, so it
-   only ships on pages that use them. (Task 3 maps the same tokens into Tailwind's @theme.) */
+   The split-flap board and the hall chrome (gate signs, page shell, status pills, airport codes,
+   dialogs). The palette lives in app/globals.css (:root + @theme: --hall … --warn) and the mono
+   stack is --font-board (JetBrains Mono + the board glyphs). Imported by the kit components, so
+   it only ships on pages that use them. */
 :root {
-  --hall: #0a0b0d;
-  --hall-2: #111316;
-  --hall-3: #16181c;
-  --rule: #22262c;
-  --ink: #f4f1e6;
-  --ink-dim: #b9bdc4;
-  --ink-sub: #9aa0a8;
-  --sign: #ffc531;
-  --sign-ink: #0a0b0d;
-  --amber: #ffb547;
-  --ok: #3ce08a;
-  --new: #ffc531;
-  --info: #9fc8ff;
-  --warn: #ff6b4a;
-  /* Tile shading around --hall-3, lit from above, so each tile and its split read on the board. */
+  /* Tile shading around --hall-3, lit from above, so each tile and its split read on the board.
+     On :root because the flap engine reads them from there (FlapText.js, cssVar). */
   --flap-hi: #1d2026;
   --flap-lo: #111316;
   --flap-foot: #0d0f12;
@@ -24,7 +13,7 @@
 }
 
 /* A page in the terminal hall. (No :has() here: it would re-check on every DOM change the
-   flaps make. A hall page paints <html> itself; Task 3 makes the whole site dark.) */
+   flaps make. <html> and <body> are --hall site-wide, see globals.css.) */
 .om-hall { background: var(--hall); color: var(--ink); min-height: 100svh; }
 
 /* ─── FlapText ───
@@ -45,7 +34,7 @@
   flex: none;
   width: calc(var(--n, 1) * (0.6em + 3.5px) - 1px);
   height: 1.42em;
-  font-family: var(--font-jb-mono), ui-monospace, monospace;
+  font-family: var(--font-board);
   font-weight: 500;
 }
 .flap-t {
@@ -91,7 +80,7 @@
 }
 .flap-plain,
 .flap-sr {
-  font-family: var(--font-jb-mono), ui-monospace, monospace;
+  font-family: var(--font-board);
   font-weight: 500;
 }
 .flap-plain { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
@@ -115,7 +104,7 @@
   padding: 12px 10px 6px;
 }
 .fb-caption {
-  font: 600 11px/1.2 var(--font-jb-mono), ui-monospace, monospace;
+  font: 600 11px/1.2 var(--font-board);
   letter-spacing: 0.22em;
   color: var(--sign);
   padding: 2px 0 12px;
@@ -135,7 +124,7 @@
 .fb-body .fb-row { position: relative; padding: 7px 0; border-top: 1px solid var(--rule); }
 .fb-cell { display: flex; min-width: 0; color: var(--ink); }
 .fb-th {
-  font: 500 10.5px/1.2 var(--font-jb-mono), ui-monospace, monospace;
+  font: 500 10.5px/1.2 var(--font-board);
   letter-spacing: 0.14em;
   color: var(--ink-sub);
   white-space: nowrap;
@@ -173,4 +162,168 @@
     text-overflow: ellipsis;
     max-width: 100%;
   }
+}
+
+/* ─── GateSign ───
+   A yellow gate sign: the letter on a black chip, the label in mono capitals. A link when it
+   has an href. Only transform moves (a 1px lift on hover). */
+.gs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 11px 5px 5px;
+  border-radius: 6px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 500 12px/1.25 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.gs[data-letterless] { padding-left: 11px; }
+.gs-l {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--sign-ink);
+  color: var(--sign);
+  font: 800 13px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+.gs-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+a.gs { transition: transform 0.16s cubic-bezier(.22, 1, .36, 1); }
+a.gs:hover { transform: translateY(-1px); }
+a.gs:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
+
+/* ─── PageShell ───
+   The black hall header (gate sign, headline with one yellow word, sub) over the page's content,
+   both on --hall, 880px wide (1120px when wide), 16px gutters on phones. */
+.ps { flex: 1 0 auto; background: var(--hall); color: var(--ink); }
+.ps-head,
+.ps-body { width: min(100% - 32px, var(--ps-w, 880px)); margin-inline: auto; }
+.ps[data-wide] { --ps-w: 1120px; }
+.ps-head { padding: 28px 0 24px; }
+.ps-title {
+  margin: 16px 0 0;
+  font: 800 clamp(32px, 3.6vw + 18px, 56px)/1.04 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.ps-accent { font-style: normal; color: var(--sign); }
+.ps-sub { margin: 12px 0 0; max-width: 56ch; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.ps-body { padding-bottom: 72px; }
+@media (min-width: 640px) {
+  .ps-head,
+  .ps-body { width: min(100% - 64px, var(--ps-w, 880px)); }
+  .ps-head { padding: 44px 0 32px; }
+  .ps-sub { font-size: 17px; }
+}
+
+/* ─── StatusPill ───
+   The status word is always the text; the lamp and colour repeat it (BOARDING --ok, NEW --new,
+   ON TIME / ANY GATE --info, CANCELLED --warn). On its own --hall-2 so it reads on any row. */
+.sp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px 3px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--hall-2);
+  color: var(--sp, var(--ink-dim));
+  font: 500 11px/1.3 var(--font-board);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+.sp::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.sp[data-status='BOARDING'] { --sp: var(--ok); }
+.sp[data-status='NEW'] { --sp: var(--new); }
+.sp[data-status='ON TIME'],
+.sp[data-status='ANY GATE'] { --sp: var(--info); }
+.sp[data-status='CANCELLED'] { --sp: var(--warn); }
+
+/* ─── AirportCode ───
+   A three-letter code on one dark tile with the board's hairline split. */
+.ac {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  min-width: 3.7em;
+  padding: 6px 6px 6px calc(6px + 0.08em);
+  border-radius: 6px;
+  background: var(--flap-hi);
+  box-shadow: inset 0 1px 0 var(--flap-edge), inset 0 -1px 0 #000;
+  color: var(--sign);
+  font: 500 14px/1.15 var(--font-board);
+  letter-spacing: 0.08em;
+  text-align: center;
+  white-space: nowrap;
+}
+.ac::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* ─── Dialog ───
+   A modal panel over a dim hall: centred card, or a full-height drawer from the right. Enters
+   with opacity/transform only; the backdrop is a flat colour (no blur on a moving layer). */
+.dlg-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.dlg-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 5, 6, 0.76);
+  animation: dlg-fade 0.18s ease-out both;
+}
+.dlg {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--hall-2);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  animation: dlg-rise 0.24s cubic-bezier(.22, 1, .36, 1) both;
+}
+.dlg:focus { outline: none; }
+.dlg-root[data-placement='right'] { justify-content: flex-end; align-items: stretch; padding: 0; }
+.dlg-root[data-placement='right'] .dlg {
+  width: min(100%, 340px);
+  height: 100%;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  animation-name: dlg-slide;
+}
+@keyframes dlg-fade { from { opacity: 0; } }
+@keyframes dlg-rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes dlg-slide { from { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  a.gs { transition: none; }
+  a.gs:hover { transform: none; }
+  /* As specific as the drawer's own animation rule, so it wins there too. */
+  .dlg-root[data-placement] .dlg,
+  .dlg-root[data-placement] .dlg-backdrop { animation: none; }
 }

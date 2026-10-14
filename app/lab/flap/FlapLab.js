@@ -59,7 +59,7 @@ const BOARDS = SETS.map((set) =>
 const EVERY_MS = 4000;
 
 const BTN =
-  'rounded-lg px-4 py-2.5 font-[family-name:var(--font-jb-mono)] text-[14px] font-medium tracking-[0.08em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sign)]';
+  'rounded-lg px-4 py-2.5 font-mono text-[14px] font-medium tracking-[0.08em] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--sign)]';
 
 export default function FlapLab() {
   const reduced = usePrefersReducedMotion();

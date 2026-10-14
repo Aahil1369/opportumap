@@ -28,12 +28,13 @@ const jbMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// No job or listing totals in any copy (spec §1): a count goes stale and reads like a claim.
 export const metadata = {
   title: 'OpportuMap — Global Opportunities for Everyone',
-  description: 'Jobs, visas, and relocation intelligence across 100 countries. Built by an immigrant kid for people who weren’t born into the passport lottery.',
+  description: 'Real roles from around the world, with pay in the local currency. Built by an immigrant kid for people who weren’t born into the passport lottery.',
   openGraph: {
     title: 'OpportuMap — Global Opportunities for Everyone',
-    description: 'Find work you can actually access. 100 countries, 33,664 roles, written for people crossing borders.',
+    description: 'Find work you can actually reach: real roles worldwide, pay in the local currency, written for people crossing borders.',
     url: 'https://opportumap.netlify.app',
     siteName: 'OpportuMap',
     type: 'website',
@@ -41,14 +42,17 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'OpportuMap — Global Opportunities for Everyone',
-    description: 'Find work you can actually access. 100 countries, 33,664 roles.',
+    description: 'Find work you can actually reach: real roles worldwide, pay in the local currency.',
   },
 };
+
+// The night navbar is on every page: the browser chrome around it is the hall's black.
+export const viewport = { themeColor: '#0a0b0d' };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${instrumentSerif.variable} ${inter.variable} ${jbMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-paper-bg text-paper-ink">
+      <body className="min-h-full flex flex-col bg-hall text-ink">
         <SmoothScroll />
         <PageTransition />
         <PingTracker />

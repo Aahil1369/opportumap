@@ -1,11 +1,19 @@
 'use client';
 
+// The night navbar, on every page: the hall-black bar, the logo, the places as gate signs (the
+// current one lit as a full yellow sign), sign-in / the account menu. Below lg the places move to
+// the drawer (NavDrawer.js, loaded on demand). Gate letters, spec §4: A Jobs · B Map ·
+// C Security (Resume) · D Simulator (Interview) · E Hangar (Startups) · F Airmail (Cover letter)
+// · Lounge (Community) · Itinerary (Saved) · Crew (Profile) · Passport Control → Migrova.
+// Only transform moves (the caret, the progress bar).
+
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { displayName } from '../../lib/displayName.js';
 import { isAdminUser } from '../../lib/admin.js';
+import { Chip, FOCUS, isHere, Logo, MIGROVA, UserAvatar } from './navParts';
 
 // Keep Supabase and these interaction-gated modals out of the initial bundle.
 // supabase-js is ~67KB gzipped and was previously loaded on every page just to
@@ -13,33 +21,22 @@ import { isAdminUser } from '../../lib/admin.js';
 // connections (logged-out visitors never download it until they open AuthModal).
 const AuthModal = dynamic(() => import('./AuthModal'), { ssr: false });
 const ProfileModal = dynamic(() => import('./ProfileModal'), { ssr: false });
+// The phone drawer only matters after a tap: it loads then (or on idle, on narrow screens).
+const NavDrawer = dynamic(() => import('./NavDrawer'), { ssr: false });
 
 const NAV_LINKS = [
-  { href: '/jobs',      label: 'Jobs' },
-  { href: '/map',       label: 'Map' },
-  { href: '/startups',  label: 'Startups' },
-  { href: '/community', label: 'Community' },
-  { href: '/messages',  label: 'Messages' },
+  { href: '/jobs', gate: 'A', label: 'Jobs' },
+  { href: '/map', gate: 'B', label: 'Map' },
+  { href: '/startups', gate: 'E', label: 'Startups', place: 'Hangar' },
+  { href: '/community', label: 'Community', place: 'Lounge' },
+  { href: '/messages', label: 'Messages' },
 ];
 
 const TOOL_LINKS = [
-  { href: '/resume',       label: 'Resume Grader' },
-  { href: '/cover-letter', label: 'Cover Letter' },
-  { href: '/interview',    label: 'Interview Prep' },
+  { href: '/resume', gate: 'C', place: 'Security', label: 'Resume grader' },
+  { href: '/interview', gate: 'D', place: 'Simulator', label: 'Interview prep' },
+  { href: '/cover-letter', gate: 'F', place: 'Airmail', label: 'Cover letter' },
 ];
-
-function UserAvatar({ user, size = 'sm' }) {
-  const name = displayName(user);
-  const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture;
-  const initials = name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-  const sz = size === 'lg' ? 'w-10 h-10 text-[12px]' : 'w-7 h-7 text-[10px]';
-  if (avatar) return <img src={avatar} alt={name} className={`${sz} object-cover`} />;
-  return (
-    <div className={`${sz} bg-paper-ink text-paper-bg flex items-center justify-center font-mono tracking-[0.05em]`}>
-      {initials}
-    </div>
-  );
-}
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -51,9 +48,13 @@ export default function Navbar() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [drawerWanted, setDrawerWanted] = useState(false);
   const [toolsUsed, setToolsUsed] = useState(0);
   const toolsRef = useRef(null);
+  const toolsButton = useRef(null);
   const userMenuRef = useRef(null);
+  const userButton = useRef(null);
+  const menuButton = useRef(null);
   const prevUserRef = useRef(null);
   const supabaseRef = useRef(null);
 
@@ -98,27 +99,70 @@ export default function Navbar() {
     fetch('/api/tool-usage').then((r) => r.ok ? r.json() : { count: 0 }).then((d) => setToolsUsed(d.count || 0)).catch(() => {});
   }, [user, pathname]);
 
+  // The desktop menus close on a click outside, and on Esc (focus back to their button).
   useEffect(() => {
-    const handler = (e) => {
+    if (!toolsOpen && !userMenuOpen) return undefined;
+    const onDown = (e) => {
       if (toolsRef.current && !toolsRef.current.contains(e.target)) setToolsOpen(false);
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (toolsOpen) { setToolsOpen(false); toolsButton.current?.focus(); }
+      if (userMenuOpen) { setUserMenuOpen(false); userButton.current?.focus(); }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [toolsOpen, userMenuOpen]);
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => { setMobileOpen(false); setToolsOpen(false); setUserMenuOpen(false); }, [pathname]);
+
+  // Below lg the menu button is the way around: fetch the drawer while the page is idle, so the
+  // first tap opens it at once.
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 1023.98px)').matches) return undefined;
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500));
+    const cancel = window.cancelIdleCallback || clearTimeout;
+    const id = idle(() => { import('./NavDrawer').catch(() => {}); });
+    return () => cancel(id);
+  }, []);
 
   const handleSignOut = async () => {
     await supabaseRef.current?.auth.signOut();
     setUserMenuOpen(false);
+    setMobileOpen(false);
     router.push('/');
   };
 
+  const closeDrawer = () => setMobileOpen(false);
   const userName = user ? displayName(user) : 'Account';
-  const progressPct = Math.min(100, (toolsUsed / TOOL_LINKS.length) * 100);
-  const isToolActive = TOOL_LINKS.some((t) => pathname === t.href);
+  const progress = Math.min(1, toolsUsed / TOOL_LINKS.length);
+  const isToolActive = TOOL_LINKS.some((t) => isHere(pathname, t.href));
   const isAdmin = isAdminUser(user);
+
+  const navLink = (l) => {
+    const here = isHere(pathname, l.href);
+    return (
+      <Link
+        key={l.href}
+        href={l.href}
+        aria-current={here ? 'page' : undefined}
+        title={l.place ? `${l.place} · ${l.label}` : undefined}
+        className={`inline-flex items-center gap-2 h-8 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.12em] uppercase whitespace-nowrap ${FOCUS} ${
+          l.gate ? 'pl-[5px] pr-2.5' : 'px-2.5'
+        } ${here ? 'bg-sign text-sign-ink' : 'text-ink-dim hover:text-ink'}`}
+      >
+        <Chip gate={l.gate} lit={here} />
+        {l.label}
+      </Link>
+    );
+  };
+
+  const menuItem = 'flex items-center gap-3 w-full rounded-[6px] px-2.5 py-2 text-left font-sans text-[14px] text-ink hover:bg-hall-3';
 
   return (
     <>
@@ -142,128 +186,130 @@ export default function Navbar() {
         />
       )}
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-paper-ink/60" onClick={() => setMobileOpen(false)} />
-          <div className="absolute top-0 right-0 h-full w-[280px] bg-paper-bg border-l border-paper-rule flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-paper-rule">
-              <span className="font-display italic text-[22px] leading-none text-paper-ink">OpportuMap</span>
-              <button onClick={() => setMobileOpen(false)} className="font-mono text-[12px] text-paper-ink-sub hover:text-accent">CLOSE</button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-5 font-mono text-[12px] tracking-[0.08em] uppercase text-paper-ink-dim space-y-1">
-              {NAV_LINKS.map((l) => (
-                <Link key={l.href} href={l.href} className={`block py-2 ${pathname === l.href ? 'text-accent' : 'hover:text-accent'}`}>{l.label}</Link>
-              ))}
-              <div className="pt-4 pb-1 text-[10px] text-paper-ink-sub tracking-[0.14em]">§ Tools</div>
-              {TOOL_LINKS.map((l) => (
-                <Link key={l.href} href={l.href} className={`block py-2 ${pathname === l.href ? 'text-accent' : 'hover:text-accent'}`}>{l.label}</Link>
-              ))}
-              <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="block py-2 hover:text-accent">Migrova ↗</a>
-            </div>
-            <div className="px-5 py-4 border-t border-paper-rule">
-              {user ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <UserAvatar user={user} size="lg" />
-                    <div className="min-w-0">
-                      <p className="font-display italic text-[16px] leading-tight text-paper-ink truncate">{userName}</p>
-                      <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub truncate">Signed in</p>
-                    </div>
-                  </div>
-                  <Link href="/profile" className="block font-mono text-[11px] tracking-[0.1em] uppercase text-paper-ink-dim hover:text-accent">Profile</Link>
-                  {isAdmin && (
-                    <Link href="/admin" className="block font-mono text-[11px] tracking-[0.1em] uppercase text-accent hover:opacity-80">Admin</Link>
-                  )}
-                  <button onClick={handleSignOut} className="block font-mono text-[11px] tracking-[0.1em] uppercase text-paper-ink-sub hover:text-accent">Sign out</button>
-                </div>
-              ) : (
-                <button onClick={() => { setMobileOpen(false); setShowAuth(true); }}
-                  className="w-full bg-paper-ink text-paper-bg font-sans text-[13px] font-medium tracking-[0.01em] px-[22px] py-3 hover:bg-[#2a3a2f] transition-colors">
-                  Sign in
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+      {drawerWanted && (
+        <NavDrawer
+          open={mobileOpen}
+          onClose={closeDrawer}
+          pathname={pathname}
+          user={user}
+          userName={userName}
+          isAdmin={isAdmin}
+          onSignIn={() => { closeDrawer(); setShowAuth(true); }}
+          onSignOut={handleSignOut}
+          returnFocusRef={menuButton}
+        />
       )}
 
-      <header className="border-b border-paper-rule bg-paper-bg sticky top-0 z-30">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10 py-4 flex items-center justify-between gap-6">
-          <Link href="/" className="font-display italic text-[24px] leading-none tracking-[-0.02em] text-paper-ink hover:text-accent transition-colors">
-            OpportuMap
-          </Link>
+      <header className="sticky top-0 z-30 bg-hall text-ink border-b border-rule">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-10 h-[60px] flex items-center justify-between gap-6">
+          <Logo />
 
-          <nav className="hidden md:flex items-center gap-7 font-mono text-[11px] tracking-[0.08em] uppercase text-paper-ink-dim">
-            {NAV_LINKS.map((l) => (
-              <Link key={l.href} href={l.href}
-                className={`relative transition-colors ${pathname === l.href ? 'text-paper-ink' : 'hover:text-accent'}`}>
-                {l.label}
-                {pathname === l.href && <span className="absolute -bottom-[18px] left-0 right-0 h-px bg-accent" />}
-              </Link>
-            ))}
+          <nav aria-label="Main" className="hidden lg:flex items-center gap-1.5">
+            {NAV_LINKS.map(navLink)}
             <div className="relative" ref={toolsRef}>
-              <button onClick={() => setToolsOpen(!toolsOpen)}
-                className={`transition-colors ${isToolActive ? 'text-paper-ink' : 'hover:text-accent'}`}>
+              <button
+                ref={toolsButton}
+                type="button"
+                aria-expanded={toolsOpen}
+                aria-controls="nav-tools"
+                onClick={() => setToolsOpen((o) => !o)}
+                className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.12em] uppercase ${
+                  isToolActive ? 'bg-sign text-sign-ink' : 'text-ink-dim hover:text-ink'
+                }`}
+              >
                 Tools
+                <span aria-hidden="true" className={`inline-block transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}>▾</span>
               </button>
               {toolsOpen && (
-                <div className="absolute top-full right-0 mt-3 w-[240px] bg-paper-bg-alt border border-paper-rule py-2 font-sans normal-case tracking-normal">
-                  {TOOL_LINKS.map((t) => (
-                    <Link key={t.href} href={t.href} onClick={() => setToolsOpen(false)}
-                      className={`block px-4 py-2 text-[13px] transition-colors ${pathname === t.href ? 'text-accent' : 'text-paper-ink hover:bg-paper-bg'}`}>
-                      {t.label}
-                    </Link>
-                  ))}
-                  <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" onClick={() => setToolsOpen(false)}
-                    className="block px-4 py-2 text-[13px] transition-colors text-paper-ink hover:bg-paper-bg">
-                    Migrova ↗
+                <div id="nav-tools" className="absolute top-full right-0 mt-3 w-[300px] rounded-[10px] bg-hall-2 border border-rule p-2 shadow-[0_18px_48px_rgba(0,0,0,0.5)]">
+                  {TOOL_LINKS.map((t) => {
+                    const here = isHere(pathname, t.href);
+                    return (
+                      <Link key={t.href} href={t.href} onClick={() => setToolsOpen(false)} aria-current={here ? 'page' : undefined}
+                        className={`${menuItem} ${here ? 'bg-hall-3' : ''}`}>
+                        <Chip gate={t.gate} lit={false} />
+                        <span className="font-mono text-[12px] font-medium tracking-[0.12em] uppercase text-sign">{t.place}</span>
+                        <span className="ml-auto text-ink-dim">{t.label}</span>
+                      </Link>
+                    );
+                  })}
+                  <div className="my-1.5 h-px bg-rule" />
+                  <a href={MIGROVA} target="_blank" rel="noopener noreferrer" onClick={() => setToolsOpen(false)} className={menuItem}>
+                    <span aria-hidden="true" className="inline-grid place-items-center w-[22px]">🛂</span>
+                    <span className="font-mono text-[12px] font-medium tracking-[0.12em] uppercase text-sign">Passport control</span>
+                    <span className="ml-auto text-ink-dim">Migrova ↗</span>
                   </a>
                 </div>
               )}
             </div>
           </nav>
 
-          <div className="flex items-center gap-4 font-mono text-[11px]">
+          <div className="flex items-center gap-2">
             {user ? (
-              <div className="relative hidden md:block" ref={userMenuRef}>
-                <button onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 text-paper-ink hover:text-accent transition-colors">
+              <div className="relative hidden lg:block" ref={userMenuRef}>
+                <button
+                  ref={userButton}
+                  type="button"
+                  aria-expanded={userMenuOpen}
+                  aria-controls="nav-account"
+                  onClick={() => setUserMenuOpen((o) => !o)}
+                  className="flex items-center gap-2 h-9 pl-1 pr-2.5 rounded-[6px] text-ink hover:bg-hall-3 font-mono text-[12px] font-medium tracking-[0.06em]"
+                >
                   <UserAvatar user={user} />
-                  <span className="max-w-[90px] truncate">{userName}</span>
+                  <span className="max-w-[120px] truncate">{userName}</span>
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-[220px] bg-paper-bg-alt border border-paper-rule">
-                    <div className="px-4 py-3 border-b border-paper-rule">
-                      <p className="font-display italic text-[15px] leading-tight text-paper-ink truncate">{userName}</p>
-                      <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub truncate mt-1">Signed in</p>
+                  <div id="nav-account" className="absolute right-0 top-full mt-3 w-[240px] rounded-[10px] bg-hall-2 border border-rule p-2 shadow-[0_18px_48px_rgba(0,0,0,0.5)]">
+                    <div className="px-2.5 pt-1.5 pb-2.5 border-b border-rule mb-1.5">
+                      <p className="font-sans text-[15px] font-semibold leading-tight text-ink truncate">{userName}</p>
+                      <p className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-sub mt-1">Signed in</p>
                     </div>
-                    <div className="py-1 font-sans normal-case tracking-normal">
-                      <Link href="/profile" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-paper-ink hover:bg-paper-bg">Profile</Link>
-                      <Link href="/saved" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-paper-ink hover:bg-paper-bg">Saved jobs</Link>
-                      {isAdmin && (
-                        <Link href="/admin" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-[13px] text-accent hover:bg-paper-bg">Admin</Link>
-                      )}
-                      <div className="my-1 h-px bg-paper-rule" />
-                      <button onClick={handleSignOut} className="block w-full text-left px-4 py-2 text-[13px] text-paper-ink-sub hover:bg-paper-bg">Sign out</button>
-                    </div>
+                    <Link href="/profile" onClick={() => setUserMenuOpen(false)} className={menuItem}>
+                      <span className="font-mono text-[12px] font-medium tracking-[0.12em] uppercase text-sign">Crew</span>
+                      <span className="ml-auto text-ink-dim">Profile</span>
+                    </Link>
+                    <Link href="/saved" onClick={() => setUserMenuOpen(false)} className={menuItem}>
+                      <span className="font-mono text-[12px] font-medium tracking-[0.12em] uppercase text-sign">Itinerary</span>
+                      <span className="ml-auto text-ink-dim">Saved jobs</span>
+                    </Link>
+                    {isAdmin && (
+                      <Link href="/admin" onClick={() => setUserMenuOpen(false)} className={menuItem}>
+                        <span className="font-mono text-[12px] font-medium tracking-[0.12em] uppercase text-sign">Admin</span>
+                      </Link>
+                    )}
+                    <div className="my-1.5 h-px bg-rule" />
+                    <button type="button" onClick={handleSignOut} className={`${menuItem} text-ink-dim`}>Sign out</button>
                   </div>
                 )}
               </div>
             ) : (
-              <button onClick={() => setShowAuth(true)} className="text-paper-ink hover:text-accent transition-colors">Sign in</button>
+              <button
+                type="button"
+                onClick={() => setShowAuth(true)}
+                className="inline-flex items-center h-9 px-3 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.14em] uppercase text-ink ring-1 ring-inset ring-rule hover:ring-ink-sub"
+              >
+                Sign in
+              </button>
             )}
-            <button onClick={() => setMobileOpen(true)}
-              className="md:hidden w-8 h-8 flex flex-col items-center justify-center gap-1 hover:text-accent">
-              <span className="block w-4 h-px bg-paper-ink" />
-              <span className="block w-4 h-px bg-paper-ink" />
-              <span className="block w-4 h-px bg-paper-ink" />
+            <button
+              ref={menuButton}
+              type="button"
+              aria-label="Open menu"
+              aria-haspopup="dialog"
+              aria-expanded={mobileOpen}
+              onClick={() => { setDrawerWanted(true); setMobileOpen(true); }}
+              className="lg:hidden w-11 h-11 -mr-2 flex flex-col items-center justify-center gap-[5px] rounded-[6px] hover:bg-hall-3"
+            >
+              <span className="block w-[18px] h-[1.5px] bg-ink" />
+              <span className="block w-[18px] h-[1.5px] bg-ink" />
+              <span className="block w-[18px] h-[1.5px] bg-ink" />
             </button>
           </div>
         </div>
 
         {user && toolsUsed > 0 && (
-          <div className="h-[2px] bg-paper-rule">
-            <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progressPct}%` }} />
+          <div className="h-[2px] bg-rule overflow-hidden" aria-hidden="true">
+            <div className="h-full w-full bg-sign origin-left transition-transform duration-300" style={{ transform: `scaleX(${progress})` }} />
           </div>
         )}
       </header>

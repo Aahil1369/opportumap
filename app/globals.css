@@ -1,7 +1,30 @@
 @import "tailwindcss";
 
-/* ─── Field Notes Design Tokens ─── */
+/* ─── Design tokens ───
+   Departures (the night-time airport): every redesigned page and the night navbar.
+   Paper/terminal (Field Notes): kept until each old page is redesigned. */
 :root {
+  /* Departures: the terminal hall, its signs and the board's status lamps */
+  --hall:           #0a0b0d;
+  --hall-2:         #111316;
+  --hall-3:         #16181c;
+  --rule:           #22262c;
+  --ink:            #f4f1e6;
+  --ink-dim:        #b9bdc4;
+  --ink-sub:        #9aa0a8;
+  --sign:           #ffc531;
+  --sign-ink:       #0a0b0d;
+  --amber:          #ffb547;
+  --ok:             #3ce08a;
+  --new:            #ffc531;
+  --info:           #9fc8ff;
+  --warn:           #ff6b4a;
+
+  /* The board's mono stack: OM Board Glyphs first, for the few characters JetBrains Mono's web
+     subsets lack (see the @font-face below); it covers nothing else, so JetBrains Mono stays
+     the line's first available font. */
+  --font-board:     "OM Board Glyphs", var(--font-jb-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
   /* Paper register */
   --paper-bg:       #e6dfc9;
   --paper-bg-alt:   #efe9d8;
@@ -28,6 +51,21 @@
 }
 
 @theme inline {
+  --color-hall:           var(--hall);
+  --color-hall-2:         var(--hall-2);
+  --color-hall-3:         var(--hall-3);
+  --color-rule:           var(--rule);
+  --color-ink:            var(--ink);
+  --color-ink-dim:        var(--ink-dim);
+  --color-ink-sub:        var(--ink-sub);
+  --color-sign:           var(--sign);
+  --color-sign-ink:       var(--sign-ink);
+  --color-amber:          var(--amber);
+  --color-ok:             var(--ok);
+  --color-new:            var(--new);
+  --color-info:           var(--info);
+  --color-warn:           var(--warn);
+
   --color-paper-bg:       var(--paper-bg);
   --color-paper-bg-alt:   var(--paper-bg-alt);
   --color-paper-ink:      var(--paper-ink);
@@ -48,18 +86,41 @@
 
   --font-display:         var(--font-instrument-serif), Georgia, serif;
   --font-sans:            var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono:            var(--font-jb-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-mono:            var(--font-board);
 }
 
+/* ─── Board glyphs ───
+   ← → ↗ ↘ ✕ (JetBrains Mono's own) and ✓ ₹ ₩ (IBM Plex Mono at JetBrains Mono's cap height),
+   600 units wide on JetBrains Mono's metrics. Built by scripts/fonts/build-board-glyphs.mjs
+   (SIL OFL 1.1, app/fonts/OFL.txt); ~1.5 KB, fetched only when one of these is on the page. */
+@font-face {
+  font-family: "OM Board Glyphs";
+  src: url("./fonts/om-board-glyphs-400.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+20A9, U+20B9, U+2190, U+2192, U+2197-2198, U+2713, U+2715;
+}
+@font-face {
+  font-family: "OM Board Glyphs";
+  src: url("./fonts/om-board-glyphs-700.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+20A9, U+20B9, U+2190, U+2192, U+2197-2198, U+2713, U+2715;
+}
+
+/* The hall is the page under everything (overscroll, short pages, the night navbar); pages not
+   redesigned yet paint their own paper body on top. */
 html {
   scroll-behavior: smooth;
-  background: var(--paper-bg);
-  color: var(--paper-ink);
+  background: var(--hall);
+  color: var(--ink);
 }
 
 body {
-  background: var(--paper-bg);
-  color: var(--paper-ink);
+  background: var(--hall);
+  color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -116,7 +177,7 @@ body {
   position: fixed;
   top: 0; left: 0;
   height: 2px;
-  background: var(--accent);
+  background: var(--sign);
   z-index: 100;
   transform-origin: left center;
   transform: scaleX(0);
@@ -164,12 +225,14 @@ body {
   content: '';
   position: absolute;
   bottom: 0; left: 0;
-  width: 0;
+  width: 100%;
   height: 1px;
   background: var(--accent);
-  transition: width 0.3s var(--ease);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s var(--ease);
 }
-.tool-card-underline:hover::after { width: 100%; }
+.tool-card-underline:hover::after { transform: scaleX(1); }
 
 /* ─── Mapbox popups (terminal register) ─── */
 .mapboxgl-popup-content {

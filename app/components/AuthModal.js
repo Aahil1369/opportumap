@@ -54,7 +54,7 @@ export default function AuthModal({ onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm bg-paper-bg border border-paper-rule">
+      <div className="w-full max-w-sm bg-paper-bg text-paper-ink border border-paper-rule">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-paper-rule">
           <h2 className="font-display text-[22px] leading-[1.15] text-paper-ink">

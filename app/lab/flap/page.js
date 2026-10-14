@@ -18,12 +18,12 @@ export default function FlapLabPage() {
             <span aria-hidden="true" className="mr-2 inline-block h-3 w-3 rounded-[3px] bg-[var(--sign)] align-[-1px]" />
             opportumap
           </span>
-          <span className="font-[family-name:var(--font-jb-mono)] text-[12px] tracking-[0.16em] text-[var(--ink-sub)]">
+          <span className="font-mono text-[12px] tracking-[0.16em] text-[var(--ink-sub)]">
             LAB · STEP 0
           </span>
         </header>
 
-        <p className="font-[family-name:var(--font-jb-mono)] text-[12px] tracking-[0.22em] text-[var(--sign)]">
+        <p className="font-mono text-[12px] tracking-[0.22em] text-[var(--sign)]">
           DEPARTURES · روانگی · DÉPARTS
         </p>
         <h1 className="mt-3 max-w-[14ch] text-[clamp(32px,8.4vw,64px)] font-extrabold leading-[1.02] tracking-[-0.025em]">
@@ -39,7 +39,7 @@ export default function FlapLabPage() {
         </div>
 
         <p className="mt-6 text-[16px] leading-[1.5] text-[var(--ink-sub)]">
-          Sample rows, not live listings. Add <code className="font-[family-name:var(--font-jb-mono)] text-[var(--ink-dim)]">?fps=1</code> to
+          Sample rows, not live listings. Add <code className="font-mono text-[var(--ink-dim)]">?fps=1</code> to
           the address for the frame meter.
         </p>
       </div>

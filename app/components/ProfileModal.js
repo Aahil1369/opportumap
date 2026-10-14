@@ -58,7 +58,7 @@ export default function ProfileModal({ onSave, initialProfile, onClose, welcome 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-paper-bg border border-paper-rule">
+      <div className="w-full max-w-lg bg-paper-bg text-paper-ink border border-paper-rule">
 
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-paper-rule">
