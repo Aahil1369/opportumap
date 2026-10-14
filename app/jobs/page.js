@@ -29,6 +29,7 @@ function jobFreshness(job) {
 }
 import { getVisaStatus } from '../data/visaData';
 import { createClient } from '../../lib/supabase-browser';
+import { realName } from '../../lib/displayName.js';
 
 const JOB_TYPES = [
   { value: 'all', label: 'All' },
@@ -117,7 +118,7 @@ export default function JobsPage() {
           }
         } catch {}
         // Pre-fill name from Google if no saved profile
-        const name = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+        const name = realName(user);
         const localRaw = localStorage.getItem('opportumap_profile');
         if (localRaw) {
           const p = { ...JSON.parse(localRaw), name: JSON.parse(localRaw).name || name };

@@ -32,7 +32,7 @@ export async function POST(request) {
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) return Response.json({ error: 'Sign in to follow' }, { status: 401 });
 
-  const { following_id, following_name } = await request.json();
+  const { following_id } = await request.json();
   if (!following_id || following_id === user.id) return Response.json({ error: 'Invalid' }, { status: 400 });
 
   const { data: existing } = await supabase
@@ -47,8 +47,10 @@ export async function POST(request) {
     await authClient.from('follows').insert({
       follower_id: user.id,
       following_id,
-      follower_name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
-      following_name: following_name || '',
+      // Names on follows are never displayed; store nothing rather than a
+      // value that could be (or be derived from) someone's email address.
+      follower_name: '',
+      following_name: '',
     });
     return Response.json({ following: true });
   }

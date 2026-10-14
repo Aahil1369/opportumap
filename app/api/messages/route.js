@@ -1,19 +1,26 @@
-import { createClient as createServerClient } from '../../../lib/supabase-server.js';
-import { supabase } from '../../../lib/supabase.js';
+import { createClient } from '../../../lib/supabase-server.js';
+import { hasSupabase } from '../../../lib/supabase.js';
+import { isUuid } from '../../../lib/uuid.js';
+import { dbErrorStatus } from '../../../lib/dbError.js';
 
-export async function GET(request) {
-  const serverClient = await createServerClient();
-  const { data: { user } } = await serverClient.auth.getUser();
+const MAX_MESSAGE = 4000; // matches the startup_messages_content_len constraint
+
+// All reads and writes use the user's session: RLS only returns messages the
+// user sent or received, and only lets them send as themselves.
+export async function GET() {
+  if (!hasSupabase) return Response.json({ conversations: [] });
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isUuid(user.id)) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Get all messages where user is sender or receiver
-  const { data: messages, error } = await supabase
+  const { data: messages, error } = await db
     .from('startup_messages')
     .select('*, startups(id, name, user_id)')
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) return Response.json({ error: 'Could not load messages' }, { status: 500 });
 
   // Group into conversations by startup_id + other_user_id
   const convMap = {};
@@ -38,22 +45,30 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const serverClient = await createServerClient();
-  const { data: { user } } = await serverClient.auth.getUser();
+  if (!hasSupabase) return Response.json({ error: 'Database unavailable' }, { status: 503 });
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { startupId, receiverId, content } = await request.json();
-  if (!startupId || !receiverId || !content?.trim()) {
+  let body;
+  try { body = await request.json(); } catch { body = {}; }
+  const { startupId, receiverId } = body ?? {};
+  const content = typeof body?.content === 'string' ? body.content.trim() : '';
+  if (!isUuid(startupId) || !isUuid(receiverId) || !content) {
     return Response.json({ error: 'Missing fields' }, { status: 400 });
   }
+  if (receiverId === user.id) return Response.json({ error: 'You cannot message yourself' }, { status: 400 });
+  if (content.length > MAX_MESSAGE) {
+    return Response.json({ error: `Messages can be at most ${MAX_MESSAGE} characters` }, { status: 400 });
+  }
 
-  const { data, error } = await supabase.from('startup_messages').insert({
+  const { data, error } = await db.from('startup_messages').insert({
     startup_id: startupId,
     sender_id: user.id,
     receiver_id: receiverId,
-    content: content.trim(),
+    content,
   }).select().single();
 
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) return Response.json({ error: 'Could not send your message' }, { status: dbErrorStatus(error) });
   return Response.json({ message: data });
 }

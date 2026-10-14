@@ -1,48 +1,45 @@
-import { createClient as createServerClient } from '../../../lib/supabase-server.js';
-import { supabase } from '../../../lib/supabase.js';
+import { createClient } from '../../../lib/supabase-server.js';
+import { hasSupabase } from '../../../lib/supabase.js';
+import { buildStartupInsert } from '../../../lib/startups.js';
+import { dbErrorStatus } from '../../../lib/dbError.js';
 
+// Every query runs on the cookie client, so RLS sees the signed-in user
+// (auth.uid()); signed-out visitors are the anon role and can only read.
 export async function GET(request) {
+  if (!hasSupabase) return Response.json({ startups: [] });
   const { searchParams } = new URL(request.url);
   const stage = searchParams.get('stage');
   const sector = searchParams.get('sector');
   const sort = searchParams.get('sort') || 'newest';
 
-  let query = supabase.from('startups').select('*');
+  const db = await createClient();
+  let query = db.from('startups').select('*');
   if (stage) query = query.eq('stage', stage);
   if (sector) query = query.eq('sector', sector);
   if (sort === 'trending') query = query.order('upvote_count', { ascending: false });
   else query = query.order('created_at', { ascending: false });
 
   const { data, error } = await query.limit(50);
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) return Response.json({ error: 'Could not load startups' }, { status: 500 });
   return Response.json({ startups: data ?? [] });
 }
 
 export async function POST(request) {
-  const serverClient = await createServerClient();
-  const { data: { user } } = await serverClient.auth.getUser();
-  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!hasSupabase) return Response.json({ error: 'Database unavailable' }, { status: 503 });
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
+  if (!user) return Response.json({ error: 'Sign in to post a startup' }, { status: 401 });
 
-  const body = await request.json();
-  const { name, tagline, description, stage, sector, raise_amount, equity_offered, team_size, location, website, pitch_deck_url } = body;
-  if (!name || !tagline || !description || !stage || !sector) {
-    return Response.json({ error: 'Missing required fields' }, { status: 400 });
+  let body;
+  try { body = await request.json(); } catch { body = null; }
+  const { row, error: invalid } = buildStartupInsert(body, user.id);
+  if (invalid) return Response.json({ error: invalid }, { status: 400 });
+
+  // The founder's display name and the counters are set by database triggers;
+  // the column grants refuse them from clients.
+  const { data, error } = await db.from('startups').insert(row).select().single();
+  if (error) {
+    return Response.json({ error: 'Could not post your startup. Please try again.' }, { status: dbErrorStatus(error) });
   }
-
-  const userName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Anonymous';
-
-  const { data, error } = await supabase.from('startups').insert({
-    user_id: user.id,
-    user_name: userName,
-    name, tagline, description, stage, sector,
-    raise_amount: raise_amount || null,
-    equity_offered: equity_offered || null,
-    team_size: team_size || null,
-    location: location || null,
-    website: website || null,
-    pitch_deck_url: pitch_deck_url || null,
-  }).select().single();
-
-  if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ startup: data });
 }

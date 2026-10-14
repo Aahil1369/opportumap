@@ -1,5 +1,6 @@
 import { createClient } from '../../../../lib/supabase-server.js';
 import { supabase, hasSupabase } from '../../../../lib/supabase.js';
+import { displayName } from '../../../../lib/displayName.js';
 
 export async function GET(request) {
   if (!hasSupabase) return Response.json({ comments: [] });
@@ -34,7 +35,7 @@ export async function POST(request) {
     .insert({
       post_id,
       user_id: user.id,
-      user_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+      user_name: displayName(user),
       user_avatar: user.user_metadata?.avatar_url || '',
       content: content.trim(),
     })
