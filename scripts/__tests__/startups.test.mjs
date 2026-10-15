@@ -154,7 +154,8 @@ test('upvote/interest routes: duplicate insert (23505) means "already done", ids
 
 test('pages never spin forever: fetches go through fetchJson with an error state', () => {
   // /startups and /startups/[id] fetch in their client islands (app/components/startups/).
-  for (const p of ['app/components/startups/Hangar.js', 'app/components/startups/Stand.js', 'app/messages/page.js', 'app/components/StartupChat.js', 'app/community/page.js']) {
+  // /community and /profile fetch in their islands (app/components/community/, app/components/profile/).
+  for (const p of ['app/components/startups/Hangar.js', 'app/components/startups/Stand.js', 'app/messages/page.js', 'app/components/StartupChat.js', 'app/components/community/Lounge.js', 'app/components/community/Comments.js', 'app/components/profile/Crew.js']) {
     const src = read(p);
     assert.match(src, /fetchJson\(/, `${p} uses fetchJson`);
     assert.match(src, /\.catch\(/, `${p} handles failures`);

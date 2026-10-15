@@ -1,0 +1,589 @@
+/* ─── /community — the departure lounge · /profile — the crew badge ──────────────────────────
+   The lounge: a composer, then the feed of posts on --hall-3 cards (author, route chip, the post
+   type on board tiles, the text, Like / Comments), with an About panel beside it on desktop.
+   An empty lounge is a designed screen: a board line, a row of seats, one marked YOURS?.
+   The crew badge: an airport crew ID on its lanyard (yellow band, initials, name, route,
+   member since, crew number) beside the member's own numbers, then their posts.
+   Palette tokens only (app/globals.css); mono = --font-board; the field border is a mix of two
+   tokens (≥ 3:1 against the panels). Motion: transform/opacity only (the badge drops once, the
+   like heart pops); reduced motion turns it off. No vh, no CSS trig, no backdrop-filter. */
+
+.lg {
+  --lg-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --lg-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2));
+  color: var(--ink);
+}
+
+/* ─── Buttons and links ─── */
+.lg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: 700 16px/1.2 var(--lg-sans);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
+}
+.lg-btn:active { transform: translateY(1px); }
+.lg-btn-sign { background: var(--sign); color: var(--sign-ink); }
+.lg-btn-ghost { background: transparent; color: var(--ink); border-color: var(--lg-field); }
+.lg-btn-sm { min-height: 48px; padding: 0 14px; }
+.lg-btn[aria-disabled='true'] { opacity: 0.6; cursor: progress; }
+.lg-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sign);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.lg-btn:focus-visible,
+.lg-link:focus-visible,
+.lg-act:focus-visible,
+.lg-follow:focus-visible,
+.lg-compose-open:focus-visible {
+  outline: 2px solid var(--sign);
+  outline-offset: 2px;
+}
+
+/* ─── Layout: the feed, and the panel beside it on desktop ─── */
+.lg-cols { display: grid; gap: 28px; grid-template-columns: minmax(0, 1fr); }
+.lg-main { min-width: 0; }
+.lg-side { display: grid; gap: 14px; align-content: start; min-width: 0; }
+@media (min-width: 960px) {
+  .lg-cols { grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
+  .lg-side { position: sticky; top: 84px; }
+}
+.lg-compose-slot,
+.lg-post { scroll-margin-top: 76px; }
+
+/* ─── Composer ─── */
+.lg-compose { background: var(--hall-2); border: 1px solid var(--rule); border-radius: 14px; }
+.lg-compose-bar,
+.lg-compose-wait { display: flex; align-items: center; gap: 12px; padding: 12px; }
+.lg-compose-wait { background: var(--hall-2); border: 1px solid var(--rule); border-radius: 14px; }
+.lg-compose-open {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--lg-field);
+  border-radius: 10px;
+  background: var(--hall);
+  color: var(--ink-sub);
+  font: 400 16px/1.3 var(--lg-sans);
+  text-align: left;
+  cursor: text;
+}
+.lg-compose-open:hover { color: var(--ink-dim); }
+.lg-form { display: grid; gap: 8px; padding: 4px 16px 16px; border-top: 1px solid var(--rule); }
+.lg-as {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 2px;
+  font: 500 12px/1.3 var(--font-board);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+}
+.lg-types { margin: 0; padding: 0; border: 0; min-width: 0; }
+.lg-label {
+  display: block;
+  margin-top: 8px;
+  font: 500 12px/1.3 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.lg-types .lg-label { margin-top: 4px; padding: 0; }
+.lg-opt { color: var(--ink-sub); letter-spacing: 0.04em; text-transform: none; }
+.lg-type-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.lg-type-opt { position: relative; display: inline-flex; }
+.lg-type-opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+.lg-type-opt span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall);
+  color: var(--ink-dim);
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.12em;
+}
+.lg-type-opt input:checked + span { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
+.lg-type-opt input:focus-visible + span { outline: 2px solid var(--sign); outline-offset: 2px; }
+.lg-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--lg-field);
+  border-radius: 10px;
+  background: var(--hall);
+  color: var(--ink);
+  font: 400 16px/1.45 var(--lg-sans);
+}
+.lg-input::placeholder { color: var(--ink-sub); opacity: 1; }
+.lg-input:focus-visible { outline: 2px solid var(--sign); outline-offset: 1px; border-color: var(--sign); }
+.lg-textarea { min-height: 136px; resize: vertical; }
+.lg-hint {
+  margin: 0;
+  font: 500 11px/1.4 var(--font-board);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+}
+.lg-error { margin: 4px 0 0; font-size: 16px; line-height: 1.45; color: var(--warn); }
+.lg-form-a { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+
+/* ─── Sign-in prompts ─── */
+.lg-prompt {
+  padding: 18px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--sign);
+  border-radius: 14px;
+  background: var(--hall-2);
+}
+.lg-prompt-t { margin: 0; font: 800 20px/1.2 var(--lg-sans); letter-spacing: -0.01em; }
+.lg-prompt-s { margin: 6px 0 0; max-width: 52ch; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.lg-prompt-a { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+.lg-notice { margin: 10px 0 0; font-size: 16px; line-height: 1.4; color: var(--ok); }
+.lg-notice:empty { margin: 0; }
+
+/* ─── The feed ─── */
+.lg-feed-wrap { margin-top: 28px; }
+.lg-cap {
+  margin: 0 0 12px;
+  font: 600 11px/1.2 var(--font-board);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sign);
+}
+.lg-feed { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.lg-post { min-width: 0; }
+.lg-card { min-width: 0; padding: 16px; border: 1px solid var(--rule); border-radius: 14px; background: var(--hall-3); }
+.lg-card-head { display: flex; align-items: flex-start; gap: 12px; }
+.lg-who { flex: 1; min-width: 0; }
+.lg-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 0;
+  font: 700 16px/1.3 var(--lg-sans);
+}
+.lg-name-t { overflow-wrap: anywhere; }
+.lg-verified {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 800 11px/1 var(--lg-sans);
+}
+.lg-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 6px 0 0;
+  font: 500 12px/1.2 var(--font-board);
+  letter-spacing: 0.1em;
+  color: var(--ink-sub);
+}
+.lg-type { display: inline-flex; color: var(--amber); }
+.lg-type .flap-tiles,
+.lg-type .flap-plain { font-size: 12px; }
+.lg-follow {
+  flex: none;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sign);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sign);
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.lg-follow[aria-pressed='true'] { border-color: var(--lg-field); color: var(--ink-dim); }
+.lg-follow[aria-disabled='true'] { opacity: 0.6; cursor: progress; }
+.lg-title { margin: 14px 0 0; font: 800 20px/1.25 var(--lg-sans); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.lg-text {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.lg-more { display: inline-block; min-height: 32px; margin-top: 4px; font-size: 16px; }
+.lg-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; }
+.lg-tag {
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  font: 500 12px/1.2 var(--font-board);
+  letter-spacing: 0.04em;
+  color: var(--ink-sub);
+}
+.lg-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 14px; padding-top: 8px; border-top: 1px solid var(--rule); }
+.lg-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-dim);
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.lg-act:hover { color: var(--ink); }
+.lg-act[aria-pressed='true'],
+.lg-act[aria-pressed='true'] .lg-act-n { color: var(--sign); }
+.lg-act[aria-expanded='true'] { color: var(--ink); }
+.lg-act-n { color: var(--ink-sub); letter-spacing: 0.04em; }
+.lg-ico { flex: none; }
+.lg-act[data-pop][aria-pressed='true'] .lg-ico { animation: lg-pop 0.34s cubic-bezier(.22, 1, .36, 1); }
+@keyframes lg-pop {
+  45% { transform: scale(1.28); }
+}
+
+/* ─── Comments ─── */
+.lg-comments { display: grid; gap: 12px; margin-top: 12px; padding: 12px 0 2px 14px; border-left: 2px solid var(--rule); }
+.lg-clist { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.lg-c { display: flex; gap: 10px; }
+.lg-c-body { flex: 1; min-width: 0; }
+.lg-c-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin: 0; }
+.lg-c-name { font: 700 16px/1.3 var(--lg-sans); overflow-wrap: anywhere; }
+.lg-c-time { font: 500 11px/1.2 var(--font-board); letter-spacing: 0.1em; color: var(--ink-sub); }
+.lg-c-text { margin: 2px 0 0; font-size: 16px; line-height: 1.55; color: var(--ink-dim); white-space: pre-line; overflow-wrap: anywhere; }
+.lg-cform { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.lg-cform .lg-error { grid-column: 1 / -1; }
+.lg-c-signin { justify-self: start; min-height: 44px; font-size: 16px; }
+.lg-note { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-sub); }
+.lg-inline-alert { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.lg-panel .lg-inline-alert { margin-top: 12px; }
+
+/* ─── Screens: loading, failed, empty ─── */
+.lg-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 28px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--hall-2);
+  text-align: center;
+}
+.lg-state-t { margin: 0; font: 800 22px/1.2 var(--lg-sans); letter-spacing: -0.01em; }
+.lg-state-s { max-width: 46ch; margin: 0 0 8px; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+
+.lg-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 16px 16px 26px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--hall-2);
+  text-align: center;
+}
+.lg-board {
+  justify-self: stretch;
+  overflow: hidden;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall);
+  text-align: left;
+}
+.lg-board-cap { margin: 0 0 8px; font: 600 11px/1.2 var(--font-board); letter-spacing: 0.22em; color: var(--sign); }
+.lg-board .flap { color: var(--amber); }
+.lg-board .flap-tiles,
+.lg-board .flap-plain { font-size: 15px; color: var(--amber); }
+.lg-seats { width: min(100%, 320px); height: auto; margin-top: 6px; }
+.lg-seat rect { fill: var(--hall-3); stroke: var(--lg-field); stroke-width: 1.5; }
+.lg-seat path { fill: none; stroke: var(--lg-field); stroke-width: 3; stroke-linecap: round; }
+.lg-seat-you rect { fill: none; stroke: var(--sign); stroke-dasharray: 4 4; }
+.lg-seat-you path { stroke: var(--sign); }
+.lg-seat-tag { font: 600 11px var(--font-board); letter-spacing: 0.18em; fill: var(--sign); }
+.lg-empty-t {
+  max-width: 30ch;
+  margin: 4px 0 0;
+  font: 800 clamp(20px, 1.4vw + 14px, 26px)/1.2 var(--lg-sans);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.lg-empty-s { max-width: 46ch; margin: 0 0 6px; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+
+/* Still skeletons (nothing pulses). */
+.lg-skel { display: block; border-radius: 6px; background: var(--rule); }
+.lg-skel-list { display: grid; gap: 12px; }
+.lg-skel-card .lg-card-head { align-items: center; }
+.lg-skel-av { flex: none; width: 40px; height: 40px; border-radius: 50%; }
+.lg-skel-av-lg { width: 76px; height: 76px; border-radius: 14px; }
+.lg-skel-line { width: 100%; height: 12px; margin-top: 12px; }
+.lg-card-head .lg-skel-line { margin-top: 0; }
+.lg-skel-bar { flex: 1; height: 48px; border-radius: 10px; }
+
+.lg-more-row { display: flex; justify-content: center; margin-top: 16px; }
+.lg-more-error { text-align: center; }
+
+/* ─── Avatars and route chips ─── */
+.lg-av {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: var(--hall);
+  color: var(--sign);
+  font: 600 14px/1 var(--font-board);
+  letter-spacing: 0.04em;
+  object-fit: cover;
+}
+.lg-av[data-size='sm'] { width: 32px; height: 32px; font-size: 12px; }
+.lg-av[data-size='lg'] { width: 76px; height: 76px; border-radius: 14px; background: var(--hall-3); font-size: 26px; }
+
+.rc {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--flap-hi);
+  box-shadow: inset 0 1px 0 var(--flap-edge), inset 0 -1px 0 #000;
+  color: var(--sign);
+  font: 500 12px/1.2 var(--font-board);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.rc-arrow { color: var(--ink-dim); }
+
+/* ─── The side panel ─── */
+.lg-panel { padding: 16px; border: 1px solid var(--rule); border-radius: 14px; background: var(--hall-2); }
+.lg-panel-h {
+  margin: 0 0 10px;
+  font: 600 11px/1.2 var(--font-board);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sign);
+}
+.lg-panel-p { margin: 0 0 12px; font-size: 16px; line-height: 1.55; color: var(--ink-dim); }
+.lg-kinds { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--rule); list-style: none; }
+.lg-kinds li {
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--hall);
+  font: 500 11px/1.2 var(--font-board);
+  letter-spacing: 0.12em;
+  color: var(--amber);
+}
+.lg-mine-who { display: flex; align-items: center; gap: 12px; }
+.lg-mine-t { display: grid; justify-items: start; gap: 6px; min-width: 0; }
+.lg-mine-name { margin: 0; font: 700 16px/1.3 var(--lg-sans); overflow-wrap: anywhere; }
+.lg-mine-sub { margin: 0; font: 500 11px/1.3 var(--font-board); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-sub); }
+.lg-mine-stats,
+.cb-stats { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 0; }
+.lg-mine-stats { margin: 14px 0 12px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.lg-mine-stats div,
+.cb-stat { display: flex; flex-direction: column-reverse; gap: 4px; }
+.lg-mine-stats dt,
+.cb-stat dt,
+.cb-field dt,
+.cb-account dt {
+  font: 500 11px/1.2 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+}
+.lg-mine-stats dd,
+.cb-stat dd { margin: 0; font: 800 26px/1 var(--lg-sans); letter-spacing: -0.01em; }
+.lg-mine-link { font-size: 16px; }
+
+.lg-foot {
+  margin: 40px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  font: 500 12px/1.6 var(--font-board);
+  letter-spacing: 0.06em;
+  color: var(--ink-sub);
+}
+
+/* ─── The crew badge ─── */
+.cb-top { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 860px) {
+  .cb-top { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 32px; align-items: start; }
+}
+.cb { position: relative; width: 100%; max-width: 380px; margin-inline: auto; padding-top: 34px; }
+/* The lanyard: a dark strap from the top edge down into the badge's slot. */
+.cb::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 20px;
+  height: 52px;
+  margin-left: -10px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: repeating-linear-gradient(180deg, var(--hall-3) 0 6px, var(--hall-2) 6px 8px);
+}
+.cb-card {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 18px;
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  background: var(--hall-2);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  transform-origin: 50% -34px;
+}
+.cb-card[data-drop] { animation: cb-drop 0.85s cubic-bezier(.22, 1, .36, 1) both; }
+/* Small angles: a swinging corner never reaches past the 16px page gutter on a phone (a wider
+   swing would widen the page while it plays). */
+@keyframes cb-drop {
+  0% { transform: translateY(-28px) rotate(-1.6deg); opacity: 0; }
+  55% { transform: translateY(3px) rotate(0.8deg); opacity: 1; }
+  80% { transform: translateY(0) rotate(-0.3deg); }
+  100% { transform: none; }
+}
+.cb-slot {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  left: 50%;
+  width: 46px;
+  height: 9px;
+  margin-left: -23px;
+  border-radius: 5px;
+  background: var(--hall);
+  box-shadow: inset 0 1px 2px #000;
+}
+.cb-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 28px 18px 12px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 12px/1 var(--font-board);
+  letter-spacing: 0.24em;
+}
+.cb-band-r { padding: 5px 8px; border-radius: 4px; background: var(--sign-ink); color: var(--sign); letter-spacing: 0.18em; }
+.cb-main { display: flex; align-items: center; gap: 16px; padding: 18px 18px 0; }
+.cb-id { min-width: 0; }
+.cb-k { margin: 0 0 4px; font: 500 11px/1.2 var(--font-board); letter-spacing: 0.18em; color: var(--ink-sub); }
+.cb-name { margin: 0; font: 800 24px/1.15 var(--lg-sans); letter-spacing: -0.015em; overflow-wrap: anywhere; }
+.cb-name:focus { outline: none; }
+.cb-verified {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 3px 8px;
+  border: 1px solid var(--ok);
+  border-radius: 5px;
+  color: var(--ok);
+  font: 600 11px/1.2 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.cb-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  margin: 16px 18px 0;
+  padding-top: 14px;
+  border-top: 1px dashed var(--lg-field);
+}
+.cb-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
+.cb-field-route { grid-column: 1 / -1; }
+.cb-field dd { margin: 0; font: 500 16px/1.3 var(--font-board); letter-spacing: 0.06em; }
+.cb-route { display: inline-flex; max-width: 100%; }
+.cb-route .flap { color: var(--sign); }
+.cb-route .flap-tiles,
+.cb-route .flap-plain { font-size: 22px; color: var(--sign); }
+.cb-wait { font: 500 22px/1.42 var(--font-board); color: var(--ink-sub); }
+.cb-none { font: 400 16px/1.4 var(--lg-sans); letter-spacing: 0; color: var(--ink-dim); }
+.cb-bars {
+  display: block;
+  height: 28px;
+  margin: 18px 18px 0;
+  border-radius: 2px;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ink-dim) 0 2px,
+    transparent 2px 4px,
+    var(--ink-dim) 4px 5px,
+    transparent 5px 8px,
+    var(--ink-dim) 8px 11px,
+    transparent 11px 13px
+  );
+}
+.cb-side { display: grid; gap: 14px; min-width: 0; }
+.cb-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cb-account { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--rule); }
+.cb-account div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
+.cb-account dd { margin: 0; font-size: 16px; color: var(--ink); }
+.cb-posts { margin-top: 40px; }
+.cb-post-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 760px) {
+  .cb-post-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.cb-post .lg-meta { margin-top: 0; }
+.cb-post-type { color: var(--amber); }
+.cb-post-text { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.cb-post-n { margin: 12px 0 0; font: 500 12px/1.3 var(--font-board); letter-spacing: 0.08em; color: var(--ink-sub); }
+/* Signed out: the sign-in card, then a blank dashed badge (beside it on desktop). */
+.cb-out .lg-prompt { order: -1; align-self: start; }
+@media (min-width: 860px) {
+  .cb-out .lg-prompt { order: 0; margin-top: 34px; }
+}
+.cb-vacant .cb-card { border-style: dashed; border-color: var(--lg-field); box-shadow: none; }
+.cb-vacant .cb-name { color: var(--ink-sub); }
+.cb-vacant .lg-av { border-style: dashed; color: var(--ink-sub); }
+.cb-skel .cb-card { min-height: 320px; }
+.cb-skel .cb-main .lg-skel-line { margin-top: 0; }
+.cb-skel .cb-card > .lg-skel-line { width: auto; margin: 18px 18px 0; }
+
+@media (max-width: 639px) {
+  .lg-card { padding: 14px; }
+  .lg-title { font-size: 19px; }
+  .cb-name { font-size: 22px; }
+}
+
+/* Reduced motion: the badge is simply there, the heart does not pop, buttons do not move. */
+@media (prefers-reduced-motion: reduce) {
+  .cb-card[data-drop],
+  .lg-act[data-pop][aria-pressed='true'] .lg-ico { animation: none; }
+  .lg-btn { transition: none; }
+  .lg-btn:active { transform: none; }
+}
