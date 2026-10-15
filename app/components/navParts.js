@@ -38,9 +38,9 @@ export function Chip({ gate, lit }) {
   );
 }
 
-export function Logo({ className = '' }) {
+export function Logo({ className = '', onClick }) {
   return (
-    <Link href="/" className={`inline-flex items-center gap-2 font-sans text-[18px] font-extrabold tracking-[-0.01em] text-ink ${className}`}>
+    <Link href="/" onClick={onClick} className={`inline-flex items-center gap-2 font-sans text-[18px] font-extrabold tracking-[-0.01em] text-ink ${className}`}>
       <span aria-hidden="true" className="inline-block w-3 h-3 rounded-[3px] bg-sign" />
       opportumap
     </Link>

@@ -35,6 +35,7 @@ import {
   visaLink,
 } from '../../../lib/departures/gateInfo';
 import { cleanTitle } from '../../../lib/departures/jobPlace';
+import { adviceDescription } from '../../../lib/departures/jobText';
 import './gate.css';
 
 const FLAP_DELAY_MS = 260; // after the panel has risen (kit.css dlg-rise, 240 ms)
@@ -49,12 +50,6 @@ function profileFacts(profile) {
   const { skills, experience, jobTypes, nationality, currentCountry } = profile;
   return { skills, experience, jobTypes: Array.isArray(jobTypes) ? jobTypes : [], nationality, currentCountry };
 }
-
-const plainText = (html) =>
-  String(html ?? '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 
 function askAdvice(key, body) {
   if (advices.has(key)) return advices.get(key);
@@ -107,7 +102,8 @@ export default function JobGate({ job, profile, onClose, returnFocusRef }) {
         company,
         location,
         salary: pay.kind === 'listed' ? pay.text : 'not listed',
-        description: plainText(job?.description).slice(0, 500),
+        // The very text the server's board keeps (jobText.js): one role, one question to the model.
+        description: adviceDescription(job?.description),
       },
       profile: facts,
     };

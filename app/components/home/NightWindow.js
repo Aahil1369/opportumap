@@ -27,8 +27,8 @@ export default function NightWindow({ rows }) {
           The whole world, <em>lit up.</em>
         </h2>
         <p className="hp-text">
-          Every light is a city where roles open up. The routes start from where you are: sign in and
-          set up your profile, and they start from your country.
+          Every light is a city where roles open up. Sign in and set up your profile, and the routes
+          start from your country.
         </p>
       </div>
       <NightRoutes hubs={hubs} origin={origin} dests={dests} w={NIGHT_VIEW.w} h={NIGHT_VIEW.h}>

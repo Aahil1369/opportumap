@@ -144,9 +144,10 @@ export function PredictionBeat({ row }) {
 
   const listed = row.cells.pay;
   const where = row.city ? ` in ${row.city}` : '';
-  let note = 'The pay the role lists.';
+  // The board's pay: the role's own, or the estimate Adzuna lists for it, so say only where it is from.
+  let note = 'The pay on the board.';
   if (predicted) note = `Our salary model's estimate for ${row.cells.role}${where}.`;
-  else if (predicted === null) note = "Our salary model's estimate is unavailable right now, so this is the pay the role lists.";
+  else if (predicted === null) note = "Our salary model's estimate is unavailable right now, so this is the pay on the board.";
   else if (seen) note = 'Asking our salary model…';
 
   // LOCAL on the visitor's clock, as on the board above (not the time the page was built).

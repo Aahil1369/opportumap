@@ -28,7 +28,9 @@ export default function PersonalBoard({ rows, columns, caption }) {
       if (!live || !Array.isArray(jobs) || !jobs.length) return;
       // Their chosen countries share the whole board; without a choice it stays a varied board.
       const perCountry = countries.length ? Math.max(2, Math.ceil(rows.length / countries.length)) : 2;
-      setMine(board.boardRowsFrom(jobs, { now: new Date(), profile, fill: rows, perCountry }));
+      const next = board.boardRowsFrom(jobs, { now: new Date(), profile, fill: rows, perCountry });
+      // Only a board with at least one of their own roles is YOUR DEPARTURES (not the same rows renamed).
+      if (board.hasOwnRows(next, rows)) setMine(next);
     })().catch(() => {});
     return () => {
       live = false;

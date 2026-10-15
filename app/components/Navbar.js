@@ -213,7 +213,7 @@ export default function Navbar() {
                 }`}
               >
                 Tools
-                <span aria-hidden="true" className={`inline-block transition-transform duration-200 ${toolsOpen ? 'rotate-180' : ''}`}>▾</span>
+                <span aria-hidden="true" className={`inline-block transition-transform duration-200 motion-reduce:transition-none ${toolsOpen ? 'rotate-180' : ''}`}>▾</span>
               </button>
               {toolsOpen && (
                 <div id="nav-tools" className="absolute top-full right-0 mt-3 w-[300px] rounded-[10px] bg-hall-2 border border-rule p-2 shadow-[0_18px_48px_rgba(0,0,0,0.5)]">
@@ -304,7 +304,7 @@ export default function Navbar() {
 
         {user && toolsUsed > 0 && (
           <div className="h-[2px] bg-rule overflow-hidden" aria-hidden="true">
-            <div className="h-full w-full bg-sign origin-left transition-transform duration-300" style={{ transform: `scaleX(${progress})` }} />
+            <div className="h-full w-full bg-sign origin-left transition-transform duration-300 motion-reduce:transition-none" style={{ transform: `scaleX(${progress})` }} />
           </div>
         )}
       </header>

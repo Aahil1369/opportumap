@@ -26,7 +26,7 @@ export default function NavDrawer({ open, onClose, pathname, user, userName, isA
   return (
     <Dialog open={open} onClose={onClose} label="Site menu" placement="right" returnFocusRef={returnFocusRef} className="flex flex-col">
       <div className="flex items-center justify-between gap-3 px-4 h-[60px] border-b border-rule flex-none">
-        <Logo />
+        <Logo onClick={onClose} />
         <button
           type="button"
           data-autofocus
@@ -53,7 +53,7 @@ export default function NavDrawer({ open, onClose, pathname, user, userName, isA
                 >
                   <Chip gate={l.gate} lit={here} />
                   <span className="font-mono text-[15px] font-medium tracking-[0.1em] uppercase">{l.label}</span>
-                  {l.sub && <span className={`ml-auto font-sans text-[15px] ${here ? 'text-sign-ink' : 'text-ink-sub'}`}>{l.sub}</span>}
+                  {l.sub && <span className={`ml-auto font-sans text-[16px] ${here ? 'text-sign-ink' : 'text-ink-sub'}`}>{l.sub}</span>}
                 </Link>
               </li>
             );
@@ -67,7 +67,7 @@ export default function NavDrawer({ open, onClose, pathname, user, userName, isA
             >
               <span aria-hidden="true">🛂</span>
               <span className="font-mono text-[15px] font-medium tracking-[0.1em] uppercase">Passport control</span>
-              <span className="ml-auto font-sans text-[15px] text-ink-sub">Migrova ↗</span>
+              <span className="ml-auto font-sans text-[16px] text-ink-sub">Migrova ↗</span>
             </a>
           </li>
         </ul>
