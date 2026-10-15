@@ -121,7 +121,34 @@
   cursor: pointer;
 }
 .mt-me:hover { border-color: var(--sign); }
-:is(.mt-input, .mt-select, .mt-go, .mt-me, .mt-btn, .mt-link, .arr-x):focus-visible {
+/* Phones: the profile button reads PROFILE, so "United Kingdom" still fits next to Show. */
+.mt-me-v {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Show arrivals: choosing a country in the select opens nothing; this opens its board. */
+.mt-show {
+  flex: none;
+  height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--sign);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sign);
+  font: 600 13px/1 var(--font-board);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mt-show:hover { background: var(--sign); color: var(--sign-ink); }
+.mt-show:disabled { border-color: var(--rule); background: transparent; color: var(--ink-sub); cursor: default; }
+:is(.mt-input, .mt-select, .mt-go, .mt-me, .mt-show, .mt-btn, .mt-link, .arr-x):focus-visible {
   outline: 2px solid var(--sign);
   outline-offset: 2px;
 }
@@ -138,6 +165,13 @@
     color: var(--ink-dim);
   }
   .mt-bar { padding: 14px 32px 16px; }
+  .mt-me-v {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
 }
 @media (min-width: 900px) {
   .mt-bar {
@@ -146,6 +180,7 @@
     column-gap: 20px;
   }
   .mt-select,
+  .mt-show,
   .mt-me { height: 48px; }
   .mt-bar .mt-label {
     position: static;
@@ -154,6 +189,10 @@
     overflow: visible;
     clip-path: none;
   }
+}
+/* Two equal columns until there is room: the select keeps a whole country name beside Show. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .mt-bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
 /* ── The radar ── */

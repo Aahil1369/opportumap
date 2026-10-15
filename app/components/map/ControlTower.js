@@ -14,8 +14,10 @@
 //   cluster in the world view, opens its ARRIVALS board (ArrivalsBoard), whose rows open gates
 //   too. A country with no roles on this search says so in a line, not a dialog.
 // - The keyboard (and the touch) path: "Arrivals by country", a select of the countries on the
-//   radar, opens the same boards. If the map cannot load (no WebGL, no network), the boards and
-//   a link to /jobs still work.
+//   radar, and its Show arrivals button open the same boards. Choosing a country only remembers
+//   it (ArrowDown on a closed select fires `change` at once in Chromium and Firefox, so a board
+//   opened on change would always be the first country's; WCAG 3.2.2). If the map cannot load
+//   (no WebGL, no network), the boards and a link to /jobs still work.
 // - The data layer (towerData.js: the search's city table, the beacons, the boards) loads after
 //   hydration, next to the profile, so it is not in the page's first-load JS.
 // - AI: no salary model or advice here; a gate asks for its own pay and advice when it opens.
@@ -87,6 +89,7 @@ export default function ControlTower() {
   const [mapState, setMapState] = useState('loading'); // 'loading' | 'ready' | 'error'
   const [mapTry, setMapTry] = useState(0);
   const [arrivals, setArrivals] = useState(null); // iso2 of the open board
+  const [chosen, setChosen] = useState(''); // iso2 chosen in "Arrivals by country" (choosing opens nothing)
   const [openId, setOpenId] = useState(null);
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState(false);
@@ -168,6 +171,8 @@ export default function ControlTower() {
     [lib, loading, radar, roles, now],
   );
   const countries = useMemo(() => (loading || !lib ? [] : lib.arrivalCountries(roles)), [lib, loading, roles]);
+  // The chosen country while it is on this search's radar (a new search may not have it).
+  const picked = countries.some((c) => c.iso2 === chosen) ? chosen : '';
   const ranked = profile ?? null;
   const arrivalRows = useMemo(
     () => (arrivals && lib ? lib.countryArrivals(roles, arrivals, { now, profile: ranked }) : []),
@@ -256,12 +261,13 @@ export default function ControlTower() {
     setMapState('loading');
     setMapTry((n) => n + 1);
   };
-  const pick = (e) => {
-    const iso = e.target.value;
-    if (!iso) return;
-    boardOpener.current = e.target;
+  // Choosing a country only remembers it; Show arrivals opens its board.
+  const pick = (e) => setChosen(e.target.value);
+  const showPicked = (e) => {
+    if (!picked) return;
+    boardOpener.current = e.currentTarget;
     setNotice('');
-    setArrivals(iso);
+    setArrivals(picked);
   };
 
   const saveProfile = (p) => {
@@ -346,7 +352,7 @@ export default function ControlTower() {
             Arrivals by country
           </label>
           <div className="mt-field">
-            <select id="mt-arr" className="mt-select" value="" onChange={pick} disabled={!countries.length}>
+            <select id="mt-arr" className="mt-select" value={picked} onChange={pick} disabled={!countries.length}>
               <option value="">{countries.length ? 'Country arrivals' : 'No countries yet'}</option>
               {countries.map((c) => (
                 <option key={c.iso2} value={c.iso2}>
@@ -354,8 +360,13 @@ export default function ControlTower() {
                 </option>
               ))}
             </select>
+            <button type="button" className="mt-show" onClick={showPicked} disabled={!picked}>
+              Show<span className="sr-only"> arrivals</span>
+            </button>
             <button ref={meRef} type="button" className="mt-me" onClick={() => setEditing(true)}>
-              {profile ? 'Edit profile' : 'Set up profile'}
+              {/* Phones show "PROFILE" (room for the country and Show); the name stays "Set up profile". */}
+              <span className="mt-me-v">{profile ? 'Edit ' : 'Set up '}</span>
+              profile
               <span className="sr-only"> (it lights BOARDING on your best matches)</span>
             </button>
           </div>

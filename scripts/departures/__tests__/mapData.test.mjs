@@ -291,6 +291,81 @@ test('no storage read while rendering (no hydration mismatch); Lenis is off on /
   assert.match(smooth, /['"]\/map['"]/);
 });
 
+/**
+ * ControlTower.js as a tree: its JSX elements, and its functions by name (`const f = () => …`,
+ * `const f = useCallback(() => …)`, `function f() {}`), so a handler can be followed through the
+ * functions it calls.
+ */
+function towerTree() {
+  const src = read('app/components/map/ControlTower.js');
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true }, range: true });
+  const elements = [];
+  const fns = new Map();
+  const isFn = (n) => n && (n.type === 'ArrowFunctionExpression' || n.type === 'FunctionExpression');
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'JSXElement') elements.push(node);
+    if (node.type === 'VariableDeclarator' && node.id.type === 'Identifier') {
+      const init = node.init?.type === 'CallExpression' && isFn(node.init.arguments[0]) ? node.init.arguments[0] : node.init;
+      if (isFn(init)) fns.set(node.id.name, src.slice(...init.range));
+    }
+    if (node.type === 'FunctionDeclaration' && node.id) fns.set(node.id.name, src.slice(...node.range));
+    for (const key of Object.keys(node)) {
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object' && key !== 'range') visit(v);
+    }
+  };
+  visit(ast);
+  const name = (el) => el.openingElement.name.name;
+  const attr = (el, key) => el.openingElement.attributes.find((a) => a.type === 'JSXAttribute' && a.name.name === key);
+  const text = (node) =>
+    node.type === 'JSXText' ? node.value : node.type === 'JSXElement' ? node.children.map(text).join('') : '';
+  /** A handler's code and the code of every tower function it calls, however deep. */
+  const reach = (a) => {
+    const seen = new Set();
+    const out = [];
+    const take = (code) => {
+      out.push(code);
+      for (const m of code.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)) {
+        if (fns.has(m[1]) && !seen.has(m[1])) {
+          seen.add(m[1]);
+          take(fns.get(m[1]));
+        }
+      }
+    };
+    const e = a.value.expression;
+    take(e.type === 'Identifier' && fns.has(e.name) ? fns.get(e.name) : src.slice(...e.range));
+    return out.join('\n');
+  };
+  return { elements, name, attr, text, reach };
+}
+
+test('Arrivals by country: choosing a country opens nothing; the Show arrivals button opens its board (WCAG 3.2.2)', () => {
+  // ArrowDown on a closed <select> fires `change` at once in Chromium and Firefox: a board that
+  // opened on change would open the first country, and the next ArrowDown would open it again.
+  const { elements, name, attr, text, reach } = towerTree();
+  const select = elements.find((el) => name(el) === 'select' && attr(el, 'id')?.value?.value === 'mt-arr');
+  assert.ok(select, 'the #mt-arr select');
+  const value = attr(select, 'value');
+  assert.ok(value?.value?.type === 'JSXExpressionContainer' && value.value.expression.type !== 'Literal', 'the chosen country is kept in state (not value="")');
+  const change = attr(select, 'onChange');
+  assert.ok(change, 'the select has an onChange');
+  const onChange = reach(change);
+  assert.ok(!/\bsetArrivals\s*\(/.test(onChange), 'the select’s onChange never opens a board');
+  assert.ok(!/\b(?:showCountry|setOpenId)\s*\(|boardOpener/.test(onChange), 'the select’s onChange opens nothing');
+
+  const show = elements.find((el) => name(el) === 'button' && text(el).replace(/\s+/g, ' ').trim() === 'Show arrivals');
+  assert.ok(show, 'a "Show arrivals" button');
+  assert.equal(attr(show, 'type')?.value?.value, 'button', 'Show arrivals is not a submit button');
+  const click = attr(show, 'onClick');
+  assert.ok(click, 'Show arrivals has an onClick');
+  assert.match(reach(click), /\bsetArrivals\s*\(/, 'Show arrivals opens the chosen country’s board');
+  assert.match(reach(click), /boardOpener\.current\s*=/, 'the board gives focus back to what opened it');
+  const css = stripCssComments(read('app/components/map/map.css'));
+  assert.match(css, /\.mt-show\s*\{[^}]*\bheight:\s*44px[^}]*\bmin-width:\s*44px/, 'Show arrivals is a 44px touch target');
+});
+
 /** Every string a file can show: string literals, template text, JSX text and attributes. */
 function visibleStrings(src, file) {
   const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
