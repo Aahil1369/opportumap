@@ -228,3 +228,123 @@ test('boundsOf: the box around some points; across the antimeridian it wraps ins
   assert.deepEqual(fiji, [[178, -18], [180.5, -16.5]]);
 });
 
+// ── Source guards over the control tower ────────────────────────────────────────────────────
+
+function walk(rel) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) return [];
+  if (!statSync(abs).isDirectory()) return [abs];
+  return readdirSync(abs).flatMap((name) => walk(join(rel, name)));
+}
+const TOWER = ['app/map', 'app/components/map', 'app/components/Map.js', 'lib/departures/mapData.js'].flatMap(walk);
+const TOWER_JS = TOWER.filter((f) => /\.(?:js|jsx|mjs)$/.test(f));
+
+test('the tower files exist (sanity)', () => {
+  const names = TOWER.map(show);
+  for (const f of ['app/map/page.js', 'app/components/Map.js', 'app/components/map/ArrivalsBoard.js', 'app/components/map/map.css', 'lib/departures/mapData.js']) {
+    assert.ok(names.includes(f), `${f} exists`);
+  }
+});
+
+test('Map.js: one clustered GeoJSON source, circle beacons, no number labels on clusters', () => {
+  const src = read('app/components/Map.js');
+  assert.match(src, /type:\s*'geojson'/);
+  assert.match(src, /cluster:\s*true/);
+  assert.match(src, /type:\s*'circle'/);
+  assert.ok(!/point_count_abbreviated/.test(src), 'no cluster totals');
+  assert.ok(!/text-field/.test(src), 'no symbol text on the beacons');
+  assert.ok(!/new mapboxgl\.Marker/.test(src), 'no DOM markers (one canvas layer, not thousands of nodes)');
+  assert.match(src, /\.setData\(/, 'a new search replaces the source data');
+  assert.match(src, /getClusterExpansionZoom/, 'a cluster click zooms');
+});
+
+test('Map.js: pixel ratio capped at 2; popups from DOM nodes only', () => {
+  const src = read('app/components/Map.js');
+  // Mapbox GL v3 has no pixelRatio option: it reads window.devicePixelRatio, capped while the map lives.
+  assert.match(src, /Math\.min\(\s*\w*[dD]evicePixelRatio\w*\(\)[^,)]*,\s*2\s*\)/);
+  assert.match(src, /defineProperty\(window, 'devicePixelRatio'/);
+  assert.match(src, /\.setDOMContent\(/);
+  assert.match(src, /beaconLabel\(/);
+  assert.ok(!/setHTML|innerHTML|insertAdjacentHTML/.test(src));
+});
+
+test('mapbox-gl loads lazily: only Map.js imports it, and the tower loads Map.js with ssr: false', () => {
+  for (const f of TOWER_JS) {
+    if (show(f) === 'app/components/Map.js') continue;
+    assert.ok(!/from ['"]mapbox-gl/.test(readFileSync(f, 'utf8')), `${show(f)} imports mapbox-gl`);
+  }
+  const tower = read('app/components/map/ControlTower.js');
+  assert.match(tower, /dynamic\(\s*\(\)\s*=>\s*import\(['"]\.\.\/Map['"]\),\s*\{[^}]*ssr:\s*false/);
+  assert.ok(!/^['"]use client['"]/.test(read('app/map/page.js').trim()), 'the page itself renders on the server');
+  assert.match(read('app/map/page.js'), /export const metadata/);
+});
+
+test('no storage read while rendering (no hydration mismatch); Lenis is off on /map', () => {
+  for (const f of TOWER_JS) {
+    const src = readFileSync(f, 'utf8');
+    assert.ok(!/useState\(\s*\(\)\s*=>[^;]*(?:localStorage|sessionStorage|window\.)/s.test(src), `${show(f)} reads the browser in a state initialiser`);
+    assert.ok(!/typeof window === 'undefined'/.test(src), `${show(f)} renders differently on the server`);
+  }
+  assert.match(read('app/map/page.js'), /data-lenis-prevent/);
+  const smooth = read('app/components/motion/SmoothScroll.js');
+  assert.match(smooth, /usePathname/);
+  assert.match(smooth, /['"]\/map['"]/);
+});
+
+/** Every string a file can show: string literals, template text, JSX text and attributes. */
+function visibleStrings(src, file) {
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+  const out = [];
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
+    else if (node.type === 'TemplateElement') out.push(node.value.cooked ?? node.value.raw);
+    else if (node.type === 'JSXText') out.push(node.value);
+    for (const key of Object.keys(node)) {
+      if (key === 'parent') continue;
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  try {
+    visit(ast);
+  } catch (e) {
+    throw new Error(`${show(file)}: ${e.message}`);
+  }
+  return out;
+}
+
+test('the tower copy: no "flight"/"fare", no job or listing totals', () => {
+  const found = [];
+  for (const f of TOWER_JS) {
+    const src = readFileSync(f, 'utf8');
+    for (const s of visibleStrings(src, f)) {
+      if (/\b(?:flights?|fares?)\b/i.test(s)) found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      if (/\b\d[\d,.]*\s*[kKmM]?\+?\s*(?:countries|jobs|roles|listings|openings|beacons|arrivals)\b/i.test(s)) {
+        found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      }
+    }
+    if (/\.length\.toLocaleString\(\)|\{\s*\w+\.length\s*\}\s*(?:jobs|roles)/i.test(src)) found.push(`${show(f)}: renders a total`);
+  }
+  assert.deepEqual(found, []);
+});
+
+test('map.css: transform/opacity transitions only, no CSS trig, no backdrop-filter, svh/dvh not vh', () => {
+  const css = stripCssComments(read('app/components/map/map.css'));
+  assert.ok(!/atan2|\b(?:a?sin|a?cos|a?tan)\(/i.test(css), 'CSS trig');
+  assert.ok(!/backdrop-filter/.test(css), 'backdrop-filter');
+  assert.ok(!/\d(?:vh)\b/.test(css), 'vh (use svh / dvh)');
+  for (const m of css.matchAll(/transition(?:-property)?\s*:\s*([^;]+);/g)) {
+    for (const part of m[1].replace(/\([^)]*\)/g, '').split(',')) {
+      const prop = part.trim().split(/\s+/)[0];
+      assert.ok(['transform', 'opacity', 'none'].includes(prop), `map.css transitions ${prop}`);
+    }
+  }
+  for (const m of css.matchAll(/@keyframes[^{]+\{([\s\S]*?)\}\s*\}/g)) {
+    for (const p of m[1].matchAll(/([a-z-]+)\s*:/g)) {
+      assert.ok(['transform', 'opacity'].includes(p[1]), `a keyframe animates ${p[1]}`);
+    }
+  }
+  assert.match(css, /100svh/, 'the tower fills the small viewport height');
+});

@@ -1,11 +1,13 @@
-// /map popups are built from DOM nodes + textContent; links only for http(s) URLs.
+// /map's beacon label (the hover label over a role's beacon) is built from DOM nodes + textContent:
+// job fields come from third-party feeds and never become markup. The P0 fix's rule for Map.js
+// (setDOMContent, no HTML strings) holds for the control tower's rewrite.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const ROOT = new URL('../../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
-const { buildJobPopup } = await import(new URL('app/components/mapPopup.js', ROOT));
+const { beaconLabel } = await import(new URL('app/components/map/beaconLabel.js', ROOT));
 
 // Minimal document: every element refuses raw HTML, so any innerHTML use fails the test.
 function fakeDocument() {
@@ -30,54 +32,34 @@ const anchors = (root) => walk(root).filter((n) => n.tagName === 'A');
 
 const XSS = '<img src=x onerror=alert(1)>';
 
-test('buildJobPopup: markup in job fields stays literal text', () => {
-  const root = buildJobPopup(fakeDocument(), {
-    title: XSS, company: '<b>Co</b>', location: '"><svg onload=alert(1)>', salary: '$1', url: 'https://jobs.example.org/1',
+test('beaconLabel: markup in job fields stays literal text', () => {
+  const root = beaconLabel(fakeDocument(), {
+    id: 'a', code: 'YYZ', status: 'ON TIME', title: XSS, company: '<b>Co</b>', payText: '"><svg onload=alert(1)>',
   });
-  assert.equal(root.className, 'popup-inner');
-  assert.equal(byClass(root, 'popup-title').textContent, XSS);
-  assert.equal(byClass(root, 'popup-company').textContent, '<b>Co</b>');
-  assert.equal(byClass(root, 'popup-location').textContent, '"><svg onload=alert(1)>');
-  assert.equal(byClass(root, 'popup-salary').textContent, '$1');
+  assert.equal(root.className, 'mt-pop-in');
+  assert.equal(byClass(root, 'mt-pop-t').textContent, XSS);
+  assert.equal(byClass(root, 'mt-pop-s').textContent, '<b>Co</b>');
+  assert.equal(byClass(root, 'mt-pop-p').textContent, '"><svg onload=alert(1)>');
+  assert.equal(anchors(root).length, 0, 'no links: the gate opens on click');
 });
 
-test('buildJobPopup: javascript: / data: / relative URLs get no link', () => {
-  for (const url of ['javascript:alert(2)', 'data:text/html,x', '/relative', '', null, undefined]) {
-    const root = buildJobPopup(fakeDocument(), { title: 't', url });
-    assert.equal(anchors(root).length, 0, `no link for ${url}`);
-  }
+test('beaconLabel: code and status line, pay or "Pay not listed", the hint; odd input is safe', () => {
+  const root = beaconLabel(fakeDocument(), { code: 'BER', status: 'NEW', title: 'Data Engineer', company: '', payText: 'Pay not listed' });
+  assert.equal(byClass(root, 'mt-pop-k').textContent, 'BER · NEW');
+  assert.equal(byClass(root, 'mt-pop-s'), undefined, 'no empty company line');
+  const pay = byClass(root, 'mt-pop-p');
+  assert.equal(pay.textContent, 'Pay not listed');
+  assert.match(byClass(root, 'mt-pop-h').textContent, /gate/i);
+  const empty = beaconLabel(fakeDocument(), null);
+  assert.equal(byClass(empty, 'mt-pop-t').textContent, 'Untitled role');
 });
 
-test('buildJobPopup: http(s) link opens in a new tab with noopener noreferrer, quotes encoded', () => {
-  const root = buildJobPopup(fakeDocument(), { title: 't', url: 'https://a.test/" onmouseover="alert(3)' });
-  const [a] = anchors(root);
-  assert.ok(a, 'link present');
-  assert.equal(a.className, 'popup-link');
-  assert.equal(a.target, '_blank');
-  assert.equal(a.rel, 'noopener noreferrer');
-  assert.ok(!a.href.includes('"'));
-  assert.ok(a.href.startsWith('https://a.test/'));
-  assert.equal(a.textContent, 'View job →');
-});
-
-test('buildJobPopup: visa line with match score keeps the old look', () => {
-  const root = buildJobPopup(fakeDocument(), { title: 't' }, { nationality: 'pk', emoji: '🟢', label: 'Visa likely', score: 80 });
-  const visa = byClass(root, 'popup-visa');
-  assert.ok(visa);
-  assert.equal(visa.childNodes[0], '🟢 Visa likely');
-  const span = visa.childNodes.find((c) => typeof c !== 'string' && c.tagName === 'SPAN');
-  assert.equal(span.textContent, '80% match');
-  assert.equal(span.style.color, '#6366f1');
-  const noVisa = buildJobPopup(fakeDocument(), { title: 't' }, { nationality: '', score: 80 });
-  assert.equal(byClass(noVisa, 'popup-visa'), undefined);
-});
-
-test('Map.js: popups use setDOMContent and no HTML template string', () => {
+test('Map.js: labels use setDOMContent + beaconLabel and no HTML template string', () => {
   const src = read('app/components/Map.js');
   assert.match(src, /\.setDOMContent\(/);
-  assert.match(src, /buildJobPopup\(/);
+  assert.match(src, /beaconLabel\(/);
   assert.ok(!/setHTML/.test(src));
-  assert.ok(!/`[^`]*popup-title[^`]*`/.test(src), 'no template-string popup');
+  assert.ok(!/`[^`]*mt-pop-t[^`]*`/.test(src), 'no template-string label');
 });
 
 test('api/jobs: entity decoding applied to title, company, location, description', () => {
