@@ -31,9 +31,11 @@ const whole = (text, width) => len(text) <= width && !fitFlap(text, width).inclu
 // currency writes them (as jobsPay.test.mjs sweeps /jobs).
 const CURRENCIES = [...new Set([...Object.values(CURRENCY_BY_COUNTRY), 'USD', 'JPY', 'SEK', 'AED', null])];
 const YEARLY = [10_000, 12_500, 99_500, 120_000, 150_000, 455_000, 999_000];
+// Senior roles in SEK, MXN, ZAR or CHF can pass a million a year ("CHF 120K–1.5M" is 13 too).
+const MILLIONS = [999_500, 1_250_000, 1_500_000, 9_500_000];
 const BIG = [1_250_000, 4_500_000, 9_500_000, 12_000_000, 45_000_000, 120_000_000];
 const LAKH = [100_000, 1_250_000, 1_850_000, 9_950_000, 12_500_000, 95_000_000];
-const amounts = (c) => (c === 'INR' ? LAKH : c === 'JPY' ? BIG : YEARLY);
+const amounts = (c) => (c === 'INR' ? LAKH : c === 'JPY' ? BIG : [...YEARLY, ...MILLIONS]);
 
 function everyPay() {
   const out = [];
@@ -59,6 +61,7 @@ test('the homepage PAY column is PAY_WIDTH (13) tiles, the same as /jobs', () =>
 test('every currency\'s widest yearly range fits the homepage PAY column whole', () => {
   const pays = everyPay();
   assert.ok(pays.length > 150, `swept ${pays.length} pays`);
+  assert.ok(pays.includes('CHF 120K–1.5M') && pays.includes('SEK 999K–9.5M'), 'million-plus ranges are in the sweep');
   const misses = pays.filter((pay) => !whole(pay, LAYOUT.pay.width)).map((pay) => `${pay} (${len(pay)})`);
   assert.deepEqual(misses, []);
 });
