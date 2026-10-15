@@ -3,6 +3,10 @@
 // rules on its files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as espree from 'espree';
 
 const {
   CLEARED,
@@ -292,4 +296,139 @@ test('simErrorFor words a failed answer; raw server errors never reach the page'
   // A 400 without its own text still says something useful.
   assert.match(simErrorFor(400, undefined, 'questions'), /title/i);
   assert.match(simErrorFor(400, '', 'feedback'), /answer/i);
+});
+
+// ── Copy and motion rules on the /interview files ───────────────────────────────────────────
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const show = (f) => relative(ROOT, f).split(sep).join('/');
+const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
+function walk(rel) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) return [];
+  if (!statSync(abs).isDirectory()) return [abs];
+  return readdirSync(abs).flatMap((name) => walk(join(rel, name)));
+}
+const SURFACE = ['app/interview', 'app/components/interview', 'lib/departures/interviewProgress.js']
+  .flatMap(walk)
+  .filter((f) => /\.(?:js|mjs)$/.test(f));
+
+function visibleStrings(src, file) {
+  let ast;
+  try {
+    ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+  } catch (e) {
+    throw new Error(`${show(file)}: ${e.message}`);
+  }
+  const out = [];
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
+    else if (node.type === 'TemplateElement') out.push(node.value.cooked ?? node.value.raw);
+    else if (node.type === 'JSXText') out.push(node.value);
+    for (const key of Object.keys(node)) {
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(ast);
+  return out;
+}
+
+test('the /interview surface is scanned', () => {
+  const names = SURFACE.map(show);
+  for (const f of [
+    'app/interview/page.js',
+    'app/components/interview/Simulator.js',
+    'app/components/interview/Altimeter.js',
+    'lib/departures/interviewProgress.js',
+  ]) {
+    assert.ok(names.includes(f), `${f} is scanned`);
+  }
+  assert.ok(existsSync(join(ROOT, 'app/components/interview/interview.css')), 'interview.css');
+});
+
+test('no "flight"/"fare" and no job totals in the /interview copy', () => {
+  const found = [];
+  for (const f of SURFACE) {
+    const src = readFileSync(f, 'utf8');
+    if (/\b\d{1,3},\d{3}\s*(?:jobs|roles|departures)\b/i.test(src)) found.push(`${show(f)}: a job total`);
+    for (const s of visibleStrings(src, f)) {
+      if (/\b(?:flights?|fares?)\b/i.test(s)) found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      if (/\b\d[\d,.]*\s*[kKmM]?\+?\s*(?:countries|jobs|roles|listings|openings|departures)\b/i.test(s)) {
+        found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      }
+    }
+  }
+  assert.deepEqual(found, []);
+});
+
+test('the page is a server page with its own title and the D · SIMULATOR sign, without the retired hero', () => {
+  const page = read('app/interview/page.js');
+  assert.ok(!/^\s*['"]use client['"]/.test(page), 'page.js is a server component');
+  assert.match(page, /export const metadata\s*=\s*\{[\s\S]*?title:\s*'[^']+ — OpportuMap'/);
+  assert.match(page, /sign=\{\{\s*letter:\s*'D',\s*label:\s*'Simulator'\s*\}\}/);
+  for (const f of SURFACE) {
+    const src = readFileSync(f, 'utf8');
+    assert.ok(!/EditorialHero|useScrollReveal/.test(src), `${show(f)} uses a retired hero`);
+  }
+});
+
+test('every fetch checks res.ok before reading the answer; the inputs are labelled', () => {
+  const src = read('app/components/interview/Simulator.js');
+  const fetches = [...src.matchAll(/await fetch\(/g)].map((m) => m.index);
+  assert.ok(fetches.length >= 2, 'questions + feedback');
+  for (const at of fetches) {
+    const json = src.indexOf('.json()', at);
+    const ok = src.indexOf('res.ok', at);
+    assert.ok(ok > -1 && json > ok, `res.ok before .json() after the fetch at ${at}`);
+  }
+  assert.match(src, /simErrorFor\(/, 'non-OK answers are worded by simErrorFor');
+  const ids = [...src.matchAll(/<(?:input|textarea)\b[^>]*\bid=(?:"([^"]+)"|\{`([^`]+)`\})/g)].map((m) => m[1] ?? m[2]);
+  assert.ok(ids.length >= 4, `title, company, description, answer: ${ids.join(', ')}`);
+  for (const id of ids) {
+    const lit = id.includes('${') ? id.split('${')[0] : id;
+    assert.ok(src.includes(`htmlFor="${id}"`) || src.includes(`htmlFor={\`${lit}`), `a <label htmlFor> for ${id}`);
+  }
+  assert.match(src, />\s*Skip\b/, 'a Skip button');
+});
+
+test('the altimeter is a real progressbar that moves by transform', () => {
+  const src = read('app/components/interview/Altimeter.js');
+  assert.match(src, /role="progressbar"/);
+  assert.match(src, /aria-valuenow=\{/);
+  assert.match(src, /aria-valuemin=\{0\}/);
+  assert.match(src, /aria-valuemax=\{100\}/);
+  assert.match(src, /transform:\s*`rotate\(/, 'the needle turns by transform');
+});
+
+test('interview.css moves only transform and opacity (and a short stroke-dashoffset)', () => {
+  const css = read('app/components/interview/interview.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const allowed = ['transform', 'opacity', 'stroke-dashoffset', 'none'];
+  const topLevel = (v) => {
+    let flat = v;
+    while (/\([^()]*\)/.test(flat)) flat = flat.replace(/\([^()]*\)/g, '');
+    return flat.split(',');
+  };
+  for (const m of css.matchAll(/transition(?:-property)?\s*:\s*([^;}]+)/g)) {
+    for (const part of topLevel(m[1])) {
+      const prop = part.trim().split(/\s+/)[0];
+      assert.ok(allowed.includes(prop), `transition on ${prop}`);
+    }
+  }
+  for (const m of css.matchAll(/@keyframes\s+[\w-]+\s*\{((?:[^{}]*\{[^{}]*\})*)[^{}]*\}/g)) {
+    for (const d of m[1].matchAll(/([\w-]+)\s*:/g)) {
+      assert.ok(['transform', 'opacity'].includes(d[1]), `keyframes animate ${d[1]}`);
+    }
+  }
+  assert.ok(!/backdrop-filter|\bfilter\s*:/.test(css), 'no filters');
+  assert.ok(!/\b\d+(?:\.\d+)?vh\b/.test(css), 'svh/dvh, not vh');
+  assert.ok(!/atan2|\b(?:a?sin|a?cos|a?tan)\(/i.test(css), 'no CSS trig');
+  // Phones: what you type is 16px (no iOS zoom), and so is the text you read.
+  const field = /\.iv-field\s*\{([^}]*)\}/.exec(css);
+  assert.ok(field && /font:[^;]*\b16px\b|font-size:\s*16px/.test(field[1]), '.iv-field is 16px');
+  for (const m of css.matchAll(/font(?:-size)?\s*:\s*[^;]*?\b(1[0-5]|\d)px[^;]*?var\(--font-inter\)/g)) {
+    assert.fail(`Inter text under 16px: ${m[0]}`);
+  }
 });
