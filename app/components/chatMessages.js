@@ -15,7 +15,25 @@ export function appendUnique(list, msg) {
   return [...list, msg];
 }
 
-// Swap the optimistic row for the server row (or drop it when the send failed).
+// A send that failed stays where it was in the thread, marked, so it can be retried or edited.
+export function markFailed(list, id) {
+  return patch(list, id, { pending: false, failed: true });
+}
+
+// Retrying it: back to "sending".
+export function markPending(list, id) {
+  return patch(list, id, { pending: true, failed: false });
+}
+
+function patch(list, id, fields) {
+  const at = list.findIndex((m) => m.id === id);
+  if (at === -1) return list;
+  const next = list.slice();
+  next[at] = { ...list[at], ...fields };
+  return next;
+}
+
+// Swap the optimistic row for the server row (or drop it: a failed send that is being edited).
 export function replaceTemp(list, tempId, serverRow) {
   const without = list.filter((m) => m.id !== tempId);
   if (!serverRow) return without;

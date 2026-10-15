@@ -53,8 +53,12 @@ test('no display name is ever derived from an email', () => {
   assert.deepEqual(hits(/split\(\s*['"]@['"]\s*\)/), []);
 });
 
+// /community and /profile render through their client islands (the lounge, the crew room).
+const LOUNGE_FILES = ['app/components/community/Lounge.js', 'app/components/community/PostCard.js', 'app/components/community/Composer.js', 'app/components/community/Comments.js'];
+const CREW_FILES = ['app/components/profile/Crew.js', 'app/components/profile/CrewBadge.js'];
+
 test('the signed-in user\'s email is not rendered on /community, /profile or the Navbar', () => {
-  for (const f of ['app/community/page.js', 'app/profile/page.js', 'app/components/Navbar.js']) {
+  for (const f of ['app/community/page.js', 'app/profile/page.js', ...LOUNGE_FILES, ...CREW_FILES, 'app/components/Navbar.js']) {
     assert.ok(!/\{\s*(?:user|currentUser|newUser)\??\.email\s*\}/.test(read(f)), `${f} renders an email`);
   }
 });
@@ -72,7 +76,7 @@ test('admin and verified checks use the admin user id, not an email', () => {
     assert.match(src, /isAdminUser\(/, `${f} uses isAdminUser`);
     assert.ok(!/\.email\s*[!=]==/.test(src), `${f} compares an email`);
   }
-  for (const f of ['app/profile/page.js', 'app/community/page.js']) {
+  for (const f of ['app/components/profile/CrewBadge.js', 'app/components/community/PostCard.js']) {
     assert.match(read(f), /isVerifiedUserId\(/, `${f} uses isVerifiedUserId`);
   }
 });
@@ -80,7 +84,8 @@ test('admin and verified checks use the admin user id, not an email', () => {
 test('display names come from lib/displayName.js wherever they are built', () => {
   for (const f of [
     'app/api/community/posts/route.js', 'app/api/community/comments/route.js',
-    'app/community/page.js', 'app/profile/page.js', 'app/components/Navbar.js',
+    'app/components/community/Composer.js', 'app/components/community/Lounge.js', 'app/components/profile/CrewBadge.js',
+    'app/components/Navbar.js',
   ]) {
     assert.match(read(f), /displayName\(/, `${f} uses displayName`);
   }
@@ -96,6 +101,8 @@ test('display names come from lib/displayName.js wherever they are built', () =>
 
 test('AuthModal: the name field is required on sign-up', () => {
   const src = read('app/components/AuthModal.js');
-  assert.match(src, /placeholder="Your name"[^>]*\brequired\b/s);
+  const nameInput = [...src.matchAll(/<input\b((?:(?!\/>)[\s\S])*)\/>/g)].map((m) => m[1]).find((tag) => /autoComplete="name"/.test(tag));
+  assert.ok(nameInput, 'the sign-up form has a name field');
+  assert.match(nameInput, /\brequired\b/);
 });
 

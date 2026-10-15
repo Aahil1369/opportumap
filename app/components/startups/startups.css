@@ -1,0 +1,504 @@
+/* ─── /startups — the hangar ───────────────────────────────────────────────────────────────
+   Startups on their stands: a dark bay with a dashed yellow floor line and the startup's tail
+   fin (TailFin.js) standing on it, then the name, tagline, tags, raise and passengers. The
+   detail page is one stand: a big fin, the specs, the pitch deck and the boarding card
+   (+1 PASSENGER / STANDBY). Palette tokens only (app/globals.css); mono = --font-board.
+   Motion: transform/opacity only (the fins roll in once, cards lift on hover) plus one short
+   stroke-dashoffset (an empty stand's outline drawing in); reduced motion turns all of it off. */
+
+.hg { --hg-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif; }
+.hg,
+.hg-standpage { color: var(--ink); }
+
+/* ─── Tail fin ─── */
+.tf { display: block; overflow: visible; }
+.tf-letter { font: 800 11.5px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif; }
+.tf-vacant .tf-outline {
+  fill: none;
+  stroke: var(--ink-sub);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 3;
+  stroke-linejoin: round;
+}
+.tf-draw .tf-outline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tf-draw 1.6s 0.25s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+@keyframes tf-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* The fins roll up onto the floor once (Hangar.js / Stand.js set data-rise for that moment). */
+.hg-stand[data-rise] .hg-fin,
+.hg-hero-bay[data-rise] .hg-fin {
+  animation: hg-rise 0.7s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(var(--k, 0) * 70ms);
+}
+@keyframes hg-rise {
+  from { transform: translateY(62%); opacity: 0; }
+}
+
+/* ─── Buttons ─── */
+.hg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: 700 16px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
+}
+.hg-btn:active { transform: translateY(1px); }
+.hg-btn-sign { background: var(--sign); color: var(--sign-ink); }
+.hg-btn-ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.hg-btn-ghost:hover { border-color: #3a3f47; }
+.hg-btn[aria-disabled='true'] { opacity: 0.6; cursor: progress; }
+.hg-btn:focus-visible,
+.hg-chip:focus-visible,
+.hg-card:focus-visible,
+.hg-back:focus-visible,
+.hg-x:focus-visible {
+  outline: 2px solid var(--sign);
+  outline-offset: 2px;
+}
+
+/* ─── Toolbar + filter chips (one scrolling row on phones) ─── */
+.hg-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; margin-bottom: 18px; }
+.hg-notice { margin: 0; font-size: 16px; line-height: 1.4; color: var(--ok); }
+.hg-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -16px 22px;
+  padding: 2px 16px 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.hg-chips::-webkit-scrollbar { display: none; }
+.hg-chip-group { flex: none; display: flex; gap: 6px; }
+.hg-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall-2);
+  color: var(--ink-dim);
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.hg-chip:hover { color: var(--ink); border-color: #3a3f47; }
+.hg-chip[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
+.hg-chip-n { color: var(--ink-sub); font-size: 11px; letter-spacing: 0.04em; }
+.hg-chip[aria-pressed='true'] .hg-chip-n { color: var(--sign-ink); }
+.hg-chip-clear { color: var(--ink); }
+.hg-chip-sep { flex: none; width: 1px; height: 22px; background: var(--rule); }
+@media (min-width: 640px) {
+  .hg-chips { margin-inline: -32px; padding-inline: 32px; }
+}
+@media (min-width: 960px) {
+  .hg-chips { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; row-gap: 10px; }
+}
+
+/* ─── The stands ─── */
+.hg-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .hg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .hg-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hg-stand { min-width: 0; }
+.hg-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--hall-3);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.2s cubic-bezier(.22, 1, .36, 1);
+}
+a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
+
+/* A bay: the dark stand with its dashed yellow floor line; the fin stands on the line. */
+.hg-bay,
+.hg-hero-bay {
+  position: relative;
+  overflow: hidden;
+  background: var(--hall-2);
+}
+.hg-bay { flex: none; height: 100px; border-bottom: 1px solid var(--rule); }
+.hg-bay::before,
+.hg-hero-bay::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, rgba(255, 197, 49, 0.55) 0 14px, transparent 14px 24px);
+}
+.hg-bay .hg-fin { position: absolute; left: 10px; bottom: -4px; width: 88px; height: 88px; }
+.hg-bay-no {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font: 500 11px/1 var(--font-board);
+  letter-spacing: 0.16em;
+  color: var(--ink-sub);
+}
+
+.hg-card-body { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 16px; min-width: 0; }
+.hg-name {
+  margin: 0;
+  font: 800 20px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.hg-tagline {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.hg-tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.hg-tags li {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 7px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--hall-2);
+  color: var(--ink-dim);
+  font: 500 11px/1 var(--font-board);
+  letter-spacing: 0.12em;
+}
+.hg-card-foot {
+  margin: auto 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  font: 500 12px/1.3 var(--font-board);
+  letter-spacing: 0.1em;
+}
+.hg-raise { color: var(--sign); }
+.hg-raise-none { color: var(--ink-sub); }
+.hg-pax { color: var(--info); }
+
+/* Loading: three still, empty stands (no shimmer loop). */
+.hg-skel .hg-card { border-style: dashed; }
+.hg-skel-bar { display: block; width: 78%; height: 14px; border-radius: 4px; background: var(--hall-2); }
+.hg-skel-short { width: 48%; }
+
+/* ─── States: error, empty hangar, nothing on these stands ─── */
+.hg-state,
+.hg-empty {
+  padding: 28px 20px 30px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--hall-2);
+  text-align: center;
+}
+.hg-kicker { margin: 0 0 10px; font: 500 11px/1.3 var(--font-board); letter-spacing: 0.22em; color: var(--sign); }
+.hg-state-title {
+  margin: 0 auto;
+  max-width: 24ch;
+  font: 800 clamp(24px, 2.2vw + 16px, 34px)/1.12 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.hg-state-sub { margin: 12px auto 0; max-width: 52ch; font-size: 16px; line-height: 1.55; color: var(--ink-dim); }
+.hg-state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+.hg-empty .hg-notice { margin-top: 14px; }
+.hg-empty-bays {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto 24px;
+}
+.hg-empty-bay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 6px 10px;
+  border: 1px dashed var(--rule);
+  border-radius: 10px;
+  background: var(--hall);
+}
+.hg-empty-bay .tf { width: min(88px, 100%); height: auto; aspect-ratio: 1; }
+.hg-empty-bay[data-yours] { border-color: rgba(255, 197, 49, 0.45); }
+.hg-empty-bay[data-yours] .tf-outline { stroke: var(--sign); }
+.hg-empty-no { font: 500 10px/1.35 var(--font-board); letter-spacing: 0.14em; color: var(--ink-sub); }
+.hg-empty-no > span { display: block; }
+@media (max-width: 639px) {
+  .hg-empty { padding: 22px 14px 24px; }
+  .hg-empty-bays { margin-bottom: 18px; }
+  .hg-empty-bay { padding: 10px 4px 8px; }
+  .hg-empty-bay .tf { width: min(64px, 100%); }
+}
+.hg-empty-bay[data-yours] .hg-empty-no { color: var(--sign); }
+.hg-none {
+  margin: 0;
+  padding: 28px 16px;
+  border: 1px dashed var(--rule);
+  border-radius: 14px;
+  text-align: center;
+  font-size: 16px;
+  color: var(--ink-dim);
+}
+.hg-none-t { margin: 0 0 14px; font-size: 18px; font-weight: 700; color: var(--ink); }
+.hg-foot {
+  margin: 48px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-sub);
+}
+
+/* ─── Sign in to board ─── */
+.hg-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255, 197, 49, 0.35);
+  border-radius: 12px;
+  background: var(--hall);
+}
+.hg-prompt-t { margin: 0; font: 800 18px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif; }
+.hg-prompt-s { margin: 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); }
+.hg-prompt .hg-btn { width: 100%; }
+
+/* ─── Post a startup (kit Dialog panel) ─── */
+.dlg.hg-post { width: min(100%, 620px); }
+.hg-post-form { display: flex; flex-direction: column; }
+.hg-post-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.hg-post-head .hg-kicker { margin-bottom: 6px; }
+.hg-post-title { margin: 0; font: 800 24px/1.15 var(--font-inter), ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.01em; }
+.hg-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+}
+.hg-post-body { display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 20px; }
+.hg-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hg-label { padding: 0; font: 500 12px/1.3 var(--font-board); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.hg-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid #2f343c;
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 400 16px/1.4 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+.hg-input::placeholder { color: var(--ink-sub); opacity: 1; }
+.hg-input:focus { outline: 2px solid var(--sign); outline-offset: 1px; border-color: transparent; }
+.hg-textarea { min-height: 112px; resize: vertical; }
+.hg-fieldset { display: flex; flex-direction: column; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.hg-radios { display: flex; flex-wrap: wrap; gap: 8px; }
+.hg-radio { position: relative; display: inline-flex; }
+.hg-radio input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.hg-radio span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall-3);
+  color: var(--ink-dim);
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.12em;
+}
+.hg-radio input:checked + span { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
+.hg-radio input:focus-visible + span { outline: 2px solid var(--sign); outline-offset: 2px; }
+.hg-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 419px) { .hg-grid2 { grid-template-columns: minmax(0, 1fr); } }
+.hg-file { max-width: 100%; font-size: 16px; color: var(--ink-dim); }
+.hg-file::file-selector-button {
+  margin-right: 12px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 600 15px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+.hg-deck-status { margin: 0; font-size: 16px; line-height: 1.4; color: var(--ink-sub); }
+.hg-deck-status[data-state='done'] { color: var(--ok); }
+.hg-deck-status[data-state='error'] { color: var(--warn); }
+.hg-post-foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--rule);
+  background: var(--hall-2);
+}
+.hg-post-actions { display: flex; justify-content: flex-end; gap: 10px; }
+@media (max-width: 479px) { .hg-post-actions .hg-btn-sign { flex: 1; padding-inline: 12px; } }
+.hg-alert { margin: 0; font-size: 16px; line-height: 1.4; color: var(--warn); }
+
+/* ─── One stand (/startups/[id]) ─── */
+.hg-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ink-sub);
+}
+.hg-back:hover { color: var(--ink); }
+.hg-stand-head { padding-top: 12px; }
+.hg-stand-sign { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 6px; }
+.hg-stand-no { font: 500 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--ink-sub); }
+.hg-hero { display: flex; align-items: flex-end; gap: 22px; margin-top: 20px; }
+.hg-hero-bay { flex: none; width: 132px; height: 120px; border: 1px solid var(--rule); border-radius: 14px; }
+.hg-hero-bay .hg-fin { position: absolute; left: 0; bottom: -6px; width: 132px; height: 132px; }
+.hg-hero-text { min-width: 0; }
+.hg-hero-name { margin-top: 0; overflow-wrap: anywhere; }
+.hg-hero.hg-skel .hg-hero-text { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 639px) {
+  .hg-hero { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .hg-hero-bay { width: 104px; height: 96px; }
+  .hg-hero-bay .hg-fin { width: 104px; height: 104px; bottom: -5px; }
+  .hg-hero.hg-skel .hg-hero-text { width: 100%; }
+}
+
+/* Specs, then the boarding card, then about + deck: the reading order on every screen. On wide
+   screens the card takes its own column beside the other two. */
+.hg-stand-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.hg-rest,
+.hg-side { min-width: 0; }
+@media (min-width: 960px) {
+  .hg-stand-body {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-areas: 'specs side' 'rest side' 'foot foot';
+    grid-template-rows: auto 1fr auto;
+    column-gap: 40px;
+    align-items: start;
+  }
+  .hg-specs { grid-area: specs; }
+  .hg-side { grid-area: side; position: sticky; top: 84px; }
+  .hg-rest { grid-area: rest; }
+  .hg-stand-body > .hg-foot { grid-area: foot; }
+}
+.hg-specs { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.hg-spec { min-width: 0; padding: 12px 14px; border: 1px solid var(--rule); border-radius: 10px; background: var(--hall-2); }
+.hg-spec dt { font: 500 11px/1.2 var(--font-board); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-sub); }
+.hg-spec dd { margin: 6px 0 0; font-size: 16px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.hg-section { margin-top: 30px; }
+.hg-rest > .hg-section:first-child { margin-top: 0; }
+.hg-h2 { margin: 0 0 12px; font: 500 12px/1.2 var(--font-board); letter-spacing: 0.22em; text-transform: uppercase; color: var(--sign); }
+.hg-about { margin: 0; max-width: 68ch; font-size: 17px; line-height: 1.65; color: var(--ink-dim); white-space: pre-line; overflow-wrap: anywhere; }
+.hg-locked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 18px;
+  border: 1px dashed var(--rule);
+  border-radius: 12px;
+}
+.hg-locked p { flex: 1 1 220px; margin: 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); }
+
+.hg-pass {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--hall-2);
+}
+.hg-pass .hg-h2 { margin-bottom: 0; }
+.hg-pass-raise { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.hg-pass-big { font: 800 34px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; color: var(--sign); }
+.hg-pass-cap { font: 500 11px/1.3 var(--font-board); letter-spacing: 0.18em; color: var(--ink-sub); }
+.hg-pax-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-block: 1px dashed var(--rule);
+}
+.hg-pax-tiles { font-size: 26px; line-height: 1; color: var(--sign); }
+.hg-acts { display: flex; flex-direction: column; }
+.hg-acts .hg-btn,
+.hg-pass > .hg-btn { width: 100%; }
+.hg-toggle {
+  background: var(--hall-3);
+  border-color: var(--rule);
+  color: var(--ink);
+  font: 600 14px/1.2 var(--font-board);
+  letter-spacing: 0.14em;
+}
+.hg-toggle:hover { border-color: #3a3f47; }
+.hg-toggle[aria-pressed='true'] { background: var(--ok); border-color: var(--ok); color: var(--hall); }
+.hg-toggle[data-kind='standby'][aria-pressed='true'] { background: var(--info); border-color: var(--info); }
+.hg-state-line { margin: 6px 0 14px; font-size: 16px; line-height: 1.4; color: var(--ink-sub); }
+.hg-state-line[data-on] { color: var(--ok); }
+.hg-founder { margin: 2px 0 0; font: 500 11px/1.4 var(--font-board); letter-spacing: 0.16em; color: var(--ink-sub); overflow-wrap: anywhere; }
+.hg-standpage .hg-foot { margin-top: 28px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hg-stand[data-rise] .hg-fin,
+  .hg-hero-bay[data-rise] .hg-fin { animation: none; }
+  .tf-draw .tf-outline { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
+  .hg-btn,
+  .hg-card { transition: none; }
+  .hg-btn:active,
+  a.hg-card:hover { transform: none; }
+}

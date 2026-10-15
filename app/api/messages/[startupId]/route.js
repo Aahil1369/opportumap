@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
 
   const { data, error } = await db
     .from('startup_messages')
-    .select('*')
+    .select('id, startup_id, sender_id, receiver_id, content, read, created_at')
     .eq('startup_id', startupId)
     .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${user.id})`)
     .order('created_at', { ascending: true });

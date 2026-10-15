@@ -2,6 +2,7 @@ import { createClient } from '../../../lib/supabase-server.js';
 import { hasSupabase } from '../../../lib/supabase.js';
 import { isUuid } from '../../../lib/uuid.js';
 import { dbErrorStatus } from '../../../lib/dbError.js';
+import { conversationsFrom } from '../../../lib/departures/gateChat.js';
 
 const MAX_MESSAGE = 4000; // matches the startup_messages_content_len constraint
 
@@ -14,34 +15,18 @@ export async function GET() {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   if (!isUuid(user.id)) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // The founder's public name (kept on the startup row by the database, never an email) names
+  // the other person when they founded the startup; anyone else reads as "Member 1A2B".
   const { data: messages, error } = await db
     .from('startup_messages')
-    .select('*, startups(id, name, user_id)')
+    .select('id, startup_id, sender_id, receiver_id, content, read, created_at, startups(id, name, user_id, user_name)')
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
   if (error) return Response.json({ error: 'Could not load messages' }, { status: 500 });
 
-  // Group into conversations by startup_id + other_user_id
-  const convMap = {};
-  for (const msg of messages ?? []) {
-    const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
-    const key = `${msg.startup_id}::${otherId}`;
-    if (!convMap[key]) {
-      convMap[key] = {
-        startup_id: msg.startup_id,
-        startup_name: msg.startups?.name ?? 'Unknown',
-        startup_founder_id: msg.startups?.user_id,
-        other_user_id: otherId,
-        last_message: msg.content,
-        last_at: msg.created_at,
-        unread: 0,
-      };
-    }
-    if (!msg.read && msg.receiver_id === user.id) convMap[key].unread++;
-  }
-
-  return Response.json({ conversations: Object.values(convMap) });
+  // One row per conversation (startup + the other person), newest first, with its unread count.
+  return Response.json({ conversations: conversationsFrom(messages, user.id) });
 }
 
 export async function POST(request) {
