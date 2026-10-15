@@ -179,6 +179,9 @@ export default function JobGate({ job, profile, onClose, returnFocusRef }) {
               : 'Our salary model’s estimate for this role and city, in the local currency.'}
           </p>
         )}
+        {pay.kind === 'listed' && pay.runway && (
+          <p className="gate-src">The {header.town || 'city'} range is our salary model’s estimate for this kind of role.</p>
+        )}
       </section>
 
       <section className="gate-sec" aria-labelledby={`${titleId}-pa`}>

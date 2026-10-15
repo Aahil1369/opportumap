@@ -342,6 +342,12 @@ test('JobGate: a named kit Dialog, the right links, plain text only', () => {
   assert.ok(!/verdict/i.test(src.replace(/\/\/.*$/gm, '')), 'the gate shows no verdict');
 });
 
+test("JobGate says whose numbers the runway's city range is, for listed pay too", () => {
+  const src = read('app/components/jobs/JobGate.js');
+  assert.match(src, /pay\.kind === 'listed' && pay\.runway && \(/);
+  assert.match(src, /range is our salary model’s estimate/);
+});
+
 test('/jobs opens JobGate (loaded on first open) and hands focus back to the row', () => {
   const src = read('app/components/jobs/JobsBoard.js');
   assert.match(src, /const JobGate = dynamic\(\(\) => import\('\.\/JobGate'\), \{ ssr: false \}\)/);
