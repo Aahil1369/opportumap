@@ -1,34 +1,14 @@
 'use client';
 
 // The homepage board for everyone, personalised for a signed-in visitor with a profile: their
-// roles (the same query and countries /jobs uses) re-flap into the board's rows in place. Same
-// DOM, no page swap; until (or unless) they arrive, the server's rows stay. The row builder (and
-// its city table) loads only on this path.
+// roles (the same query and countries /jobs uses: lib/departures/profileQuery.js) re-flap into
+// the board's rows in place. Same DOM, no page swap; until (or unless) they arrive, the server's
+// rows stay. The row builder (and its city table) loads only on this path.
 
 import { useEffect, useState } from 'react';
 import HomeBoard from './HomeBoard';
 import { loadHomeProfile } from './homeProfile';
-
-const JOB_TYPES = {
-  'Software Engineering': 'software engineer',
-  'Data Science / ML': 'data scientist machine learning',
-  'Product Management': 'product manager',
-  Design: 'UX designer',
-  'DevOps / Cloud': 'devops cloud engineer',
-  Research: 'research engineer',
-  'Finance / Fintech': 'fintech engineer',
-};
-
-/** The profile's search, as /jobs builds it: its first job type, then up to three skills. */
-export function profileQuery(profile) {
-  const parts = [];
-  const type = profile?.jobTypes?.[0];
-  if (type && JOB_TYPES[type]) parts.push(JOB_TYPES[type]);
-  if (typeof profile?.skills === 'string') {
-    parts.push(...profile.skills.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 3));
-  }
-  return parts.slice(0, 5).join(' ') || 'software engineer';
-}
+import { profileQuery } from '../../../lib/departures/profileQuery';
 
 const ISO2 = /^[a-z]{2}$/;
 
