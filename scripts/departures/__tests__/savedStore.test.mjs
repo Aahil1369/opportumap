@@ -13,6 +13,8 @@ import * as espree from 'espree';
 
 const store = await import(new URL('../../../lib/departures/savedStore.js', import.meta.url));
 const { SAVED_KEY, LEGACY_KEY, SNAPSHOT_FIELDS, snapshot, readSaved, saveJob, removeJob, migrateSaved } = store;
+const { trimJob, jobRow, BOARD_DESC_CHARS } = await import(new URL('../../../lib/departures/jobRows.js', import.meta.url));
+const { gatePay } = await import(new URL('../../../lib/departures/gateInfo.js', import.meta.url));
 
 /** An in-memory Storage (getItem / setItem / removeItem), with the raw values for the asserts. */
 function memory(seed = {}) {
@@ -40,7 +42,8 @@ const blocked = () => ({
 
 const tick = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// A feed job as /api/jobs returns it: the snapshot keeps 12 fields of it, never the rest.
+// A feed job as the live feeds give it: the snapshot keeps 14 fields of it (the description as at
+// most BOARD_DESC_CHARS of plain text, as the /jobs server board keeps it), never the rest.
 const JOB = {
   id: 'adzuna_5927958773',
   title: 'Software Engineer',
@@ -74,22 +77,26 @@ const SNAP = {
   posted_at: '2026-10-12T09:00:00Z',
   remote: false,
   source: 'adzuna',
+  salary_predicted: false,
+  // '<p>Build things.</p>' x 200 as plain text, cut at a word to at most 300 characters.
+  description: `${'Build things. '.repeat(20)}Build things…`,
 };
 
-test('the keys and the snapshot fields are the brief’s', () => {
+test('the keys and the snapshot fields: the brief’s 12, then Adzuna’s estimate flag and a short description', () => {
   assert.equal(SAVED_KEY, 'opportumap_saved_v2');
   assert.equal(LEGACY_KEY, 'opportumap_saved');
   assert.deepEqual(
     [...SNAPSHOT_FIELDS],
-    ['id', 'title', 'company', 'location', 'country', 'url', 'salary_min', 'salary_max', 'currency', 'posted_at', 'remote', 'source'],
+    ['id', 'title', 'company', 'location', 'country', 'url', 'salary_min', 'salary_max', 'currency', 'posted_at', 'remote', 'source', 'salary_predicted', 'description'],
   );
 });
 
-test('snapshot round-trip: saveJob keeps the 12 fields under opportumap_saved_v2, readSaved gives them back', () => {
+test('snapshot round-trip: saveJob keeps the 14 fields under opportumap_saved_v2, readSaved gives them back', () => {
   const s = memory();
   assert.equal(saveJob(s, JOB), true);
   const raw = JSON.parse(s.data.get('opportumap_saved_v2'));
-  assert.deepEqual(raw, [SNAP], 'only the snapshot is stored: no description, coordinates or other fields');
+  assert.deepEqual(raw, [SNAP], 'only the snapshot is stored: no coordinates, no expiry, no full HTML description');
+  assert.equal(raw[0].description, trimJob(JOB).description, 'the description /jobs’ server board keeps for the same role');
   assert.deepEqual(readSaved(s), [SNAP]);
   // A fresh read of the same storage (another page, another visit) is the same list.
   assert.deepEqual(readSaved(memory(Object.fromEntries(s.data))), [SNAP]);
@@ -109,6 +116,8 @@ test('snapshot: missing fields are null, ids are strings, odd values are cleaned
     posted_at: null,
     remote: false,
     source: null,
+    salary_predicted: false,
+    description: null,
   });
   const odd = snapshot({ id: 'x_1', title: 'Nurse', salary_min: '61000', salary_max: 'lots', remote: 'yes', currency: 'dollars', posted_at: 'never' });
   assert.equal(odd.salary_min, 61000, 'a numeric string is a number');
@@ -122,6 +131,55 @@ test('snapshot: missing fields are null, ids are strings, odd values are cleaned
   for (const bad of [null, undefined, 'adzuna_1', 7, {}, { id: '' }, { id: '   ' }, { id: {} }, { id: NaN }]) {
     assert.equal(snapshot(bad), null, `${JSON.stringify(bad)} has no id`);
   }
+});
+
+test('snapshot: Adzuna’s estimate flag only when it is true; the description as short plain text, as /jobs keeps it', () => {
+  assert.equal(snapshot({ id: 'x', salary_predicted: true }).salary_predicted, true);
+  for (const v of [false, 'true', 1, '1', null, undefined, {}]) {
+    assert.equal(snapshot({ id: 'x', salary_predicted: v }).salary_predicted, false, `${JSON.stringify(v)} is not Adzuna’s estimate`);
+  }
+  const long = `<div><h2>About us</h2><p>We build <b>maps</b> for people moving abroad .</p>${'<li>Ship features weekly</li>'.repeat(80)}</div>`;
+  const d = snapshot({ id: 'x', description: long }).description;
+  assert.ok(d.length <= BOARD_DESC_CHARS, `at most ${BOARD_DESC_CHARS} characters (${d.length})`);
+  assert.equal(/[<>]/.test(d), false, 'no HTML');
+  assert.ok(d.startsWith('About us We build maps for people moving abroad.'), d.slice(0, 60));
+  assert.ok(d.endsWith('…'), 'cut at a word');
+  assert.equal(d, trimJob({ id: 'x', description: long }).description, 'the same text the /jobs server board keeps');
+  // A board role is trimmed already: its snapshot keeps that description as it is.
+  const board = trimJob({ ...JOB, description: long });
+  assert.equal(snapshot(board).description, board.description);
+  assert.equal(snapshot({ id: 'x', description: 'Short and plain.' }).description, 'Short and plain.');
+  for (const v of ['', '   ', '<p> </p>', 42, {}, ['a'], null]) {
+    assert.equal(snapshot({ id: 'x', description: v }).description, null, `${JSON.stringify(v)} is no description`);
+  }
+});
+
+test('a role opened from /saved reads as it does on /jobs: Adzuna’s estimate in the gate, the same status and match', () => {
+  const s = memory();
+  // Not new, not remote; the profile's skills and the role type are only in the description.
+  const feed = {
+    ...JOB,
+    id: 'adzuna_77',
+    title: 'Software Developer',
+    posted_at: '2026-01-05T09:00:00Z',
+    salary_predicted: true,
+    description: `<p>Our stack: python, kubernetes, terraform and postgres.</p>${'<p>More about the team and the office.</p>'.repeat(20)}`,
+  };
+  const onJobs = trimJob(feed); // the /jobs server board's copy, which the heart saves
+  saveJob(s, onJobs);
+  const saved = readSaved(s)[0]; // what /saved hands JobGate
+  assert.equal(gatePay(onJobs, null).label, "PAY · ADZUNA'S ESTIMATE FOR THIS ROLE");
+  assert.equal(gatePay(saved, null).label, "PAY · ADZUNA'S ESTIMATE FOR THIS ROLE", 'never "listed" for Adzuna’s estimate');
+  assert.equal(gatePay(snapshot({ ...feed, salary_predicted: false }), null).label, 'PAY · LISTED FOR THIS ROLE');
+
+  const now = new Date('2026-10-15T12:00:00Z');
+  const profile = { skills: 'python, kubernetes, terraform, postgres, golang', experience: '3-5', jobTypes: ['DevOps / Cloud'] };
+  const there = jobRow(onJobs, { now, profile });
+  const here = jobRow(saved, { now, profile });
+  assert.equal(there.status, 'BOARDING', 'the test role boards on /jobs');
+  assert.equal(here.status, there.status);
+  assert.deepEqual(here.match, there.match);
+  assert.equal(jobRow({ ...saved, description: null }, { now, profile }).status, 'ON TIME', 'without the description it would not board');
 });
 
 test('saveJob: newest first; saving again moves it to the top without a second copy; ids compare as strings', () => {
@@ -166,7 +224,7 @@ test('migration: found ids become snapshots, unknown ones "details unavailable",
     asked.push(id);
     await tick(2);
     if (id === 'gone_2') return null;
-    return { ...JOB, id, title: `Role ${id}`, description: 'not kept' };
+    return { ...JOB, id, title: `Role ${id}`, description: '<b>Kept</b> as plain text', salary_predicted: true };
   };
   const after = await migrateSaved(s, lookup);
   assert.deepEqual(asked.sort(), ['adzuna_1', 'adzuna_3', 'gone_2']);
@@ -177,6 +235,8 @@ test('migration: found ids become snapshots, unknown ones "details unavailable",
   ]);
   assert.deepEqual(after[1], { id: 'gone_2', unavailable: true });
   assert.deepEqual(Object.keys(after[0]), [...SNAPSHOT_FIELDS], 'a looked-up role is stored as a snapshot');
+  assert.equal(after[0].description, 'Kept as plain text');
+  assert.equal(after[0].salary_predicted, true, 'Adzuna’s estimate stays Adzuna’s estimate');
   assert.equal(s.data.has('opportumap_saved'), false, 'the id-only key is gone');
   assert.deepEqual(readSaved(s), after, 'stored under opportumap_saved_v2');
   // Once: nothing is pending now, so a second visit asks nothing.
@@ -285,7 +345,7 @@ test('corrupt or tampered data: unreadable JSON is ignored, entries are cleaned,
   assert.deepEqual(readSaved(memory({ opportumap_saved_v2: JSON.stringify({ id: 'x' }) })), [], 'not a list');
   const s = memory({
     opportumap_saved_v2: JSON.stringify([
-      { ...SNAP, description: 'x', salary_min: 'abc', title: 123 },
+      { ...SNAP, description: `<img src=x onerror=alert(1)>${'word '.repeat(2000)}`, salary_predicted: 'yes', salary_min: 'abc', title: 123 },
       { ...SNAP, title: 'Duplicate' },
       { title: 'No id' },
       'adzuna_7',
@@ -298,7 +358,9 @@ test('corrupt or tampered data: unreadable JSON is ignored, entries are cleaned,
   assert.deepEqual(list.map((j) => j.id), [SNAP.id, 'u_1', 'p_1']);
   assert.equal(list[0].salary_min, null);
   assert.equal(list[0].title, '123');
-  assert.equal('description' in list[0], false);
+  assert.ok(list[0].description.length <= BOARD_DESC_CHARS, 'a stored description is capped again on read');
+  assert.equal(/[<>]/.test(list[0].description), false, 'and kept as plain text');
+  assert.equal(list[0].salary_predicted, false, 'Adzuna’s estimate only when it is true');
   assert.deepEqual(list[1], { id: 'u_1', unavailable: true });
   assert.deepEqual(list[2], { id: 'p_1', pending: true });
 });
