@@ -6,11 +6,9 @@
    transform, opacity and the arcs' stroke-dashoffset move. Palette: globals.css tokens. */
 
 .hp { flex: 1 0 auto; }
-.hp > section,
-.hp-foot { width: min(100% - 32px, 1040px); margin-inline: auto; }
+.hp > section { width: min(100% - 32px, 1040px); margin-inline: auto; }
 @media (min-width: 640px) {
-  .hp > section,
-  .hp-foot { width: min(100% - 64px, 1040px); }
+  .hp > section { width: min(100% - 64px, 1040px); }
 }
 
 .hp-kicker {
@@ -62,8 +60,7 @@
   text-decoration: none;
 }
 .hp-more:hover { text-decoration: underline; text-underline-offset: 3px; }
-.hp-more:focus-visible,
-.hp-foot a:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; border-radius: 3px; }
+.hp-more:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; border-radius: 3px; }
 
 .hp-beat { padding: 56px 0; border-top: 1px solid var(--rule); }
 @media (min-width: 900px) {
@@ -278,21 +275,6 @@
 .wt-pc-sign { font: 500 14px/1.35 var(--font-board); letter-spacing: 0.1em; }
 .wt-pc-name { color: var(--sign); letter-spacing: 0.02em; }
 .wt-pc-sub { font-size: 16px; line-height: 1.4; color: var(--ink-dim); }
-
-.hp-foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 24px;
-  padding: 24px 0 40px;
-  border-top: 1px solid var(--rule);
-  font: 500 12px/1.4 var(--font-board);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-sub);
-}
-.hp-foot > * { padding: 8px 0; }
-.hp-foot a { color: var(--ink-dim); text-decoration: none; }
-.hp-foot a:hover { color: var(--sign); }
 
 /* ── Motion: each beat once, after hydration; nothing here under reduced motion ── */
 @media (prefers-reduced-motion: no-preference) {

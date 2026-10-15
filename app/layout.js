@@ -4,6 +4,7 @@ import PingTracker from './components/PingTracker';
 import PageTransition from './components/ui/PageTransition';
 import SmoothScroll from './components/motion/SmoothScroll';
 import FpsLoader from './components/FpsLoader';
+import SiteFooter from './components/SiteFooter';
 
 const instrumentSerif = Instrument_Serif({
   variable: '--font-instrument-serif',
@@ -30,6 +31,8 @@ const jbMono = JetBrains_Mono({
 
 // No job or listing totals in any copy (spec §1): a count goes stale and reads like a claim.
 export const metadata = {
+  // Social images (app/opengraph-image.js) and canonical URLs resolve against the live site.
+  metadataBase: new URL('https://opportumap.netlify.app'),
   title: 'OpportuMap — Global Opportunities for Everyone',
   description: 'Real roles from around the world, with pay in the local currency. Built by an immigrant kid for people who weren’t born into the passport lottery.',
   openGraph: {
@@ -58,6 +61,7 @@ export default function RootLayout({ children }) {
         <PingTracker />
         <FpsLoader />
         {children}
+        <SiteFooter />
       </body>
     </html>
   );

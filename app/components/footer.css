@@ -1,0 +1,112 @@
+/* ─── SiteFooter ───
+   The hall's footer (app/components/SiteFooter.js), on every page: the gate signs in a grid (two
+   columns on phones, four from 640px), Passport Control → Migrova and the information desk, one
+   legal line. Palette tokens only. The one motion is a sign's 1px lift on hover (transform), and
+   not under reduced motion. Text that reads as copy is 16px. */
+.sf {
+  margin-top: auto;
+  border-top: 1px solid var(--rule);
+  background: var(--hall);
+  color: var(--ink);
+}
+.sf-in {
+  width: min(100% - 32px, 1120px);
+  margin-inline: auto;
+  padding: 36px 0 calc(28px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.sf-kicker {
+  margin: 0 0 10px;
+  font: 600 11px/1.2 var(--font-board);
+  letter-spacing: 0.22em;
+  color: var(--sign);
+}
+.sf-gates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+}
+.sf-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+/* Letterless signs (Lounge, Itinerary) as tall as the lettered ones, so the rows line up. */
+.sf-gate .gs { min-height: 32px; transition: transform 0.16s cubic-bezier(.22, 1, .36, 1); }
+.sf-gate:hover .gs { transform: translateY(-1px); }
+.sf-gate:hover .sf-sub { color: var(--ink); }
+.sf-sub { font-size: 16px; line-height: 1.35; color: var(--ink-dim); }
+
+.sf-desks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.sf-desk {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--hall-2);
+  color: var(--ink);
+  font-size: 16px;
+  text-decoration: none;
+}
+.sf-desk:hover { border-color: var(--ink-sub); }
+.sf-desk-t {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font: 500 13px/1.3 var(--font-board);
+  letter-spacing: 0.12em;
+  color: var(--sign);
+}
+.sf-i {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 14px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+}
+.sf-gate:focus-visible,
+.sf-desk:focus-visible {
+  outline: 2px solid var(--sign);
+  outline-offset: 2px;
+}
+
+.sf-legal {
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-sub);
+}
+
+@media (min-width: 640px) {
+  .sf-in { width: min(100% - 64px, 1120px); padding-top: 44px; gap: 28px; }
+  .sf-gates { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 12px; }
+  .sf-gate { padding: 10px; }
+  .sf-desks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-gate .gs { transition: none; }
+  .sf-gate:hover .gs { transform: none; }
+}

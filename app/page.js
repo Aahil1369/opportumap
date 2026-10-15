@@ -109,14 +109,6 @@ export default async function Home() {
         </section>
 
         <WhereTo />
-
-        <footer className="hp-foot">
-          <span>© OpportuMap 2026</span>
-          <Link href="/contact">Contact</Link>
-          <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer">
-            A sibling of Migrova
-          </a>
-        </footer>
       </main>
     </>
   );

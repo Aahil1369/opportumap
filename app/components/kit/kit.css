@@ -196,6 +196,7 @@
   color: var(--sign);
   font: 800 13px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 0;
+  text-transform: none; /* the letter as given: A–F, or the information desk's lowercase i */
 }
 .gs-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 a.gs { transition: transform 0.16s cubic-bezier(.22, 1, .36, 1); }
