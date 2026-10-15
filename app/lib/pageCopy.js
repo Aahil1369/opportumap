@@ -1,5 +1,4 @@
 export const FOOTNOTES = {
-  home:         'This is a field guide, not a platform. We update it weekly.',
   jobs:         'Jobs refresh every 6 hours from Adzuna + RemoteOK. Numbers will drift.',
   map:          'Every pin is a real job we could verify. The blank ones mean we haven’t been yet.',
   community:    'Keep this place honest. No recruiters, no pitch threads, no crypto.',
@@ -16,13 +15,6 @@ export const FOOTNOTES = {
 };
 
 export const HERO_COPY = {
-  home: {
-    kicker: 'Issue 04 · Spring 2026',
-    title: 'Find work you can',
-    italic: 'actually',
-    tail: ' access.',
-    sub: 'Jobs with visa-sponsorship signals across 100 countries. For visas and relocation, see our sibling app Migrova. Built by an immigrant kid for people who weren’t born into the passport lottery.',
-  },
   resume: {
     kicker: '§ Tool 03 · Resume Grader',
     title: 'Get the grade you',

@@ -1,191 +1,117 @@
-'use client';
-
+// The homepage is the departures board (spec §6). A server component: the board's rows come from
+// the live feeds at ISR time (every 10 minutes), so the final text of every board is in the HTML;
+// the motion layers on after hydration in small client islands. When the feeds are down or slow,
+// the board is a static sample (FALLBACK_ROWS) and says so. Beats, top to bottom: the board, the
+// prediction, the window, the gates, your row, where to.
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import Navbar from './components/Navbar';
-import Dashboard from './components/Dashboard';
-import PassportHero from './components/ui/PassportHero';
-import SectionHead from './components/ui/SectionHead';
-import Btn from './components/ui/Btn';
-import Glyph from './components/ui/Glyph';
-import Footnote from './components/ui/Footnote';
-import Reveal from './components/motion/Reveal';
-import Stagger from './components/motion/Stagger';
-import StaggerItem from './components/motion/StaggerItem';
-import CountUp from './components/motion/CountUp';
-import { useScrollReveal } from './components/ui/hooks/useScrollReveal';
-import { HERO_COPY, FOOTNOTES } from './lib/pageCopy';
+import PersonalBoard from './components/home/PersonalBoard';
+import { FounderBeat, PredictionBeat } from './components/home/HomeBoard';
+import NightWindow from './components/home/NightWindow';
+import GateWalk from './components/home/GateWalk';
+import WhereTo from './components/home/WhereTo';
+import { fetchLiveJobs } from '../lib/jobsFeed';
+import { BOARD_COLUMNS, FALLBACK_ROWS, FOUNDER_ROW, boardRowsFrom } from '../lib/departures/board';
+import './components/home/home.css';
 
-const TOOLS = [
-  { n: '01', tag: 'RSM', href: '/resume',       glyph: 'document',   name: 'Resume Grader',  desc: 'Brutally honest. Average is 35–55, not 75.' },
-  { n: '02', tag: 'CVR', href: '/cover-letter', glyph: 'envelope',   name: 'Cover Letter',   desc: 'Paste the job, pick a tone. We draft.' },
-  { n: '03', tag: 'INT', href: '/interview',    glyph: 'microphone', name: 'Interview Prep', desc: '15 tailored questions + AI mock interview.' },
-  { n: '04', tag: 'MGV', href: 'https://migrova.netlify.app', external: true, glyph: 'globe-wire', name: 'Migrova ↗', desc: 'Moving abroad? Visas, relocation, legal guidance — our sibling app.' },
-];
+export const revalidate = 600;
 
-const HOW_IT_WORKS = [
-  { n: '01', title: 'Tell us about you', body: 'Nationality, skills, where you want to go. 60 seconds.' },
-  { n: '02', title: 'Get matched',       body: 'We surface the jobs that fit your skills and visa needs.' },
-  { n: '03', title: 'Prepare',           body: 'Visa guides, resume grade, interview prep — all tailored.' },
-  { n: '04', title: 'Go',                body: 'Apply with confidence. Real jobs, real visa paths.' },
-];
+const TITLE = 'OpportuMap — The world is hiring. Pick your gate.';
+const DESCRIPTION =
+  'Real roles from around the world on one departures board, in local time and local pay. Built by an immigrant kid for people crossing borders.';
 
-const STATS = [
-  { value: 100,   label: 'Countries mapped' },
-  { value: 33664, label: 'Live roles', live: true },
-  { value: 6,     label: 'Continents' },
-];
+export const metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: { title: TITLE, description: DESCRIPTION, url: 'https://opportumap.netlify.app', siteName: 'OpportuMap', type: 'website' },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
+};
 
-const TESTIMONIALS = [
-  { quote: 'OpportuMap helped me land a role in Berlin I never would have found on LinkedIn. The sponsorship signals saved me hours.', name: 'Priya S.',  role: 'Data Engineer',      move: 'IN → DE' },
-  { quote: 'The AI resume matching is insane. It told me exactly which jobs fit my background.',                                       name: 'Marcus W.', role: 'Software Engineer',  move: 'BR → NL' },
-  { quote: 'The resume grader was brutal — and right. Fixed what it flagged and started getting callbacks.',                           name: 'Amara O.',  role: 'ML Engineer',        move: 'NG → CA' },
-];
+// Adzuna countries across the continents; "software" keeps the roles close to who reads this.
+const HOME_COUNTRIES = ['ca', 'gb', 'de', 'in', 'sg', 'au', 'nl', 'us'];
+const FEED_TIMEOUT_MS = 6000;
 
-export default function Home() {
-  useScrollReveal();
-  const [profile, setProfile] = useState(null);
+async function boardRows() {
+  try {
+    // The feeds' cache windows match the page's, so the board is rebuilt every 10 minutes.
+    const jobs = await fetchLiveJobs({ query: 'software', countries: HOME_COUNTRIES, timeoutMs: FEED_TIMEOUT_MS, revalidate });
+    return boardRowsFrom(jobs, { now: new Date() });
+  } catch {
+    return FALLBACK_ROWS;
+  }
+}
 
-  // Scroll-drawn connector line for the "how it works" row.
-  const howRef = useRef(null);
-  const reduceMotion = useReducedMotion();
-  const { scrollYProgress: howProgress } = useScroll({ target: howRef, offset: ['start 85%', 'end 60%'] });
-  const lineScale = useTransform(howProgress, [0, 1], [0, 1]);
-
-  useEffect(() => {
-    fetch('/api/user-profile')
-      .then((r) => r.json())
-      .then((d) => { if (d.profile?.nationality) setProfile(d.profile); })
-      .catch(() => {});
-  }, []);
-
-  // Render the marketing homepage immediately (server-rendered into the HTML so it
-  // paints instantly). Swap to the personalized dashboard only if a profile loads.
-  if (profile) return (
-    <div className="min-h-screen bg-paper-bg text-paper-ink">
-      <Navbar />
-      <Dashboard profile={profile} />
-    </div>
-  );
-
-  const hero = HERO_COPY.home;
+export default async function Home() {
+  const rows = await boardRows();
+  const samples = rows.filter((r) => r.fallback).length;
+  const allSamples = samples === rows.length;
+  const lifted = rows.find((r) => /\d/.test(r.cells.pay)) || rows[0];
 
   return (
-    <div className="min-h-screen bg-paper-bg text-paper-ink">
+    <>
       <Navbar />
+      <main className="om-hall hp">
+        <section className="hp-hero" aria-labelledby="hp-title">
+          <p className="hp-kicker">
+            DEPARTURES · <span lang="ur" dir="rtl">روانگی</span> · <span lang="fr">DÉPARTS</span>
+          </p>
+          <h1 id="hp-title" className="hp-h1">
+            The world is hiring. <em>Pick your gate.</em>
+          </h1>
+          <p className="hp-text hp-lede">
+            Real roles from around the world, in local time and local pay. Tap a row to open its gate.
+          </p>
+          <PersonalBoard rows={rows} columns={BOARD_COLUMNS} caption={allSamples ? 'DEPARTURES · SAMPLE' : 'DEPARTURES'} />
+          <p className="hp-after">
+            {samples > 0 && (
+              <span>
+                {allSamples ? 'These rows are samples' : 'Some rows are samples'}: the live feeds were slow just now.{' '}
+              </span>
+            )}
+            <Link href="/jobs" className="hp-more">
+              See every role on the board →
+            </Link>
+          </p>
+        </section>
 
-      <PassportHero
-        kicker={hero.kicker}
-        title={hero.title}
-        titleItalic={hero.italic}
-        titleTail={hero.tail}
-        sub={hero.sub}
-        cta={<Btn variant="primary" href="/jobs" magnetic>Browse jobs →</Btn>}
-        secondaryCta={<Btn variant="secondary" href="/map">Spin the map</Btn>}
-      />
-
-      <Reveal as="section" className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12 border-t border-paper-rule">
-        <div className="grid grid-cols-3 gap-6 sm:gap-10">
-          {STATS.map((s) => (
-            <div key={s.label} className="flex flex-col">
-              <div className="font-display text-[40px] sm:text-[56px] leading-none text-paper-ink tabular-nums flex items-center gap-3">
-                <CountUp value={s.value} />
-                {s.live && <span className="om-live-dot" aria-hidden />}
-              </div>
-              <div className="mt-3 font-mono text-[10px] tracking-[0.14em] uppercase text-paper-ink-sub">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </Reveal>
-
-      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
-        <Reveal>
-          <SectionHead
-            number={1}
-            kicker="TOOLS"
-            title="Your global career toolkit."
-            sub="Three career tools plus our visa & relocation sibling, Migrova."
-          />
-        </Reveal>
-        <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 mt-14 border-t border-l border-paper-rule">
-          {TOOLS.map((t) => {
-            const Cmp = t.external ? 'a' : Link;
-            const extra = t.external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
-            return (
-              <StaggerItem key={t.href} className="border-r border-b border-paper-rule">
-                <Cmp href={t.href} {...extra}
-                  className="tool-card-underline group block h-full p-8 bg-paper-bg hover:bg-paper-bg-alt hover:-translate-y-1 transition-[background-color,transform] duration-300 will-change-transform">
-                  <div className="text-paper-ink mb-6"><Glyph name={t.glyph} size={36} /></div>
-                  <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-2">№ {t.n} — {t.tag}</div>
-                  <div className="font-display text-[22px] leading-[1.15] mb-2">{t.name}</div>
-                  <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{t.desc}</div>
-                </Cmp>
-              </StaggerItem>
-            );
-          })}
-        </Stagger>
-      </section>
-
-      <section ref={howRef} className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
-        <Reveal>
-          <SectionHead number={2} kicker="HOW IT WORKS" title="Set up in two minutes." />
-        </Reveal>
-        <div className="relative mt-14">
-          {!reduceMotion && (
-            <motion.div
-              aria-hidden
-              className="absolute left-0 right-0 top-0 h-px bg-accent origin-left z-10"
-              style={{ scaleX: lineScale }}
-            />
-          )}
-          <Stagger as="ol" className="grid grid-cols-1 md:grid-cols-4 gap-0 border-t border-l border-paper-rule">
-            {HOW_IT_WORKS.map((s) => (
-              <StaggerItem as="li" key={s.n} className="p-8 border-r border-b border-paper-rule">
-                <div className="font-display italic text-[32px] text-accent mb-3">№{s.n}</div>
-                <div className="font-display text-[20px] mb-2">{s.title}</div>
-                <div className="text-[13px] text-paper-ink-dim leading-[1.5]">{s.body}</div>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </div>
-      </section>
-
-      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-20 border-t border-paper-rule">
-        <Reveal>
-          <SectionHead number={3} kicker="FIELD REPORTS" title="What readers have done." />
-        </Reveal>
-        <Stagger className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-paper-rule">
-          {TESTIMONIALS.map((t) => (
-            <StaggerItem as="figure" key={t.name} className="p-8 border-r border-b border-paper-rule">
-              <blockquote className="font-display text-[20px] leading-[1.35] text-paper-ink mb-6">&ldquo;{t.quote}&rdquo;</blockquote>
-              <figcaption className="font-mono text-[11px] tracking-[0.08em] text-paper-ink-sub">
-                {t.name.toUpperCase()} · {t.role.toUpperCase()} · {t.move}
-              </figcaption>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </section>
-
-      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-28 border-t border-paper-rule">
-        <Reveal className="max-w-[780px]">
-          <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-6">§ 04 · BEGIN</div>
-          <h2 className="font-display text-[48px] sm:text-[64px] leading-[1.02] tracking-[-0.015em] mb-8">
-            60 seconds from here to <em className="italic text-accent">somewhere new</em>.
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            <Btn variant="primary" href="/jobs" magnetic>Browse jobs →</Btn>
-            <Btn variant="ghost" href="/jobs">Browse jobs</Btn>
+        <section className="hp-beat hp-predict" aria-labelledby="pb-title">
+          <div className="hp-copy">
+            <p className="hp-kicker">PAY · PREDICTED</p>
+            <h2 id="pb-title" className="hp-h2">
+              Know the pay <em>before you board.</em>
+            </h2>
+            <p className="hp-text">
+              One role lifts off the board. Our salary model reads the role and the city and estimates
+              the pay in the local currency. It is labelled a prediction, because it is one.
+            </p>
           </div>
-          <Footnote>{FOOTNOTES.home}</Footnote>
-        </Reveal>
-      </section>
+          <PredictionBeat row={lifted} />
+        </section>
 
-      <footer className="border-t border-paper-rule px-6 sm:px-10 py-10 font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub flex flex-wrap justify-between gap-4 max-w-[1280px] mx-auto">
-        <span>© OpportuMap 2026</span>
-        <span>A sibling of <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-accent underline">Migrova</a></span>
-        <span><Link href="/contact" className="hover:text-accent">Contact</Link> · <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer" className="hover:text-accent">Migrova</a></span>
-      </footer>
-    </div>
+        <NightWindow rows={rows} />
+
+        <GateWalk />
+
+        <section className="hp-beat hp-founder" aria-labelledby="fd-title">
+          <div className="hp-copy">
+            <p className="hp-kicker">ARRIVED</p>
+            <h2 id="fd-title" className="hp-h2">
+              One row on this board <em>already made it.</em>
+            </h2>
+          </div>
+          <FounderBeat rows={rows} founder={FOUNDER_ROW} columns={BOARD_COLUMNS} />
+        </section>
+
+        <WhereTo />
+
+        <footer className="hp-foot">
+          <span>© OpportuMap 2026</span>
+          <Link href="/contact">Contact</Link>
+          <a href="https://migrova.netlify.app" target="_blank" rel="noopener noreferrer">
+            A sibling of Migrova
+          </a>
+        </footer>
+      </main>
+    </>
   );
 }

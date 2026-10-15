@@ -1,0 +1,336 @@
+/* ─── Homepage: the departures board (app/page.js, app/components/home/) ─────────────────────
+   The black terminal hall, top to bottom: the board, the prediction, the window, the gates, the
+   founder's row, where to. Every beat's final state is the plain CSS below (what the server
+   sends, and what reduced motion keeps); its motion lives in the no-preference blocks, keyed on
+   data-beat="armed" (scrolled below the fold, waiting) and data-beat="play" (Beat.js). Only
+   transform, opacity and the arcs' stroke-dashoffset move. Palette: globals.css tokens. */
+
+.hp { flex: 1 0 auto; }
+.hp > section,
+.hp-foot { width: min(100% - 32px, 1040px); margin-inline: auto; }
+@media (min-width: 640px) {
+  .hp > section,
+  .hp-foot { width: min(100% - 64px, 1040px); }
+}
+
+.hp-kicker {
+  margin: 0;
+  font: 500 12px/1.5 var(--font-board);
+  letter-spacing: 0.22em;
+  color: var(--sign);
+}
+.hp-h1,
+.hp-h2 {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  text-wrap: balance;
+}
+.hp-h1 {
+  margin: 12px 0 0;
+  max-width: 15ch;
+  font-size: clamp(36px, 6.4vw + 12px, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+.hp-h2 {
+  margin: 10px 0 0;
+  max-width: 20ch;
+  font-size: clamp(28px, 3.4vw + 14px, 48px);
+  line-height: 1.06;
+  letter-spacing: -0.025em;
+}
+.hp-h1 em,
+.hp-h2 em { font-style: normal; color: var(--sign); }
+.hp-text { margin: 14px 0 0; max-width: 56ch; font-size: 16px; line-height: 1.55; color: var(--ink-dim); }
+@media (min-width: 640px) {
+  .hp-text { font-size: 17px; }
+}
+.hp-copy { max-width: 680px; }
+
+/* ── 1 · The board ── */
+.hp-hero { padding: 28px 0 48px; }
+@media (min-width: 900px) {
+  .hp-hero { padding: 56px 0 72px; }
+}
+.hb { margin-top: 28px; max-width: 900px; }
+.hp-after { margin: 14px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-sub); }
+.hp-more {
+  display: inline-block;
+  padding: 6px 0;
+  color: var(--sign);
+  font-weight: 600;
+  text-decoration: none;
+}
+.hp-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.hp-more:focus-visible,
+.hp-foot a:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; border-radius: 3px; }
+
+.hp-beat { padding: 56px 0; border-top: 1px solid var(--rule); }
+@media (min-width: 900px) {
+  .hp-beat { padding: 88px 0; }
+}
+
+/* ── 2 · The prediction: one row lifted off the board ── */
+.pb { margin: 28px 0 0; max-width: 600px; }
+.pb-card {
+  position: relative;
+  container-type: inline-size;
+  padding: 14px 14px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--hall-2);
+  transform: translateY(-6px);
+}
+.pb-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 197, 49, 0.4);
+  pointer-events: none;
+}
+.pb-row {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  font-size: min(17px, (100cqi - 112px) / 16.2); /* 27 tiles + 2 gaps fill the card */
+  color: var(--ink);
+}
+.pb-row .pb-code { color: var(--sign); }
+.pb-label {
+  margin: 16px 0 6px;
+  font: 500 11px/1.2 var(--font-board);
+  letter-spacing: 0.16em;
+  color: var(--ink-sub);
+}
+.pb-pay {
+  margin: 0;
+  font-size: min(30px, (100cqi - 80px) / 13.8); /* 23 tiles fill the card */
+  color: var(--sign);
+}
+.pb-note { margin: 14px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+
+/* ── 3 · The window: the world at night ── */
+.nw-window {
+  position: relative;
+  margin-top: 28px;
+  aspect-ratio: 1000 / 560;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: radial-gradient(120% 95% at 45% 38%, #0f1a2e 0%, #070b14 58%, #04060b 100%);
+}
+.nw-lights,
+.nw-routes { position: absolute; inset: 0; width: 100%; height: 100%; }
+.nw-glow,
+.nw-dots,
+.nw-arc { fill: none; stroke-linecap: round; }
+.nw-glow { stroke: var(--amber); stroke-opacity: 0.2; stroke-width: 11; vector-effect: non-scaling-stroke; }
+.nw-dots { stroke: #ffd894; stroke-width: 3; vector-effect: non-scaling-stroke; }
+.nw-arc { stroke: var(--sign); stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 0; }
+@media (max-width: 639px) {
+  .nw-glow { stroke-width: 6; stroke-opacity: 0.24; }
+  .nw-dots { stroke-width: 2.2; }
+  .nw-arc { stroke-width: 5.5; }
+}
+.nw-pin { position: absolute; width: 0; height: 0; }
+.nw-pin::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sign);
+  box-shadow: 0 0 0 3px rgba(255, 197, 49, 0.25);
+}
+.nw-from::before { background: var(--ink); box-shadow: 0 0 0 3px rgba(244, 241, 230, 0.25); }
+.nw-pin > span {
+  position: absolute;
+  left: 9px;
+  top: -10px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  background: rgba(10, 11, 13, 0.8);
+  color: var(--ink);
+  font: 500 11px/1 var(--font-board);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.nw-pin[data-flip] > span { left: auto; right: 9px; }
+.nw-cap {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  margin: 0 10px 0 0;
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: rgba(4, 6, 11, 0.82);
+  font: 500 11px/1.3 var(--font-board);
+  letter-spacing: 0.14em;
+  color: #ffcf7a;
+}
+
+/* ── 4 · The gates ── */
+.gw-list { display: grid; gap: 10px; margin: 28px 0 0; padding: 0; list-style: none; }
+@media (min-width: 900px) {
+  .gw-list { grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+}
+.gw-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-2);
+  color: var(--ink);
+  text-decoration: none;
+}
+.gw-link .gs { flex: none; width: 10.6em; }
+.gw-what { flex: 1; min-width: 0; font-size: 16px; line-height: 1.4; color: var(--ink-dim); }
+.gw-go { flex: none; color: var(--sign); font: 500 18px/1 var(--font-board); transition: transform 0.18s var(--ease); }
+.gw-link:hover .gw-go { transform: translateX(3px); }
+.gw-link:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+/* ── 5 · Your row: the board dims, the founder's row is lit gold ── */
+.fd { margin-top: 28px; }
+.fd .fb { max-width: 900px; }
+/* Dimmed, every colour these rows use (ink, sign, info, ok) still reads ≥ 4.7:1 on the lightest
+   part of a tile; opacity is also what the dimming animates. */
+.fd .fb-row[data-tone='off'] { opacity: 0.65; }
+.fd .fb-row[data-tone='lit'] :is(.fb-cell, .flap, .flap-plain) { color: var(--sign); }
+.fd .fb-row[data-tone='lit']::before {
+  content: '';
+  position: absolute;
+  inset: 2px -6px;
+  border: 1px solid rgba(255, 197, 49, 0.6);
+  border-radius: 8px;
+  box-shadow: 0 0 28px rgba(255, 197, 49, 0.25);
+  pointer-events: none;
+}
+.fd-line {
+  margin: 22px 0 0;
+  max-width: 34ch;
+  font: 600 clamp(20px, 1.6vw + 14px, 28px)/1.3 var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* ── 6 · Where to? ── */
+.wt-form { display: grid; gap: 12px; max-width: 640px; }
+.wt-label { font: 500 13px/1.2 var(--font-board); letter-spacing: 0.2em; color: var(--ink-sub); }
+.wt-board {
+  container-type: inline-size;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--hall-2);
+  color: var(--sign);
+}
+.wt-board .flap-tiles,
+.wt-board .flap-sr,
+.wt-board .flap-plain { font-size: min(32px, (100cqi - 62px) / 10.8); /* 18 tiles fill the board */ }
+.wt-board .flap-plain { min-height: 1.42em; line-height: 1.42; }
+.wt-input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 400 16px/1.4 var(--font-sans);
+}
+.wt-input::placeholder { color: var(--ink-sub); opacity: 1; }
+.wt-input::-webkit-search-cancel-button { appearance: none; }
+.wt-input:focus-visible,
+.wt-go:focus-visible,
+.wt-pc:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+.wt-go {
+  justify-self: start;
+  min-height: 48px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 15px/1 var(--font-board);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: transform 0.16s var(--ease);
+}
+.wt-go:hover { transform: translateY(-1px); }
+.wt-pc {
+  display: inline-grid;
+  gap: 4px;
+  max-width: 100%;
+  margin-top: 28px;
+  padding: 12px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-2);
+  color: var(--ink);
+  text-decoration: none;
+}
+.wt-pc-sign { font: 500 14px/1.35 var(--font-board); letter-spacing: 0.1em; }
+.wt-pc-name { color: var(--sign); letter-spacing: 0.02em; }
+.wt-pc-sub { font-size: 16px; line-height: 1.4; color: var(--ink-dim); }
+
+.hp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  padding: 24px 0 40px;
+  border-top: 1px solid var(--rule);
+  font: 500 12px/1.4 var(--font-board);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+}
+.hp-foot > * { padding: 8px 0; }
+.hp-foot a { color: var(--ink-dim); text-decoration: none; }
+.hp-foot a:hover { color: var(--sign); }
+
+/* ── Motion: each beat once, after hydration; nothing here under reduced motion ── */
+@media (prefers-reduced-motion: no-preference) {
+  .pb[data-beat='armed'] .pb-card { transform: none; }
+  .pb[data-beat='armed'] .pb-card::before { opacity: 0; }
+  .pb[data-beat='play'] .pb-card { transition: transform 0.7s var(--ease) 0.15s; }
+  .pb[data-beat='play'] .pb-card::before { transition: opacity 0.7s var(--ease) 0.15s; }
+
+  .nw[data-beat='armed'] .nw-window { opacity: 0; transform: translateY(28px) scale(0.98); }
+  .nw[data-beat='armed'] .nw-arc { stroke-dashoffset: 1; }
+  .nw[data-beat='armed'] :is(.nw-to, .nw-from) { opacity: 0; transform: scale(0.5); }
+  .nw[data-beat='play'] .nw-window { transition: opacity 0.6s var(--ease), transform 0.8s var(--ease); }
+  .nw[data-beat='play'] .nw-from { transition: opacity 0.3s ease 0.5s, transform 0.4s var(--ease) 0.5s; }
+  .nw[data-beat='play'] .nw-arc {
+    transition: stroke-dashoffset 1.3s cubic-bezier(0.45, 0, 0.2, 1);
+    transition-delay: calc(0.7s + var(--i) * 0.25s);
+  }
+  .nw[data-beat='play'] .nw-to {
+    transition: opacity 0.3s ease, transform 0.4s var(--ease);
+    transition-delay: calc(1.8s + var(--i) * 0.25s);
+  }
+
+  .gw[data-beat='armed'] .gw-item { opacity: 0; transform: translateX(-40px); }
+  .gw[data-beat='play'] .gw-item {
+    transition: opacity 0.45s var(--ease), transform 0.55s var(--ease);
+    transition-delay: calc(var(--i) * 80ms);
+  }
+
+  .fd[data-beat='armed'] .fb-row[data-tone='off'] { opacity: 1; }
+  .fd[data-beat='armed'] .fb-row[data-tone='lit']::before,
+  .fd[data-beat='armed'] .fd-line { opacity: 0; }
+  .fd[data-beat='play'] .fb-row[data-tone='off'] { transition: opacity 0.9s var(--ease) 0.2s; }
+  .fd[data-beat='play'] .fb-row[data-tone='lit']::before { transition: opacity 0.8s var(--ease) 0.9s; }
+  .fd[data-beat='play'] .fd-line { transition: opacity 0.8s var(--ease) 1.6s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gw-go,
+  .wt-go { transition: none; }
+  .gw-link:hover .gw-go,
+  .wt-go:hover { transform: none; }
+}
