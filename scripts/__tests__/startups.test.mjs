@@ -135,7 +135,8 @@ test('startups + messages routes: the user session client only, no manual counte
     assert.match(src, /supabase-server\.js|lib\/startupToggle\.js/, `${r} uses the cookie client`);
     assert.ok(!/\bsupabase\s*\.\s*(from|rpc|storage)\s*\(/.test(src), `${r} must not query with the anon client`);
     assert.ok(!/upvote_count\s*:|interest_count\s*:/.test(src), `${r} must not write counters`);
-    assert.ok(!/user_name/.test(src), `${r} must not set user_name`);
+    // Reading the founder's public name in a .select('…') is fine (the inbox shows it); setting it is not.
+    assert.ok(!/user_name/.test(src.replace(/\.select\(\s*'[^']*'\s*\)/g, '')), `${r} must not set user_name`);
   }
 });
 
