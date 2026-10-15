@@ -248,7 +248,7 @@ html:has(#cl-letter:focus) {
   border: 1px solid var(--rule);
   border-radius: 6px;
   background: var(--hall-3);
-  font: 500 14px/1.3 var(--font-board);
+  font: 500 16px/1.35 var(--font-board);
   color: var(--ink);
   overflow-wrap: anywhere;
 }

@@ -240,7 +240,8 @@ export default function AirmailDesk() {
 
   // The letter grows with its text, so the page scrolls and the letter never does. fitToText
   // measures it without the page ever getting shorter, so typing near the end of a long letter
-  // never moves the page.
+  // never moves the page. Because it never scrolls itself, the letter carries no
+  // data-lenis-prevent: the wheel over it scrolls the page as smoothly as anywhere else.
   const shown = edited ?? result?.letter ?? '';
   const fittedWidth = useRef(0);
   useLayout(() => {
@@ -634,7 +635,6 @@ export default function AirmailDesk() {
               data-busy={writing ? '' : undefined}
               rows={14}
               spellCheck
-              data-lenis-prevent=""
             />
             {wasEdited && (
               <p className="cl-edits">

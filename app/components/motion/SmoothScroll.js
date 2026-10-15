@@ -23,7 +23,15 @@ export default function SmoothScroll() {
     };
     rafId = requestAnimationFrame(raf);
 
+    // <html> is h-full, so it never changes size and Lenis's own observer on it never fires when
+    // the page grows after load (a letter written, results shown). Its scroll limit would stay at
+    // the first page height and clamp every wheel scroll there. The body grows with the page, so
+    // re-measure when it does (sizes only: a smooth scroll in progress carries on).
+    const grows = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => lenis.dimensions.resize());
+    grows?.observe(document.body);
+
     return () => {
+      grows?.disconnect();
       cancelAnimationFrame(rafId);
       lenis.destroy();
     };

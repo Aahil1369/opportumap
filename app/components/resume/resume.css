@@ -299,8 +299,9 @@
 }
 .rs-h { margin: 0 0 14px; font: 600 12px/1.5 var(--font-board); letter-spacing: 0.18em; color: var(--sign); }
 .rs-h-sub {
-  margin-left: 6px;
-  font: 400 14px/1.5 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  display: block;
+  margin-top: 2px;
+  font: 400 16px/1.5 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: 0;
   color: var(--ink-sub);
 }

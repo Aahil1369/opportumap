@@ -360,3 +360,21 @@ test('resume.css moves only transform and opacity', () => {
   assert.ok(!/backdrop-filter|\bfilter\s*:/.test(css), 'no filters');
   assert.ok(!/\b\d+(?:\.\d+)?vh\b/.test(css), 'svh/dvh, not vh');
 });
+
+test('resume.css: text you read is 16px on phones; the heading notes sit on their own line', () => {
+  const css = readFileSync(join(ROOT, 'app/components/resume/resume.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const m of css.matchAll(/font(?:-size)?\s*:\s*[^;]*?\b(1[0-5]|\d)px[^;]*?var\(--font-inter\)/g)) {
+    assert.fail(`Inter text under 16px: ${m[0]}`);
+  }
+  // The sub-labels match /interview's .iv-h-note and /cover-letter's .cl-h-note: a 16px block
+  // under the 12px mono heading, never wrapping beside it.
+  const sub = /\.rs-h-sub\s*\{([^}]*)\}/.exec(css);
+  assert.ok(sub, '.rs-h-sub');
+  assert.match(sub[1], /display:\s*block/);
+  assert.match(sub[1], /font:[^;]*\b16px\b/);
+  const chip = /\.rs-chip\s*\{([^}]*)\}/.exec(css);
+  assert.ok(chip && /font:[^;]*\b16px\b/.test(chip[1]), '.rs-chip is 16px');
+  for (const m of css.matchAll(/\.rs-(?:h-sub|chip)\b[^{]*\{([^}]*)\}/g)) {
+    assert.doesNotMatch(m[1], /font-size:\s*(?:1[0-5]|\d)px/, 'no rule shrinks them again');
+  }
+});

@@ -473,6 +473,54 @@ test('while the letter is typed in, no scroll anchoring moves the page, and the 
   assert.match(all, /scroll-padding-top:/, 'and below the sticky navbar');
 });
 
+/** The ids of the elements in `rel` that carry data-lenis-prevent (and how many carry it). */
+function lenisPrevented(rel) {
+  const ids = [];
+  let count = 0;
+  eachNode(parse(read(rel), rel), (node) => {
+    if (node.type !== 'JSXElement') return;
+    const a = attrs(node);
+    if (!('data-lenis-prevent' in a)) return;
+    count += 1;
+    if (typeof a.id === 'string') ids.push(a.id);
+  });
+  return { ids, count };
+}
+
+test('data-lenis-prevent only on panels that really scroll: never on the letter, which grows to fit', () => {
+  // Lenis skips wheel events under the attribute, so a letter carrying it would scroll the page
+  // natively (or fight Lenis) while everything around it scrolls smoothly.
+  const desk = lenisPrevented(DESK);
+  assert.ok(!desk.ids.includes('cl-letter'), '#cl-letter carries no data-lenis-prevent');
+  assert.deepEqual(desk.ids, ['cl-jd'], 'only the job description, which scrolls inside itself');
+  assert.equal(desk.count, desk.ids.length, 'every prevented element is a named panel');
+  const sim = lenisPrevented('app/components/interview/Simulator.js');
+  assert.deepEqual([...sim.ids].sort(), ['iv-answer', 'iv-desc'], 'the interview answer and description keep it');
+});
+
+test('Lenis re-measures when the page grows, so a wheel over the letter is never clamped to the first page height', () => {
+  // <html> is h-full: Lenis's own ResizeObserver (on <html>) never fires when a letter is written
+  // and the page grows, so its scroll limit would stay at the empty page's.
+  assert.match(read('app/layout.js'), /<html\b[^>]*\bh-full\b/, 'the reason: <html> is h-full');
+  const src = read('app/components/motion/SmoothScroll.js');
+  assert.match(src, /new ResizeObserver\(\s*\(\)\s*=>\s*lenis\.dimensions\.resize\(\)\s*\)/, 're-measures sizes only');
+  assert.match(src, /\.observe\(\s*document\.body\s*\)/, 'watches the body, which grows with the page');
+  assert.match(src, /\.disconnect\(\)/, 'and lets go on unmount');
+  assert.doesNotMatch(src, /lenis\.resize\(\)/, 'lenis.resize() would stop a smooth scroll in progress');
+});
+
+test('the keyword chips are 16px, like the ones on /resume', () => {
+  const css = read('app/components/coverLetter/coverLetter.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const chip = /\.cl-chip\s*\{([^}]*)\}/.exec(css);
+  assert.ok(chip, '.cl-chip');
+  assert.match(chip[1], /font:[^;]*\b16px\b/, '.cl-chip is 16px');
+  const note = /\.cl-h-note\s*\{([^}]*)\}/.exec(css);
+  assert.ok(note && /display:\s*block/.test(note[1]) && /\b16px\b/.test(note[1]), '.cl-h-note is a 16px block');
+  for (const m of css.matchAll(/\.cl-chip\b[^{]*\{([^}]*)\}/g)) {
+    assert.doesNotMatch(m[1], /font-size:\s*(?:1[0-5]|\d)px/, 'no rule shrinks the chips again');
+  }
+});
+
 test('Copy and Download use letterText (the edited text); the clipboard sits in try/catch with a fallback', () => {
   const src = read(DESK);
   const copy = fnSource(src, 'copyLetter');
