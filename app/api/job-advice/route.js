@@ -13,10 +13,17 @@ const groq = () => (client ??= new Groq({ apiKey: process.env.GROQ_API_KEY }));
 
 const VERDICTS = new Set(['apply', 'maybe', 'skip']);
 
-// Advice for visitors with no profile is the same for everyone: kept per role while this server
-// instance lives, so a popular role costs one model call, not one per visitor.
+// Advice for visitors with no profile is the same for everyone who asks the same question: kept
+// while this server instance lives, so a popular role costs one model call, not one per visitor.
+// The key is the exact prompt the model reads (the description and the pay too), never just the
+// role's name: the client sends every field, so a request that changes what the model reads is a
+// new question, and nobody can plant an answer that other visitors are served for that role.
 const ANON = new Map();
 const ANON_MAX = 300;
+
+// What the model reads of a job, each field capped: the client sends all of them, and they make
+// up the prompt (so the cost of a call) and the cache key.
+export const FIELD_CAPS = { title: 200, company: 120, location: 120, salary: 80, description: 500 };
 
 /** The one failure answer: the gate shows "Announcement unavailable right now." */
 export function adviceFailure() {
@@ -47,10 +54,25 @@ export function parseAdvice(raw) {
   return advice;
 }
 
+/**
+ * One job field as the model reads it: text (or a number) on one line, at most `max` long; anything
+ * else, or nothing, is 'not specified'. `html` strips tags (the description).
+ */
+function field(v, max, { html = false } = {}) {
+  if (typeof v === 'number' && Number.isFinite(v)) v = String(v);
+  if (typeof v !== 'string') return 'not specified';
+  // Cut first (8x the room leaves plenty for tags and spaces), so no request makes the tag strip
+  // below scan more than that.
+  let s = v.slice(0, max * 8);
+  if (html) s = s.replace(/<[^>]+>/g, ' ');
+  s = s.replace(/\s+/g, ' ').trim().slice(0, max).replace(/[\uD800-\uDBFF]$/, '');
+  return s || 'not specified';
+}
+
 /** The messages for one role: for this visitor (a profile), or for everyone applying (none). */
 export function advicePrompt(job, profile) {
-  const description = String(job?.description || '').replace(/<[^>]+>/g, ' ').slice(0, 500);
-  const jobSummary = `Title: ${job?.title}. Company: ${job?.company}. Location: ${job?.location}. Salary: ${job?.salary}. Description: ${description}`;
+  const f = (name, opts) => field(job?.[name], FIELD_CAPS[name], opts);
+  const jobSummary = `Title: ${f('title')}. Company: ${f('company')}. Location: ${f('location')}. Salary: ${f('salary')}. Description: ${f('description', { html: true })}`;
   if (!profile) {
     return {
       system: `You are a career advisor for OpportuMap, a global job platform. Given a job, write a short announcement for everyone thinking of applying to it: who is a strong fit (the skills and experience this role asks for) and what to check before applying (for example, whether the employer sponsors work visas for international candidates). Be specific to this job, honest and friendly. Return a JSON object with: headline (one sentence, max 14 words, saying who is a strong fit, like "Strong fit if you have shipped React and TypeScript in production"), reasons (array of 3 short strings: what the role needs, or what to check), and tips (array of 2 short application tips).`,
@@ -79,11 +101,12 @@ export async function POST(request) {
   }
   if (!job || typeof job !== 'object') return Response.json({ error: 'Job required' }, { status: 400 });
 
-  const anonKey = profile ? null : [job.title, job.company, job.location].map((v) => String(v ?? '')).join('|');
-  if (anonKey && ANON.has(anonKey)) return Response.json(ANON.get(anonKey));
-
   try {
     const { system, user } = advicePrompt(job, profile);
+    // No profile: the system prompt is fixed, so the user prompt is the whole question (see ANON).
+    const anonKey = profile ? null : user;
+    if (anonKey && ANON.has(anonKey)) return Response.json(ANON.get(anonKey));
+
     const completion = await groq().chat.completions.create({
       ...GROQ_FAST_OPTIONS,
       max_tokens: 600, // gpt-oss reasoning tokens count toward this

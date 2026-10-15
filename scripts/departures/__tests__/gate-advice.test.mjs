@@ -61,9 +61,18 @@ test('advicePrompt: with no profile it speaks to everyone applying (never "insuf
   assert.match(mine.system, /whether they should apply/);
 });
 
-test('advice for visitors with no profile is kept on the server per role (one model call per role)', () => {
-  const src = read('app/api/job-advice/route.js');
-  assert.match(src, /const ANON = new Map\(\)/);
+// The no-profile server cache (kept per exact prompt, so a changed description is never a hit) is
+// run for real in job-advice-cache.test.mjs.
+test('advicePrompt caps every job field, for the profile prompt too', () => {
+  assert.deepEqual(ROUTE.FIELD_CAPS, { title: 200, company: 120, location: 120, salary: 80, description: 500 });
+  const big = { title: 'T'.repeat(9000), company: 'C'.repeat(9000), location: 'L'.repeat(9000), salary: 'S'.repeat(9000), description: `<b>${'D'.repeat(9000)}</b>` };
+  for (const profile of [null, { skills: 'Go' }]) {
+    const { user } = ROUTE.advicePrompt(big, profile);
+    assert.match(user, /Title: T{200}\. Company: C{120}\. Location: L{120}\. Salary: S{80}\. Description: D{500}\n/);
+  }
+  // A cut never leaves half an emoji behind.
+  const { user } = ROUTE.advicePrompt({ title: `${'x'.repeat(199)}🛫` }, null);
+  assert.match(user, /Title: x{199}\. Company: not specified\./);
 });
 
 test('parseAdvice: fenced JSON is read, markdown asterisks are stripped from headline and reasons', () => {
