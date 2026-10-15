@@ -1,0 +1,542 @@
+/* ─── /cover-letter — the airmail desk ───────────────────────────────────────────────────────
+   The desk (the job, the resume, the tone luggage tags), the editable letter, its keywords and
+   notes, and the PAR AVION envelope the letter folds into on Copy or Download (Envelope.js).
+   Palette from app/globals.css; mono labels in --font-board. Motion: transform and opacity only,
+   all inside prefers-reduced-motion: no-preference; reduced motion shows the sealed envelope at
+   once. */
+
+.cl {
+  --airmail: repeating-linear-gradient(135deg, var(--warn) 0 9px, var(--hall-3) 9px 14px, var(--info) 14px 23px, var(--hall-3) 23px 28px);
+  display: grid;
+  gap: 14px;
+}
+.cl [hidden] { display: none !important; }
+
+.cl-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+  padding: 18px;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+}
+.cl-h { margin: 0; font: 600 12px/1.5 var(--font-board); letter-spacing: 0.18em; color: var(--sign); }
+.cl-h:focus { outline: none; } /* focused only to be read out */
+.cl-h-note {
+  display: block;
+  margin-top: 2px;
+  font: 400 16px/1.5 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+  color: var(--ink-sub);
+}
+.cl-k { margin-right: 6px; font: 600 12px/1.4 var(--font-board); letter-spacing: 0.16em; color: var(--ink-sub); }
+.cl-k-ok { color: var(--ok); }
+
+/* ─── Buttons ─── */
+.cl-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.cl-actions .cl-btn { flex: 1 1 auto; }
+.cl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 16px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+  cursor: pointer;
+}
+.cl-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
+.cl-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+.cl-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+.cl-btn-s { min-height: 44px; padding: 0 16px; }
+.cl-btn[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; }
+.cl-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--sign);
+  font: 600 16px/1.3 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.cl-link:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; border-radius: 4px; }
+
+/* ─── Status lines and alerts ─── */
+.cl-status { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); overflow-wrap: anywhere; }
+.cl-status-w { margin-right: 4px; font: 600 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--info); }
+.cl-lamp {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--info);
+  vertical-align: 1px;
+}
+.cl-error {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 55%, transparent);
+  border-radius: 10px;
+  background: var(--hall);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.cl-error-w { margin-right: 4px; font: 600 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--warn); }
+
+/* ─── The desk ─── */
+.cl-f { display: grid; gap: 6px; min-width: 0; }
+.cl-label { padding: 0; font: 600 16px/1.4 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink); }
+.cl-opt { font-weight: 400; color: var(--ink-sub); }
+.cl-field {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+.cl-field::placeholder { color: var(--ink-sub); opacity: 1; }
+.cl-field:focus-visible { outline: 2px solid var(--sign); outline-offset: 1px; border-color: transparent; }
+.cl-area { min-height: 168px; resize: vertical; }
+.cl-hint { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-sub); }
+
+.cl-attach { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.cl-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 6px 4px 12px;
+  border: 1px dashed var(--rule);
+  border-radius: 10px;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.cl-file-tag { flex: none; padding: 3px 6px; border-radius: 4px; background: var(--info); color: var(--sign-ink); font: 700 11px/1 var(--font-board); letter-spacing: 0.1em; }
+.cl-file-n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cl-file-s { color: var(--ink-sub); }
+
+/* The tone picker: three luggage tags (radios). Each tag is a clipped plate with a punched hole,
+   its three-letter code and its name; the picked one is the yellow priority tag, hung a little
+   askew. */
+.cl-tones { min-width: 0; margin: 0; padding: 0; border: 0; }
+.cl-tones legend { margin-bottom: 8px; }
+.cl-tags { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.cl-tag {
+  --cut: 16px;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 14px;
+  min-height: 68px;
+  padding: 12px 14px 12px 42px;
+  border-radius: 4px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.cl-tag-in { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.cl-tag-shape {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--rule);
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut));
+}
+.cl-tag-shape::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--hall-3);
+  clip-path: polygon(calc(var(--cut) - 0.5px) 0, 100% 0, 100% 100%, calc(var(--cut) - 0.5px) 100%, 0 calc(100% - var(--cut) + 0.5px), 0 calc(var(--cut) - 0.5px));
+}
+.cl-tag-hole {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--hall-2);
+  box-shadow: inset 0 0 0 2px var(--ink-sub);
+}
+.cl-tag-code { font: 700 22px/1 var(--font-board); letter-spacing: 0.06em; color: var(--sign); }
+.cl-tag-t { display: grid; min-width: 0; }
+.cl-tag-name { font: 600 16px/1.35 var(--font-inter), ui-sans-serif, system-ui, sans-serif; }
+.cl-tag-desc { font: 400 16px/1.35 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink-dim); }
+.cl-tag:hover .cl-tag-shape { background: var(--ink-sub); }
+.cl-tag:has(.cl-tag-in:focus-visible) { outline: 2px solid var(--sign); outline-offset: 3px; }
+.cl-tag[data-on] { color: var(--sign-ink); transform: rotate(-1.2deg); }
+.cl-tag[data-on] .cl-tag-shape,
+.cl-tag[data-on] .cl-tag-shape::after { background: var(--sign); }
+.cl-tag[data-on] .cl-tag-code,
+.cl-tag[data-on] .cl-tag-desc { color: var(--sign-ink); }
+.cl-tag[data-on] .cl-tag-hole { background: var(--hall-2); box-shadow: inset 0 0 0 2px var(--sign-ink); }
+
+.cl-sender { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); overflow-wrap: anywhere; }
+.cl-sender b { font-weight: 600; color: var(--ink); }
+
+/* How it works, before the first letter */
+.cl-proc { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.cl-proc li { display: grid; gap: 4px; padding: 14px 16px; border: 1px dashed var(--rule); border-radius: 12px; }
+.cl-proc-k { font: 600 12px/1.4 var(--font-board); letter-spacing: 0.16em; color: var(--sign); }
+.cl-proc-t { font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+
+/* ─── The letter ─── */
+.cl-letter { position: relative; padding-top: 24px; }
+.cl-stripes { position: absolute; top: 0; left: 0; right: 0; height: 6px; border-radius: 13px 13px 0 0; background: var(--airmail); }
+.cl-letter-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 16px; }
+.cl-readout { margin: 0; font: 500 12px/1.5 var(--font-board); letter-spacing: 0.14em; color: var(--ink-sub); }
+.cl-edited { color: var(--amber); }
+.cl-subject { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--hall-3); font-size: 16px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+.cl-open { display: grid; gap: 10px; }
+.cl-letter-l { margin-top: 2px; }
+.cl-paper { min-height: 320px; padding: 16px 18px; line-height: 1.7; resize: none; overflow-y: auto; }
+.cl-paper[data-busy] { opacity: 0.5; }
+.cl-edits { display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.cl-edits .cl-k { color: var(--amber); }
+
+/* The letter's actions ride along the bottom of the screen while the letter is on it. */
+.cl-bar { display: flex; flex-wrap: wrap; gap: 8px; }
+.cl-bar .cl-btn { flex: 1 1 auto; min-height: 44px; padding: 0 14px; }
+.cl-open .cl-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -18px -18px;
+  padding: 10px 18px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  border-radius: 0 0 13px 13px;
+  background: var(--hall-2);
+}
+
+/* Keywords and notes */
+.cl-pair { display: grid; gap: 14px; }
+.cl-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.cl-chip {
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--hall-3);
+  font: 500 14px/1.3 var(--font-board);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.cl-chip::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ink-sub);
+  vertical-align: 1px;
+}
+.cl-notes { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.cl-notes li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 8px; font-size: 16px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+.cl-mark { font: 700 15px/1.6 var(--font-board); color: var(--sign); }
+
+.cl-foot { max-width: 60ch; margin: 40px 0 0; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 16px; line-height: 1.55; color: var(--ink-sub); }
+
+/* ─── Sealed: the PAR AVION envelope ───
+   --ew × --eh is the envelope; --ph is a third of the letter (the folded sheet); --sw its width.
+   The line above the envelope and the gap under it hold the folded sheet, which waits there
+   before it slides in. */
+.cl-sealed {
+  --ew: 248px;
+  --eh: 150px;
+  --ph: 70px;
+  --sw: 204px;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 4px 0 0;
+}
+.cl-sealed-s { display: grid; align-content: end; min-height: calc(var(--ph) - 10px); max-width: 40ch; margin: 0; text-align: center; }
+.cl-sealed-s:focus { outline: none; }
+.cl-sealed-t { font-size: 16px; line-height: 1.5; color: var(--ink); }
+.cl-sealed-bar { justify-content: center; width: 100%; }
+
+.env { position: relative; width: var(--ew); height: var(--eh); }
+.env-back,
+.env-front,
+.env-rise { position: absolute; inset: 0; }
+.env:not([data-play]) .env-back { display: none; } /* sealed already: only the front */
+
+/* The back: the open flap, the sheet, the pocket, the flap that closes */
+.env-flap-open {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: calc(var(--eh) * 0.56);
+  background: var(--rule);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+}
+.env-pocket {
+  position: absolute;
+  inset: 0;
+  border: 6px solid transparent;
+  border-radius: 6px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--rule) 50%, transparent calc(50% + 0.75px)) left bottom / 50% 64% no-repeat padding-box,
+    linear-gradient(to top left, transparent calc(50% - 0.75px), var(--rule) 50%, transparent calc(50% + 0.75px)) right bottom / 50% 64% no-repeat padding-box,
+    linear-gradient(var(--hall-3), var(--hall-3)) padding-box,
+    var(--airmail) border-box;
+}
+.env-flap-shut {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--eh) * 0.56);
+  background: var(--rule);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: 50% 0;
+}
+.env-wax {
+  position: absolute;
+  bottom: 22%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 50%;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 13px/24px var(--font-board);
+  text-align: center;
+}
+
+/* The letter: three thirds, each fold a scaleY on the panel and then on its back */
+.env-sheet {
+  position: absolute;
+  top: calc(var(--ph) * -2);
+  left: calc((var(--ew) - var(--sw)) / 2);
+  width: var(--sw);
+  height: calc(var(--ph) * 3);
+  transform: translateY(calc(var(--ph) + 18px));
+}
+.env-p,
+.env-p-back { position: absolute; left: 0; right: 0; height: var(--ph); }
+.env-p {
+  padding: 11px 16px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 10px, color-mix(in srgb, var(--hall) 20%, transparent) 10px 12px) content-box,
+    var(--ink);
+}
+.env-p-top { top: 0; transform-origin: 50% 100%; transform: scaleY(0); }
+.env-p-mid { top: var(--ph); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--hall) 18%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--hall) 18%, transparent); }
+.env-p-bot { top: calc(var(--ph) * 2); transform-origin: 50% 0; transform: scaleY(0); }
+.env-p-back { top: var(--ph); background: color-mix(in srgb, var(--ink) 86%, var(--hall)); }
+.env-p-bot-back { transform-origin: 50% 100%; }
+.env-p-top-back { transform-origin: 50% 0; box-shadow: 0 -1px 0 color-mix(in srgb, var(--hall) 25%, transparent); }
+
+/* The front: what stays on the desk */
+.env-front {
+  border: 6px solid transparent;
+  border-radius: 6px;
+  background: linear-gradient(var(--hall-3), var(--hall-3)) padding-box, var(--airmail) border-box;
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--hall) 70%, transparent);
+}
+.env-label {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  display: grid;
+  gap: 2px;
+  padding: 4px 7px;
+  border: 1.5px solid var(--info);
+  border-radius: 3px;
+  color: var(--info);
+}
+.env-label b { font: 700 12px/1.1 var(--font-board); letter-spacing: 0.12em; }
+.env-label small { font: 500 8px/1.1 var(--font-board); letter-spacing: 0.22em; }
+.env-stamp {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 40px;
+  height: 48px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  outline: 2px dashed var(--hall-3);
+  outline-offset: -4px;
+  transform: rotate(4deg);
+}
+.env-stamp b { font: 800 22px/1 var(--font-board); }
+.env-stamp small { margin-top: 2px; font: 600 6.5px/1 var(--font-board); letter-spacing: 0.12em; }
+.env-mark {
+  position: absolute;
+  top: 16px;
+  right: 44px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1.5px solid var(--ink-dim);
+  border-radius: 50%;
+  color: var(--ink-dim);
+  transform: rotate(-12deg);
+}
+.env-mark::before {
+  content: '';
+  position: absolute;
+  top: 32%;
+  right: 100%;
+  width: 34px;
+  height: 36%;
+  background: repeating-linear-gradient(to bottom, var(--ink-sub) 0 1.5px, transparent 1.5px 6px);
+}
+.env-mark small { font: 500 5.5px/1.2 var(--font-board); letter-spacing: 0.08em; white-space: nowrap; }
+.env-mark b { font: 700 7.5px/1.3 var(--font-board); letter-spacing: 0.02em; white-space: nowrap; }
+.env-addr {
+  position: absolute;
+  left: 22%;
+  right: 8%;
+  bottom: 10%;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.env-addr small { font: 500 8px/1.2 var(--font-board); letter-spacing: 0.22em; color: var(--ink-sub); }
+.env-addr b { font: 700 12px/1.3 var(--font-board); letter-spacing: 0.06em; color: var(--ink); }
+.env-re {
+  display: -webkit-box;
+  overflow: hidden;
+  font: 500 10px/1.35 var(--font-board);
+  color: var(--ink-dim);
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.env-from { display: none; font: 500 9px/1.35 var(--font-board); color: var(--ink-sub); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+@media (min-width: 400px) {
+  .cl-sealed { --ew: 280px; --eh: 168px; --ph: 78px; --sw: 230px; }
+  .env-from { display: block; }
+}
+
+@media (min-width: 640px) {
+  .cl-card { padding: 22px 24px 24px; }
+  .cl-letter { padding-top: 28px; }
+  .cl-open .cl-bar { margin: 0 -24px -24px; padding: 12px 24px calc(12px + env(safe-area-inset-bottom)); }
+  .cl-bar .cl-btn { flex: 0 1 auto; }
+  .cl-actions .cl-btn { flex: 0 1 auto; }
+  .cl-paper { padding: 20px 24px; }
+  .cl-sealed { --ew: 360px; --eh: 216px; --ph: 100px; --sw: 296px; }
+  .env-label { top: 12px; left: 12px; padding: 5px 9px; }
+  .env-label b { font-size: 15px; }
+  .env-label small { font-size: 9px; }
+  .env-stamp { top: 12px; right: 12px; width: 50px; height: 60px; }
+  .env-stamp b { font-size: 28px; }
+  .env-stamp small { font-size: 7.5px; }
+  .env-mark { top: 20px; right: 58px; width: 62px; height: 62px; }
+  .env-mark small { font-size: 6.5px; }
+  .env-mark b { font-size: 9px; }
+  .env-addr b { font-size: 15px; }
+  .env-addr small { font-size: 9px; }
+  .env-re { font-size: 12px; }
+  .env-from { font-size: 10px; }
+  .env-wax { width: 30px; height: 30px; margin-left: -15px; font-size: 15px; line-height: 30px; }
+}
+@media (min-width: 760px) {
+  .cl-proc { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 880px) {
+  .cl-pair { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+
+/* ─── Motion ───
+   The fold, in order (Envelope.js): the bottom third folds up, the top third folds down, the
+   envelope rises in under the sheet, the sheet slides into the pocket, the flap closes, the
+   envelope turns over, the stamp and the postmark land (~2 s). Every keyframe fills both ways,
+   so each part waits in its first pose and stays in its last. */
+@media (prefers-reduced-motion: no-preference) {
+  .cl-btn { transition: transform 0.16s cubic-bezier(.22, 1, .36, 1); }
+  .cl-btn:hover { transform: translateY(-1px); }
+  .cl-btn:active { transform: scale(0.98); }
+  .cl-btn[aria-disabled='true'] { transform: none; }
+  .cl-tag { transition: transform 0.24s cubic-bezier(.34, 1.56, .64, 1); }
+  .cl-paper { transition: opacity 0.25s ease; }
+  .cl-lamp { animation: cl-blink 1.1s ease-in-out infinite; }
+  .cl-lamp[data-off] { animation-play-state: paused; }
+
+  .env[data-play] .env-p-bot { animation: env-fold-away 0.15s cubic-bezier(.55, 0, 1, .45) both; }
+  .env[data-play] .env-p-bot-back { animation: env-fold-over 0.15s cubic-bezier(0, .55, .45, 1) 0.15s both; }
+  .env[data-play] .env-p-top { animation: env-fold-away 0.15s cubic-bezier(.55, 0, 1, .45) 0.32s both; }
+  .env[data-play] .env-p-top-back { animation: env-fold-over 0.15s cubic-bezier(0, .55, .45, 1) 0.47s both; }
+  .env[data-play] .env-rise { animation: env-rise 0.3s cubic-bezier(.22, 1, .36, 1) 0.3s both; }
+  .env[data-play] .env-sheet { animation: env-slide 0.28s cubic-bezier(.65, 0, .35, 1) 0.68s both; }
+  .env[data-play] .env-flap-open { animation: env-fold-away 0.14s cubic-bezier(.55, 0, 1, .45) 0.98s both; }
+  .env[data-play] .env-flap-shut { animation: env-fold-over 0.16s cubic-bezier(0, .55, .45, 1) 1.12s both; }
+  .env[data-play] .env-back { animation: env-turn-away 0.14s cubic-bezier(.55, 0, 1, .45) 1.36s both; }
+  .env[data-play] .env-front { animation: env-turn-in 0.16s cubic-bezier(0, .55, .45, 1) 1.5s both; }
+  .env[data-play] .env-stamp { animation: env-stamp 0.26s cubic-bezier(.34, 1.56, .64, 1) 1.7s both; }
+  .env[data-play] .env-mark { animation: env-mark 0.24s ease-out 1.86s both; }
+  .cl-sealed[data-play] .cl-sealed-t { animation: cl-fade 0.3s ease-out 1.14s both; }
+  .cl-sealed[data-play] .cl-sealed-bar { animation: cl-fade 0.3s ease-out 1.65s both; }
+}
+@keyframes cl-blink {
+  50% { opacity: 0.25; }
+}
+@keyframes cl-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes env-fold-away {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0); }
+}
+@keyframes env-fold-over {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes env-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes env-slide {
+  from { transform: none; }
+  to { transform: translateY(calc(var(--ph) + 18px)); }
+}
+@keyframes env-turn-away {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+@keyframes env-turn-in {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes env-stamp {
+  from { opacity: 0; transform: rotate(4deg) scale(1.6); }
+  to { opacity: 1; transform: rotate(4deg); }
+}
+@keyframes env-mark {
+  from { opacity: 0; transform: rotate(-12deg) scale(1.15); }
+  to { opacity: 1; transform: rotate(-12deg); }
+}

@@ -3,7 +3,10 @@
 // OK, the profile and the resume it sends, and the copy and motion rules on its files.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as espree from 'espree';
 
 const {
   DEFAULT_TONE,
@@ -214,4 +217,208 @@ test('three tones, each one the route knows', () => {
   assert.equal(toneOf('concise').id, 'concise');
   assert.equal(toneOf('shouty').id, DEFAULT_TONE);
   assert.equal(toneOf(undefined).id, DEFAULT_TONE);
+});
+
+// ── Copy and motion rules on the /cover-letter files ────────────────────────────────────────
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+const show = (f) => relative(ROOT, f).split(sep).join('/');
+const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
+function walk(rel) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) return [];
+  if (!statSync(abs).isDirectory()) return [abs];
+  return readdirSync(abs).flatMap((name) => walk(join(rel, name)));
+}
+const SURFACE = ['app/cover-letter', 'app/components/coverLetter', 'lib/departures/coverLetter.js']
+  .flatMap(walk)
+  .filter((f) => /\.(?:js|mjs)$/.test(f));
+const DESK = 'app/components/coverLetter/AirmailDesk.js';
+
+const parse = (src, file) => {
+  try {
+    return espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true }, range: true });
+  } catch (e) {
+    throw new Error(`${file}: ${e.message}`);
+  }
+};
+function eachNode(node, fn) {
+  if (!node || typeof node.type !== 'string') return;
+  fn(node);
+  for (const key of Object.keys(node)) {
+    if (key === 'parent') continue;
+    const v = node[key];
+    if (Array.isArray(v)) v.forEach((c) => eachNode(c, fn));
+    else if (v && typeof v === 'object') eachNode(v, fn);
+  }
+}
+function visibleStrings(src, file) {
+  const out = [];
+  eachNode(parse(src, show(file)), (node) => {
+    if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
+    else if (node.type === 'TemplateElement') out.push(node.value.cooked ?? node.value.raw);
+    else if (node.type === 'JSXText') out.push(node.value);
+  });
+  return out;
+}
+const attrs = (el) =>
+  Object.fromEntries(
+    el.openingElement.attributes
+      .filter((a) => a.type === 'JSXAttribute')
+      .map((a) => [a.name.name, a.value?.type === 'Literal' ? a.value.value : a.value ? 'expr' : true]),
+  );
+const tagName = (el) => el.openingElement.name.name;
+/** The source of the function declared (const name = …, or function name) in `src`. */
+function fnSource(src, name) {
+  let found = null;
+  eachNode(parse(src, name), (node) => {
+    if (found) return;
+    if (node.type === 'VariableDeclarator' && node.id?.name === name && node.init) found = node.init;
+    else if (node.type === 'FunctionDeclaration' && node.id?.name === name) found = node;
+  });
+  assert.ok(found, `${name} is defined`);
+  return { node: found, text: src.slice(found.range[0], found.range[1]) };
+}
+
+test('the /cover-letter surface is scanned', () => {
+  const names = SURFACE.map(show);
+  for (const f of ['app/cover-letter/page.js', DESK, 'app/components/coverLetter/Envelope.js', 'lib/departures/coverLetter.js']) {
+    assert.ok(names.includes(f), `${f} is scanned`);
+  }
+  assert.ok(existsSync(join(ROOT, 'app/components/coverLetter/coverLetter.css')), 'coverLetter.css');
+});
+
+test('no "flight"/"fare" and no job totals in the /cover-letter copy', () => {
+  const found = [];
+  for (const f of SURFACE) {
+    const src = readFileSync(f, 'utf8');
+    if (/\b\d{1,3},\d{3}\s*(?:jobs|roles|departures)\b/i.test(src)) found.push(`${show(f)}: a job total`);
+    for (const s of visibleStrings(src, f)) {
+      if (/\b(?:flights?|fares?)\b/i.test(s)) found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      if (/\b\d[\d,.]*\s*[kKmM]?\+?\s*(?:countries|jobs|roles|listings|openings|departures)\b/i.test(s)) {
+        found.push(`${show(f)}: ${JSON.stringify(s.trim().slice(0, 80))}`);
+      }
+    }
+  }
+  assert.deepEqual(found, []);
+});
+
+test('the page is a server page with its own title and the F · AIRMAIL sign, without the retired hero', () => {
+  const page = read('app/cover-letter/page.js');
+  assert.ok(!/^\s*['"]use client['"]/.test(page), 'page.js is a server component');
+  assert.match(page, /export const metadata\s*=\s*\{[\s\S]*?title:\s*'[^']+ — OpportuMap'/);
+  assert.match(page, /sign=\{\{\s*letter:\s*'F',\s*label:\s*'Airmail'\s*\}\}/);
+  for (const f of SURFACE) {
+    const src = readFileSync(f, 'utf8');
+    assert.ok(!/EditorialHero|useScrollReveal/.test(src), `${show(f)} uses a retired hero`);
+  }
+});
+
+test('the letter is an editable <textarea>, labelled, and nothing else holds it', () => {
+  const src = read(DESK);
+  const letters = [];
+  let editable = false;
+  eachNode(parse(src, DESK), (node) => {
+    if (node.type !== 'JSXElement') return;
+    const a = attrs(node);
+    if (a.id === 'cl-letter') letters.push(tagName(node));
+    if ('contentEditable' in a || 'contenteditable' in a) editable = true;
+  });
+  assert.deepEqual(letters, ['textarea'], 'the element with id cl-letter is one textarea');
+  assert.equal(editable, false, 'no contentEditable stand-in');
+  assert.match(src, /htmlFor="cl-letter"/, 'a <label htmlFor="cl-letter">');
+  assert.match(src, /onChange=\{onLetterChange\}/, 'edits are kept');
+});
+
+test('Copy and Download use letterText (the edited text); the clipboard sits in try/catch with a fallback', () => {
+  const src = read(DESK);
+  const copy = fnSource(src, 'copyLetter');
+  const download = fnSource(src, 'downloadLetter');
+  for (const fn of [copy, download]) assert.match(fn.text, /letterText\(\s*edited\s*,/, 'reads letterText(edited, …)');
+
+  // writeText is called inside a try block, and the catch path says what to do instead.
+  let guarded = false;
+  eachNode(copy.node, (node) => {
+    if (node.type !== 'TryStatement') return;
+    const block = src.slice(node.block.range[0], node.block.range[1]);
+    if (/clipboard\.writeText\(/.test(block) && node.handler) guarded = true;
+  });
+  assert.ok(guarded, 'navigator.clipboard.writeText is inside try { } catch');
+  assert.match(copy.text, /COPY_FALLBACK/, 'a fallback message when the clipboard says no');
+  assert.match(src, /const COPY_FALLBACK\s*=\s*'[^']*(?:Ctrl|⌘)[^']*'/);
+  assert.match(download.text, /new Blob\(\[\s*text\s*\]/, 'the download is the same text');
+});
+
+test('every fetch checks res.ok before reading the answer; every field is labelled', () => {
+  const src = read(DESK);
+  const fetches = [...src.matchAll(/await fetch\(/g)].map((m) => m.index);
+  assert.ok(fetches.length >= 2, 'the profile + the letter');
+  for (const at of fetches) {
+    const json = src.indexOf('.json()', at);
+    const ok = src.indexOf('res.ok', at);
+    assert.ok(ok > -1 && json > ok, `res.ok before .json() after the fetch at ${at}`);
+  }
+  assert.match(src, /letterErrorFor\(/, 'non-OK answers are worded by letterErrorFor');
+  const ids = [];
+  eachNode(parse(src, DESK), (node) => {
+    if (node.type !== 'JSXElement') return;
+    const tag = tagName(node);
+    const a = attrs(node);
+    if ((tag === 'textarea' || (tag === 'input' && a.type !== 'radio')) && typeof a.id === 'string') ids.push(a.id);
+  });
+  for (const id of ['cl-jd', 'cl-resume', 'cl-letter']) assert.ok(ids.includes(id), `#${id}`);
+  for (const id of ids) assert.ok(src.includes(`htmlFor="${id}"`), `a <label htmlFor> for #${id}`);
+});
+
+test('the tone picker is a set of radio luggage tags with a legend', () => {
+  const src = read(DESK);
+  assert.match(src, /<fieldset\b/);
+  assert.match(src, /<legend\b/);
+  assert.match(src, /type="radio"/);
+  assert.match(src, /name="cl-tone"/);
+  assert.match(src, /TONES\.map\(/);
+});
+
+test('the envelope is art (aria-hidden) that plays only when asked, and reports when it is done', () => {
+  const src = read('app/components/coverLetter/Envelope.js');
+  assert.match(src, /aria-hidden="true"/);
+  assert.match(src, /data-play=\{play \? '' : undefined\}/);
+  assert.match(src, /onAnimationEnd=/);
+  assert.match(src, /PAR AVION/);
+});
+
+test('coverLetter.css moves only transform and opacity, under no-preference only', () => {
+  const css = read('app/components/coverLetter/coverLetter.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const allowed = ['transform', 'opacity', 'none'];
+  const topLevel = (v) => {
+    let flat = v;
+    while (/\([^()]*\)/.test(flat)) flat = flat.replace(/\([^()]*\)/g, '');
+    return flat.split(',');
+  };
+  for (const m of css.matchAll(/transition(?:-property)?\s*:\s*([^;}]+)/g)) {
+    for (const part of topLevel(m[1])) {
+      const prop = part.trim().split(/\s+/)[0];
+      assert.ok(allowed.includes(prop), `transition on ${prop}`);
+    }
+  }
+  const frames = [...css.matchAll(/@keyframes\s+[\w-]+\s*\{((?:[^{}]*\{[^{}]*\})*)[^{}]*\}/g)];
+  assert.ok(frames.length >= 3, 'the fold, the flap and the stamp are keyframes');
+  for (const m of frames) {
+    for (const d of m[1].matchAll(/([\w-]+)\s*:/g)) {
+      assert.ok(['transform', 'opacity'].includes(d[1]), `keyframes animate ${d[1]}`);
+    }
+  }
+  // Every animation is declared inside the no-preference block: reduced motion gets the end state.
+  const motion = /@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{([\s\S]*?)\n\}/.exec(css);
+  assert.ok(motion, 'a prefers-reduced-motion: no-preference block');
+  const outside = css.replace(motion[0], '');
+  assert.ok(!/\banimation(?:-name)?\s*:\s*(?!none)[\w-]/.test(outside), 'no animation outside no-preference');
+  assert.ok(!/backdrop-filter|\bfilter\s*:/.test(css), 'no filters');
+  assert.ok(!/\b\d+(?:\.\d+)?vh\b/.test(css), 'svh/dvh, not vh');
+  assert.ok(!/atan2|\b(?:a?sin|a?cos|a?tan)\(/i.test(css), 'no CSS trig');
+  const field = /\.cl-field\s*\{([^}]*)\}/.exec(css);
+  assert.ok(field && /font:[^;]*\b16px\b|font-size:\s*16px/.test(field[1]), '.cl-field is 16px');
+  for (const m of css.matchAll(/font(?:-size)?\s*:\s*[^;]*?\b(1[0-5]|\d)px[^;]*?var\(--font-inter\)/g)) {
+    assert.fail(`Inter text under 16px: ${m[0]}`);
+  }
 });
