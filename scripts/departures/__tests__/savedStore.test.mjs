@@ -3,8 +3,13 @@
 // no longer return is still on the itinerary (review focus 5). Saves from before (`opportumap_saved`,
 // ids only) are read as "pending" rows and looked up once; a role that cannot be found stays as a
 // "details unavailable" row. Storage that is blocked, full or missing reads as [] and writes nothing.
+// Then source guards over /saved (app/saved) and the /jobs save toggle.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as espree from 'espree';
 
 const store = await import(new URL('../../../lib/departures/savedStore.js', import.meta.url));
 const { SAVED_KEY, LEGACY_KEY, SNAPSHOT_FIELDS, snapshot, readSaved, saveJob, removeJob, migrateSaved } = store;
@@ -296,4 +301,106 @@ test('corrupt or tampered data: unreadable JSON is ignored, entries are cleaned,
   assert.equal('description' in list[0], false);
   assert.deepEqual(list[1], { id: 'u_1', unavailable: true });
   assert.deepEqual(list[2], { id: 'p_1', pending: true });
+});
+
+// ── Source guards: /saved and the save toggle ────────────────────────────────────────────────
+
+const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
+const stripCssComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+const SAVED_FILES = [...readdirSync(join(ROOT, 'app/saved')).filter((n) => n.endsWith('.js')).map((n) => `app/saved/${n}`), 'lib/departures/savedStore.js'];
+
+/** Every string a file can show: string literals, template text, JSX text and attributes. */
+function visibleStrings(src) {
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+  const out = [];
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value);
+    else if (node.type === 'TemplateElement') out.push(node.value.cooked ?? node.value.raw);
+    else if (node.type === 'JSXText') out.push(node.value);
+    for (const key of Object.keys(node)) {
+      if (key === 'parent') continue;
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(ast);
+  return out;
+}
+
+test('/saved: a server page with metadata, the ITINERARY sign, "Your itinerary." and no old editorial parts', () => {
+  const page = read('app/saved/page.js');
+  assert.doesNotMatch(page, /^\s*['"]use client['"]/m, 'the hall header renders on the server');
+  assert.match(page, /export const metadata\b/);
+  assert.match(page, /'Saved — OpportuMap'/);
+  assert.match(page, /sign=\{\{ letter: '—', label: 'ITINERARY' \}\}/);
+  assert.match(page, /title="Your"/);
+  assert.match(page, /accent="itinerary\."/);
+  for (const f of SAVED_FILES) {
+    const src = read(f);
+    assert.doesNotMatch(src, /useScrollReveal|EditorialHero|JobCard|JobDetailPanel|Footnote|paper-|font-display/, `${f}: no old editorial parts`);
+  }
+});
+
+test('/saved: the empty state, the board of saved roles from the store, rows that open JobGate', () => {
+  const island = read('app/saved/Itinerary.js');
+  assert.ok(visibleStrings(island).includes('No roles saved yet — pick one on the board.'));
+  assert.match(island, /from '\.\.\/\.\.\/lib\/departures\/savedStore'/);
+  assert.match(island, /readSaved\(/);
+  assert.match(island, /migrateSaved\(/);
+  assert.match(island, /removeJob\(/);
+  assert.match(island, /dynamic\(\(\) => import\('\.\.\/components\/jobs\/JobGate'\)/, 'JobGate, loaded on first open');
+  assert.match(island, /if \(!res\.ok\) throw[\s\S]*?res\.json\(\)/, 'res.ok before res.json()');
+  assert.match(island, /if \(reducedNow\(\)\) \{\s*drop\(\);/, 'reduced motion: the row goes at once');
+  assert.doesNotMatch(island, /localStorage\.(?:get|set)Item\(['"]opportumap_saved/, 'saved roles only through the store');
+});
+
+test('/saved rows: CANCELLED fits the status column, Remove sits beside the link and is never hidden', () => {
+  const row = read('app/saved/ItineraryRow.js');
+  const tiles = Number(/export const STATUS_TILES = (\d+)/.exec(row)?.[1]);
+  assert.ok(tiles >= 'CANCELLED'.length, `STATUS_TILES ${tiles}`);
+  assert.match(row, /stage \? 'CANCELLED'/);
+  assert.match(row, /usePredictedPay\(row\?\.ask \?\? null, \{ visible: on && !stage \}\)/, 'pay asked only while on screen');
+  for (const link of row.match(/<a\b[\s\S]*?<\/a>/g) ?? []) assert.doesNotMatch(link, /<button\b/, 'no button inside the row link');
+  const css = stripCssComments(read('app/saved/saved.css'));
+  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/\.it-x(?![-\w])/.test(selector)) continue;
+    assert.doesNotMatch(body, /opacity:\s*0(?![.\d])|visibility:\s*hidden|display:\s*none/, `Remove hidden by ${selector.trim()}`);
+  }
+});
+
+test('saved.css: only opacity and transform move; no CSS trig, no backdrop-filter, no vh', () => {
+  const css = stripCssComments(read('app/saved/saved.css'));
+  for (const m of css.matchAll(/transition(?:-property)?\s*:\s*([^;]+);/g)) {
+    for (const part of m[1].replace(/\([^)]*\)/g, '').split(',')) {
+      const prop = part.trim().split(/\s+/)[0];
+      assert.ok(['transform', 'opacity', 'none'].includes(prop), `saved.css transitions ${prop}`);
+    }
+  }
+  assert.doesNotMatch(css, /atan2|\b(?:a?sin|a?cos|a?tan)\(/i);
+  assert.doesNotMatch(css, /backdrop-filter/);
+  assert.doesNotMatch(css, /\d(?:vh)\b/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test('the /jobs save toggle stores a snapshot through the store (no raw id list)', () => {
+  const board = read('app/components/jobs/JobsBoard.js');
+  assert.match(board, /from '\.\.\/\.\.\/\.\.\/lib\/departures\/savedStore'/);
+  assert.match(board, /readSaved\(deviceStorage\(\)\)/);
+  assert.match(board, /saveJob\(store, job\)/);
+  assert.match(board, /removeJob\(store, id\)/);
+  assert.doesNotMatch(board, /opportumap_saved|SAVED_KEY/);
+});
+
+test('/saved copy: no "flight" or "fare", no totals', () => {
+  for (const f of SAVED_FILES) {
+    const src = read(f);
+    for (const str of visibleStrings(src)) {
+      assert.doesNotMatch(str, /\b(?:flights?|fares?)\b/i, `${f}: ${JSON.stringify(str)}`);
+      assert.doesNotMatch(str, /\b\d[\d,.]*\s*[kKmM]?\+?\s*(?:countries|jobs|roles|listings|openings|departures|saved)\b/i, `${f}: ${JSON.stringify(str)}`);
+    }
+    assert.doesNotMatch(src, /\{\s*(?:list|shown|rows|saved)(?:\?)?\.(?:length|size)\s*\}/, `${f}: a count rendered`);
+  }
 });
