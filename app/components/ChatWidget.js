@@ -1,6 +1,16 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+// The AI assistant on /jobs: the hall's information desk. A drawer (the kit's Dialog: focus
+// trap, Esc, the page behind stays put) where a visitor asks about visas, moving and settling
+// in; each question goes to /api/chat with the conversation so far and their profile. The
+// conversation stays while the drawer is closed (JobsBoard keeps this mounted once opened).
+// Replies are shown as plain text; a failed request says so in the desk's own words.
+//
+//   <ChatWidget open onClose profile returnFocusRef />
+
+import { useEffect, useRef, useState } from 'react';
+import Dialog from './kit/Dialog';
+import './desk.css';
 
 const SUGGESTIONS = [
   'What visa do I need for the UK?',
@@ -9,117 +19,126 @@ const SUGGESTIONS = [
   'How long does H-1B take to process?',
 ];
 
-export default function ChatWidget({ profile }) {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: 'assistant', content: `Hi${profile?.name ? ` ${profile.name}` : ''}! I'm your OpportuMap AI assistant. Ask me anything about visas, relocation, job searching, or settling in a new country.` },
+const UNAVAILABLE = "The desk couldn't answer just now. Try again in a moment.";
+
+/** Reply text as the desk shows it: the model's **bold** markers dropped (it is plain text). */
+const plain = (text) => String(text ?? '').replace(/\*\*(.+?)\*\*/g, '$1').trim();
+
+export default function ChatWidget({ open, onClose, profile, returnFocusRef }) {
+  const [messages, setMessages] = useState(() => [
+    {
+      role: 'assistant',
+      content: `Hi${profile?.name ? ` ${profile.name}` : ''}! I'm OpportuMap's AI assistant. Ask me anything about visas, relocation, job searching, or settling in a new country.`,
+    },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const bottomRef = useRef(null);
+  const log = useRef(null);
 
+  // Keep the newest message in view, inside the log only (never the page).
   useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, open]);
+    const el = log.current;
+    if (open && el) el.scrollTop = el.scrollHeight;
+  }, [messages, loading, open]);
 
   const send = async (text) => {
-    const content = text || input.trim();
+    const content = (text || input).trim();
     if (!content || loading) return;
     setInput('');
-
-    const userMessage = { role: 'user', content };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const next = [...messages, { role: 'user', content }];
+    setMessages(next);
     setLoading(true);
-
+    let reply = UNAVAILABLE;
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, profile }),
+        body: JSON.stringify({ messages: next, profile }),
       });
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.reply || `Error: ${data.error || 'Unknown error'}` }]);
+      const data = res.ok ? await res.json() : null;
+      if (typeof data?.reply === 'string' && data.reply.trim()) reply = plain(data.reply);
     } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Connection error. Please try again.' }]);
+      // the network failed: the desk says it couldn't answer
     }
+    setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     setLoading(false);
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      labelledBy="desk-chat-title"
+      placement="right"
+      className="desk-chat"
+      returnFocusRef={returnFocusRef}
+    >
+      <header className="desk-head">
+        <span className="desk-i" aria-hidden="true">
+          i
+        </span>
+        <h2 id="desk-chat-title" className="desk-title">
+          Information · AI desk
+        </h2>
+        <button type="button" className="desk-x" onClick={onClose} aria-label="Close the AI desk">
+          ✕
+        </button>
+      </header>
 
-      {/* Chat panel */}
-      {open && (
-        <div className="mb-3 w-80 border border-paper-rule bg-paper-bg shadow-2xl flex flex-col overflow-hidden"
-          style={{ height: '480px' }}>
+      <div ref={log} className="desk-log" role="log" aria-live="polite" aria-label="Conversation">
+        {messages.map((m, i) => (
+          <p key={i} className={`desk-msg ${m.role === 'user' ? 'desk-user' : 'desk-assistant'}`}>
+            {m.content}
+          </p>
+        ))}
+        {loading && (
+          <p className="desk-msg desk-assistant">
+            <span className="sr-only">The desk is answering…</span>
+            <span className="desk-dots" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </p>
+        )}
+      </div>
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-paper-rule">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink">OpportuMap AI</span>
-            </div>
-            <button onClick={() => setOpen(false)} className="text-lg leading-none text-paper-ink-sub hover:text-paper-ink transition-colors">✕</button>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 text-[12px] leading-relaxed ${
-                  m.role === 'user' ? 'bg-paper-ink text-paper-bg' : 'border border-paper-rule bg-paper-bg-alt text-paper-ink'
-                }`}>
-                  {m.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="px-3 py-2 border border-paper-rule bg-paper-bg-alt text-[12px]">
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-paper-ink-sub animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-paper-ink-sub animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-paper-ink-sub animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </span>
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Suggestions (only on first message) */}
-          {messages.length === 1 && (
-            <div className="px-4 pb-2 flex flex-col gap-1.5">
-              {SUGGESTIONS.map((s) => (
-                <button key={s} onClick={() => send(s)}
-                  className="text-left text-[11px] font-mono px-3 py-1.5 border border-paper-rule text-paper-ink-sub hover:bg-paper-bg-alt transition-colors">
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Input */}
-          <div className="px-4 pb-4 pt-2 border-t border-paper-rule">
-            <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2">
-              <input value={input} onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask anything..."
-                className="flex-1 px-3 py-2 border border-paper-rule bg-paper-bg text-paper-ink placeholder-paper-ink-sub text-[12px] outline-none focus:border-accent transition-colors" />
-              <button type="submit" disabled={!input.trim() || loading}
-                className="px-3 py-2 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] disabled:opacity-40 text-[12px] font-medium transition-colors">
-                Send
-              </button>
-            </form>
-          </div>
+      {messages.length === 1 && (
+        <div className="desk-sugg" role="group" aria-labelledby="desk-sugg-k">
+          <p id="desk-sugg-k" className="desk-sugg-k">
+            Try asking
+          </p>
+          {SUGGESTIONS.map((s) => (
+            <button key={s} type="button" onClick={() => send(s)}>
+              {s}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Toggle button */}
-      <button onClick={() => setOpen(!open)}
-        className="w-12 h-12 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] shadow-lg flex items-center justify-center text-xl transition-colors">
-        {open ? '✕' : '💬'}
-      </button>
-    </div>
+      <form
+        className="desk-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send();
+        }}
+      >
+        <label htmlFor="desk-q" className="sr-only">
+          Your question
+        </label>
+        <input
+          id="desk-q"
+          className="desk-input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask anything…"
+          autoComplete="off"
+          enterKeyHint="send"
+        />
+        <button type="submit" className="desk-send" disabled={!input.trim() || loading}>
+          Send
+        </button>
+      </form>
+    </Dialog>
   );
 }

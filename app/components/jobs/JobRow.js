@@ -11,15 +11,15 @@
 // engine paints flips on a small canvas per cell, made on the first flip). When a search or a
 // chip changes the row's text, an on-screen row re-flaps to it; an off-screen one snaps.
 // A role with no listed pay asks the salary model (usePredictedPay) while the row is on screen;
-// the estimate flaps in, marked "~", or the row says "Pay estimate unavailable".
+// the estimate flaps in, in amber and underlined with dots (the same text as listed pay: no "~"
+// tile, so the whole range fits PAY_TILES), or the row says "Pay estimate unavailable".
 
 import { memo, useRef } from 'react';
 import FlapText from '../kit/FlapText';
 import { useOnScreen } from './useOnScreen';
 import { usePredictedPay } from './usePredictedPay';
+import { PAY_TILES, STATUS_TILES, payCell } from '../../../lib/departures/jobRows';
 
-export const PAY_TILES = 12;
-export const STATUS_TILES = 8;
 const STAGGER_MS = 70;
 const PER_BATCH = 24; // rows a page of results adds: each batch ripples from its own first row
 
@@ -37,12 +37,13 @@ function JobRow({ row, href, index, saved, onOpen, onSave }) {
   const delayMs = Math.min(index % PER_BATCH, 10) * STAGGER_MS;
   const flap = (text) => ({ text, play: on, from: arrive ? '' : text, delayMs });
 
+  const cell = payCell(row.pay, predicted);
   let pay;
-  if (row.pay) {
-    pay = <FlapText {...flap(row.pay)} width={PAY_TILES} />;
-  } else if (predicted) {
+  if (cell.text && !cell.estimate) {
+    pay = <FlapText {...flap(cell.text)} width={PAY_TILES} />;
+  } else if (cell.estimate) {
     // The estimate is news even on a row that is already there: it flaps in from blank.
-    pay = <FlapText text={`~${predicted}`} from="" play={on} delayMs={delayMs} width={PAY_TILES} />;
+    pay = <FlapText text={cell.text} from="" play={on} delayMs={delayMs} width={PAY_TILES} />;
   } else {
     pay = <span className="jr-paynote">{state === 'unavailable' ? 'Pay estimate unavailable' : 'Pay not listed'}</span>;
   }
@@ -82,7 +83,11 @@ function JobRow({ row, href, index, saved, onOpen, onSave }) {
             </span>
           )}
         </span>
-        <span className="jr-pay" data-est={predicted && !row.pay ? '' : undefined}>
+        <span
+          className="jr-pay"
+          data-est={cell.estimate ? '' : undefined}
+          title={cell.estimate ? 'Estimated by our salary model' : undefined}
+        >
           {pay}
         </span>
         <span className="jr-status">

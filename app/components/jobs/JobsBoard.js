@@ -3,32 +3,56 @@
 // /jobs, the departures board (spec §7). Search a role, a company, a city or its code ("tor"
 // finds Toronto, YYZ), narrow it with the gate chips, tap a row to open its gate.
 //
-// - What it searches: searchPlan (lib/departures/jobRows.js). The base search is the visitor's
-//   profile (profileQuery, their preferred countries) or "software engineer"; a ?q= in the URL
-//   (the homepage's WHERE TO?) or the search box replaces it. Newest request wins (createLatest):
-//   an older, slower answer is dropped. A failed request is an error state with Try again, never
-//   "No roles match".
+// - First paint: the server's board (`initial`, from app/jobs/page.js): the homepage's search
+//   (HOME_SEARCH) with every row's final text in the HTML; the motion layers on after hydration.
+//   With no server board (the feeds were down at ISR time) placeholder rows wait for the same
+//   search from /api/jobs.
+// - What it searches: a visitor with no profile and no ?q= keeps the server's board (no request).
+//   Otherwise searchPlan (lib/departures/jobRows.js): the base search is the visitor's profile
+//   (profileQuery, their preferred countries) or "software engineer"; a ?q= in the URL (the
+//   homepage's WHERE TO?) or the search box replaces it, and its rows re-flap in place over the
+//   server's. Newest request wins (createLatest): an older, slower answer is dropped. A failed
+//   request is an error state with Try again, never "No roles match".
 // - Order: best match first when there is a profile (scoreJob, the same number as each row's
-//   badge and BOARDING), else the feed's order; "Newest first" sorts by posted date.
+//   badge and BOARDING), else the feed's order; "Newest first" sorts by posted date. Each board
+//   is ranked for the profile it was fetched for, so the server's rows hold still while the
+//   visitor's own board is on its way, and re-flap once, when it lands.
 // - Rows: JobRow. Rows keep their slot (key = position), so a new search or chip re-flaps the
 //   rows on screen in place; "Load more" adds rows that clack in. Only on-screen rows flap or ask
 //   the salary model (usePredictedPay).
 // - The gate: a row is a link to /jobs?job=<id>; a click opens the role here (pushState, Back
-//   closes it) and a deep link opens it once the board has it. JobDetailPanel stands in for the
-//   gate until JobGate (Task 6) replaces it.
+//   closes it). A deep link opens from the server's board at once (the homepage links its rows
+//   here, from the same search) or from the visitor's own search once it lands (deepLink); if
+//   neither has the role, one /api/jobs?id= lookup asks for it (the two pages' boards can differ
+//   when a feed call failed for one of them), and only then does the board say it couldn't find
+//   it. JobDetailPanel stands in for the gate until JobGate (Task 6) replaces it.
+// - The desk: the AI assistant (ChatWidget, /api/chat) behind the floating Ask AI button, and the
+//   relocation guide (RelocationModal) behind "I got the job". Both load when first opened.
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GateFilters from './GateFilters';
 import JobRow from './JobRow';
 import { createLatest } from '../../../lib/departures/createLatest';
-import { ROLE_TYPES, countriesOf, filterJobs, jobRow, searchPlan, sortJobs } from '../../../lib/departures/jobRows';
+import {
+  ROLE_TYPES,
+  countriesOf,
+  deepLink,
+  filterJobs,
+  findJob,
+  jobRow,
+  searchPlan,
+  sortJobs,
+} from '../../../lib/departures/jobRows';
 import { profileQuery } from '../../../lib/departures/profileQuery';
+import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
 import { loadHomeProfile } from '../home/homeProfile';
 import './jobs.css';
 
 const JobDetailPanel = dynamic(() => import('../JobDetailPanel'), { ssr: false });
 const ProfileModal = dynamic(() => import('../ProfileModal'), { ssr: false });
+const ChatWidget = dynamic(() => import('../ChatWidget'), { ssr: false });
+const RelocationModal = dynamic(() => import('../RelocationModal'), { ssr: false });
 
 const PER_PAGE = 24;
 const NO_FILTERS = { type: 'all', remote: false, country: 'all', saved: false };
@@ -38,7 +62,13 @@ const PROFILE_KEY = 'opportumap_profile';
 const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token/;
 
 const LOAD_ERROR = "We couldn't load roles right now. Try again.";
-const GONE = 'That role has left the board. Here are the roles for your search.';
+const MISSING = "We couldn't find that role on the board just now. Try searching for it by its title or company.";
+
+// The homepage's search: the server's board, and the board of a visitor with no profile and no ?q=.
+const HOME_PLAN = Object.freeze({ text: '', query: HOME_SEARCH.query, place: null, countries: HOME_SEARCH.countries, fallback: null });
+/** One search on the board: the nth time the visitor asked for it, and what was fetched. */
+const boardKey = (n, text, plan, preferred) => [n, text, plan.query, (plan.countries || preferred).join(',')].join('\u0000');
+const HOME_KEY = boardKey(0, '', HOME_PLAN, []);
 
 function readJson(key, fallback) {
   try {
@@ -55,6 +85,18 @@ async function loadProfile() {
   if (remote) return remote;
   const local = readJson(PROFILE_KEY, null);
   return local && typeof local === 'object' && !Array.isArray(local) ? local : null;
+}
+
+/** One role by id (a deep link neither board has), or null. */
+async function lookupJob(id) {
+  try {
+    const res = await fetch(`/api/jobs?${new URLSearchParams({ id })}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data?.jobs) && data.jobs[0] && String(data.jobs[0].id) === id ? data.jobs[0] : null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchJobs(query, countries) {
@@ -78,11 +120,21 @@ async function loadBoard(plan, preferred) {
 
 const searchHref = (text) => (text ? `/jobs?${new URLSearchParams({ q: text })}` : '/jobs');
 
-export default function JobsBoard() {
+/**
+ * initial: the server's board, { jobs (boardJobs), at (its clock) }, or null. It is the first
+ * board, and stays a place deep links look in after the visitor's own search replaces it.
+ */
+export default function JobsBoard({ initial = null }) {
+  const [server] = useState(() => (Array.isArray(initial?.jobs) && initial.jobs.length ? initial : null));
   const [profile, setProfile] = useState(undefined); // undefined: still loading
   const [input, setInput] = useState('');
   const [asked, setAsked] = useState(null); // { text, n }: the search on the board
-  const [board, setBoard] = useState(null); // { key, state: 'ok' | 'error', jobs, place, label, at }
+  // { key, state: 'ok' | 'error', jobs, place, label, at, profile (ranked for), mine (the profile's own search) }
+  const [board, setBoard] = useState(() =>
+    server
+      ? { key: HOME_KEY, state: 'ok', jobs: server.jobs, place: null, label: HOME_PLAN.query, at: server.at, profile: null, mine: false }
+      : null,
+  );
   const [filters, setFilters] = useState(NO_FILTERS);
   const [newest, setNewest] = useState(false);
   const [page, setPage] = useState(1);
@@ -90,8 +142,13 @@ export default function JobsBoard() {
   const [openId, setOpenId] = useState(null);
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState(false);
+  const [chat, setChat] = useState({ loaded: false, open: false }); // the assistant stays mounted once opened
+  const [moving, setMoving] = useState(false);
+  const [linked, setLinked] = useState({ jobs: [], looked: false }); // a deep link's role, looked up by id
   const [latest] = useState(createLatest);
-  const wanted = useRef(null); // ?job= from the URL, opened once the board has that role
+  const askRef = useRef(null);
+  const moveRef = useRef(null);
+  const wanted = useRef(null); // ?job= from the URL, opened once a board has that role
   const opener = useRef(null); // the row that opened the gate: focus goes back there
   const pushed = useRef(false); // the gate added a history entry (Back closes it)
 
@@ -129,13 +186,19 @@ export default function JobsBoard() {
     [profile],
   );
   const base = profile === undefined ? null : profileQuery(profile);
-  const plan = useMemo(() => (asked && base !== null ? searchPlan(asked.text, { base }) : null), [asked, base]);
-  const key = plan ? [asked.n, asked.text, plan.query, (plan.countries || preferred).join(',')].join('\u0000') : null;
+  const plan = useMemo(() => {
+    if (!asked || base === null) return null;
+    // No profile and no search: the homepage's search, which the server's board already shows.
+    if (!profile && !asked.text) return HOME_PLAN;
+    return searchPlan(asked.text, { base });
+  }, [asked, base, profile]);
+  const key = plan ? boardKey(asked.n, asked.text, plan, preferred) : null;
   const loading = key !== null && board?.key !== key;
 
   useEffect(() => {
     if (!key) return;
-    const id = latest.next();
+    const id = latest.next(); // any older request is stale from here on
+    if (!loading) return; // the board already shows this search (the server's board)
     loadBoard(plan, preferred)
       .then(
         (b) => ({ ...b, state: 'ok' }),
@@ -143,34 +206,50 @@ export default function JobsBoard() {
       )
       .then((b) => {
         if (!latest.isCurrent(id)) return; // a newer search has started: this answer is stale
-        setBoard({ ...b, key, at: Date.now() });
+        setBoard({ ...b, key, at: Date.now(), profile: profile ?? null, mine: !!profile && !plan.text });
         setPage(1);
       });
-    // `plan` and `preferred` are what `key` is made of.
+    // `plan`, `preferred`, `profile` and `loading` are what `key` is made of, as of this render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, latest]);
 
-  // A deep link (?job=<id>) opens its role once the board has loaded.
+  // A deep link (?job=<id>) opens its role from whichever board has it: the server's (a homepage
+  // row, at once) or the visitor's own search, once that has landed; failing both, one lookup by
+  // id. Only then is it a miss.
+  const settled = key !== null && !loading && board?.state === 'ok';
   useEffect(() => {
-    if (board?.state !== 'ok' || !wanted.current) return;
     const id = wanted.current;
+    const what = deepLink(id, { lists: [server?.jobs, board?.jobs, linked.jobs], settled, looked: linked.looked });
+    if (what === 'lookup') {
+      let live = true;
+      lookupJob(id).then((job) => {
+        if (live) setLinked({ jobs: job ? [job] : [], looked: true });
+      });
+      return () => {
+        live = false;
+      };
+    }
+    if (what !== 'open' && what !== 'miss') return undefined;
     wanted.current = null;
-    const there = board.jobs.some((j) => String(j.id) === id);
     Promise.resolve().then(() => {
-      if (there) setOpenId(id);
+      if (what === 'open') setOpenId(id);
       else {
-        setNotice(GONE);
+        setNotice(MISSING);
         window.history.replaceState(null, '', searchHref(asked?.text));
       }
     });
-  }, [board, asked?.text]);
+    return undefined;
+  }, [server, board, linked, settled, asked?.text]);
 
   // ── The board ──
   const now = useMemo(() => new Date(board?.at || 0), [board]);
   const savedIds = useMemo(() => new Set(saved.map(String)), [saved]);
+  // The profile the rows are ranked for: while the visitor's own board is loading, the one the
+  // board on screen was fetched for (the server's: none), so its rows hold still; then theirs.
+  const ranked = (loading ? board?.profile : profile) ?? null;
   const ordered = useMemo(
-    () => (board ? sortJobs(board.jobs, newest ? 'newest' : profile ? 'match' : 'feed', profile) : []),
-    [board, newest, profile],
+    () => (board ? sortJobs(board.jobs, newest ? 'newest' : ranked ? 'match' : 'feed', ranked) : []),
+    [board, newest, ranked],
   );
   const list = useMemo(
     () =>
@@ -185,8 +264,8 @@ export default function JobsBoard() {
     [ordered, board, filters, savedIds, now],
   );
   const rows = useMemo(
-    () => list.slice(0, page * PER_PAGE).map((job) => jobRow(job, { now, profile })),
-    [list, page, now, profile],
+    () => list.slice(0, page * PER_PAGE).map((job) => jobRow(job, { now, profile: ranked })),
+    [list, page, now, ranked],
   );
   const countries = useMemo(() => countriesOf(board?.jobs), [board]);
 
@@ -243,7 +322,7 @@ export default function JobsBoard() {
     (id) => {
       setSaved((ids) => {
         const has = ids.some((x) => String(x) === id);
-        const raw = board?.jobs.find((j) => String(j.id) === id)?.id ?? id;
+        const raw = (findJob(board?.jobs, id) || findJob(server?.jobs, id))?.id ?? id;
         const next = has ? ids.filter((x) => String(x) !== id) : [...ids, raw];
         try {
           localStorage.setItem(SAVED_KEY, JSON.stringify(next));
@@ -253,8 +332,12 @@ export default function JobsBoard() {
         return next;
       });
     },
-    [board],
+    [board, server],
   );
+
+  const openChat = () => setChat({ loaded: true, open: true });
+  const closeChat = useCallback(() => setChat((c) => ({ ...c, open: false })), []);
+  const closeMove = useCallback(() => setMoving(false), []);
 
   const saveProfile = (p) => {
     setProfile(p);
@@ -276,8 +359,8 @@ export default function JobsBoard() {
 
   // ── What the board says ──
   const busy = !board || loading;
-  const openJob = openId && board ? board.jobs.find((j) => String(j.id) === openId) : null;
-  const yours = !!profile && !asked?.text;
+  const openJob = openId ? findJob(board?.jobs, openId) || findJob(server?.jobs, openId) || findJob(linked.jobs, openId) : null;
+  const yours = !!board?.mine;
   const caption = `${yours ? 'YOUR DEPARTURES' : 'DEPARTURES'}${board ? ` · ${board.label}` : ''}`;
   const where = board?.place ? board.place.cities.slice(0, 3).join(', ') : '';
   const more = list.length > rows.length;
@@ -387,7 +470,7 @@ export default function JobsBoard() {
         </p>
       )}
 
-      <section className="jb-board" aria-labelledby="jb-cap" aria-busy={busy} data-match={profile ? '' : undefined}>
+      <section className="jb-board" aria-labelledby="jb-cap" aria-busy={busy} data-match={ranked ? '' : undefined}>
         <div className="jb-top">
           <h2 id="jb-cap" className="jb-cap">
             {caption}
@@ -402,7 +485,7 @@ export default function JobsBoard() {
             <span className="jr-code">To</span>
             <span className="jr-role">Role</span>
             <span className="jr-where">Company</span>
-            <span className="jr-side">{profile ? 'Match' : ''}</span>
+            <span className="jr-side">{ranked ? 'Match' : ''}</span>
             <span className="jr-pay">Pay</span>
             <span className="jr-status">Status</span>
           </div>
@@ -417,15 +500,53 @@ export default function JobsBoard() {
         )}
       </section>
 
+      <section className="jb-desk" aria-labelledby="jb-desk-k">
+        <div className="jb-desk-copy">
+          <h2 id="jb-desk-k" className="jb-desk-k">
+            Got the job?
+          </h2>
+          <p className="jb-desk-s">Plan the move: the visa, housing, the first legal steps and people to ask.</p>
+        </div>
+        <button
+          ref={moveRef}
+          type="button"
+          className="jb-btn"
+          aria-haspopup="dialog"
+          onClick={() => setMoving(true)}
+        >
+          I got the job →
+        </button>
+      </section>
+
       <p className="jb-foot">
-        Roles come live from Adzuna, RemoteOK, Remotive, Arbeitnow and Himalayas. Pay marked ~ is our
-        salary model&apos;s estimate for the role and the city, in the local currency.
+        Roles come live from Adzuna, RemoteOK, Remotive, Arbeitnow and Himalayas. Pay in amber,
+        underlined with dots, is our salary model&apos;s estimate for the role and the city, in the
+        local currency.
       </p>
+
+      <button
+        ref={askRef}
+        type="button"
+        className="jb-ask"
+        aria-haspopup="dialog"
+        aria-expanded={chat.open}
+        onClick={openChat}
+      >
+        <span className="jb-ask-i" aria-hidden="true">
+          i
+        </span>
+        <span className="jb-ask-t">Ask AI</span>
+        <span className="sr-only"> about visas, moving and settling in</span>
+      </button>
 
       {openJob && <JobDetailPanel job={openJob} profile={profile} onClose={close} />}
       {editing && (
         <ProfileModal initialProfile={profile} onSave={saveProfile} onClose={() => setEditing(false)} />
       )}
+      {chat.loaded && (
+        <ChatWidget open={chat.open} onClose={closeChat} profile={profile ?? null} returnFocusRef={askRef} />
+      )}
+      {moving && <RelocationModal onClose={closeMove} returnFocusRef={moveRef} />}
     </div>
   );
 }

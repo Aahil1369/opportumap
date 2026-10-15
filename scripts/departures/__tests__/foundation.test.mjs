@@ -308,6 +308,9 @@ const REDESIGNED = [
   'app/components/Navbar.js',
   'app/components/NavDrawer.js',
   'app/components/navParts.js',
+  // The desk on /jobs: the AI assistant and the relocation guide.
+  'app/components/ChatWidget.js',
+  'app/components/RelocationModal.js',
   'app/lab',
   'lib/departures',
   ...readdirSync(join(ROOT, 'app/components')).filter((n) => /^Job.*\.js$/.test(n)).map((n) => `app/components/${n}`),

@@ -1,0 +1,156 @@
+/* ─── The information desk on /jobs: the AI assistant (ChatWidget) and the relocation guide
+   (RelocationModal). Both are panels of the kit's Dialog (kit.css .dlg); this file only shapes
+   what is inside them, on the hall's tokens. Loaded with them, on first open. Nothing here
+   animates but opacity (the "typing" dots), and not under reduced motion. */
+
+/* The assistant: a drawer from the right; the log scrolls, the question box stays put. */
+.dlg-root[data-placement='right'] .dlg.desk-chat {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 420px);
+  overflow: hidden;
+}
+.desk-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 12px 14px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.desk-i {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 16px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+.desk-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 600 13px/1.3 var(--font-board);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.desk-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-dim);
+  font: 400 20px/1 var(--font-board);
+  cursor: pointer;
+}
+.desk-x:hover { background: var(--hall-3); color: var(--ink); }
+.desk-x:focus-visible,
+.desk-sugg button:focus-visible,
+.desk-send:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+.desk-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+.desk-msg {
+  max-width: 88%;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.desk-assistant { align-self: flex-start; border: 1px solid var(--rule); background: var(--hall-3); color: var(--ink); }
+.desk-user { align-self: flex-end; background: var(--sign); color: var(--sign-ink); }
+.desk-dots { display: inline-flex; gap: 5px; padding: 4px 0; }
+.desk-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-sub);
+  animation: desk-dot 1.2s ease-in-out infinite both;
+}
+.desk-dots i:nth-child(2) { animation-delay: 0.15s; }
+.desk-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes desk-dot {
+  0%, 80%, 100% { opacity: 0.3; }
+  40% { opacity: 1; }
+}
+
+.desk-sugg { display: flex; flex-direction: column; gap: 6px; padding: 0 16px 12px; }
+.desk-sugg-k {
+  margin: 0 0 2px;
+  font: 500 12px/1.3 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+}
+.desk-sugg button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall-2);
+  color: var(--ink-dim);
+  font: 400 16px/1.35 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.desk-sugg button:hover { border-color: var(--ink-sub); color: var(--ink); }
+
+.desk-form {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--rule);
+}
+.desk-input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 400 16px/1.3 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+.desk-input::placeholder { color: var(--ink-sub); opacity: 1; }
+.desk-input:focus-visible { outline: 2px solid var(--sign); outline-offset: 1px; }
+.desk-send {
+  flex: none;
+  min-width: 72px;
+  height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 15px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.desk-send:disabled { opacity: 0.45; cursor: default; }
+
+/* The relocation guide: a wide card; the Dialog panel itself scrolls. */
+.dlg.desk-move { width: min(100%, 680px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-dots i { animation: none; opacity: 0.7; }
+}

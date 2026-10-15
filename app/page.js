@@ -12,6 +12,7 @@ import GateWalk from './components/home/GateWalk';
 import WhereTo from './components/home/WhereTo';
 import { fetchLiveJobs } from '../lib/jobsFeed';
 import { BOARD_COLUMNS, FALLBACK_ROWS, FOUNDER_ROW, boardRowsFrom } from '../lib/departures/board';
+import { HOME_SEARCH } from '../lib/departures/homeSearch';
 import './components/home/home.css';
 
 export const revalidate = 600;
@@ -27,14 +28,19 @@ export const metadata = {
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 };
 
-// Adzuna countries across the continents; "software" keeps the roles close to who reads this.
-const HOME_COUNTRIES = ['ca', 'gb', 'de', 'in', 'sg', 'au', 'nl', 'us'];
+// The board's search (HOME_SEARCH: "software" in Adzuna countries across the continents keeps the
+// roles close to who reads this) is /jobs' default board too: one data-cache entry for both.
 const FEED_TIMEOUT_MS = 6000;
 
 async function boardRows() {
   try {
     // The feeds' cache windows match the page's, so the board is rebuilt every 10 minutes.
-    const jobs = await fetchLiveJobs({ query: 'software', countries: HOME_COUNTRIES, timeoutMs: FEED_TIMEOUT_MS, revalidate });
+    const jobs = await fetchLiveJobs({
+      query: HOME_SEARCH.query,
+      countries: [...HOME_SEARCH.countries],
+      timeoutMs: FEED_TIMEOUT_MS,
+      revalidate,
+    });
     return boardRowsFrom(jobs, { now: new Date() });
   } catch {
     return FALLBACK_ROWS;
