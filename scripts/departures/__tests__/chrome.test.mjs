@@ -185,15 +185,23 @@ test('/admin is noindex; /contact names the desk', async () => {
   for (const m of [admin, contact]) assert.equal(typeof m.default, 'function', 'a pass-through layout');
 });
 
-test('the social image: dark hall, a mini board, "The world is hiring." + "Pick your gate."', () => {
+test('the social image: dark hall, a mini board, "The world is hiring." + "Pick your gate."', async () => {
   const f = 'app/opengraph-image.js';
   assert.ok(has(f));
   const src = read(f);
   assert.match(src, /from 'next\/og'/);
   assert.match(src, /new ImageResponse\(/);
-  assert.match(src, /export const size = \{ width: 1200, height: 630 \}/);
-  assert.match(src, /export const contentType = 'image\/png'/);
-  assert.match(src, /export const alt = '[^']+'/);
+  // alt, size and type come from lib/socialImage.js, which the segments with their own openGraph
+  // (/jobs) name as well (see the next test).
+  assert.match(src, /import \{ SOCIAL_IMAGE_ALT, SOCIAL_IMAGE_SIZE, SOCIAL_IMAGE_TYPE \} from '\.\.\/lib\/socialImage\.js'/);
+  assert.match(src, /export const size = SOCIAL_IMAGE_SIZE;/);
+  assert.match(src, /export const contentType = SOCIAL_IMAGE_TYPE;/);
+  assert.match(src, /export const alt = SOCIAL_IMAGE_ALT;/);
+  const img = await mod('lib/socialImage.js');
+  assert.deepEqual(img.SOCIAL_IMAGE_SIZE, { width: 1200, height: 630 });
+  assert.equal(img.SOCIAL_IMAGE_TYPE, 'image/png');
+  assert.match(img.SOCIAL_IMAGE_ALT, /^OpportuMap: .*The world is hiring\. Pick your gate\.$/);
+  assert.deepEqual(copyProblems([join(ROOT, 'lib/socialImage.js')]), []);
   const strings = visibleStrings(src, f).join('\n');
   assert.match(strings, /The world is hiring\./);
   assert.match(strings, /Pick your gate\./);
@@ -201,6 +209,97 @@ test('the social image: dark hall, a mini board, "The world is hiring." + "Pick 
   assert.match(src, /#ffc531/i, 'the sign yellow');
   assert.match(src, /FALLBACK_ROWS/, 'the board rows are the samples (no employer, no freshness claimed)');
   assert.deepEqual(copyProblems([join(ROOT, f)]), []);
+});
+
+// Next adds the file-based app/opengraph-image only at its own segment (the root). A segment below
+// it that sets its own `openGraph` replaces the root's, image included (resolve-metadata.js
+// mergeStaticMetadata), so /jobs unfurled with no picture (Task 15a review I1). `twitter` without
+// images falls back to the same metadata's openGraph images (postProcessMetadata).
+function ownSocialBlocks(src, file) {
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+  const found = []; // one entry per metadata object literal that names openGraph or twitter
+  const keyOf = (p) => (p.type === 'Property' && !p.computed ? p.key.name ?? p.key.value : null);
+  const visit = (node, inMeta) => {
+    if (!node || typeof node.type !== 'string') return;
+    const meta =
+      inMeta ||
+      (node.type === 'VariableDeclarator' && node.id?.name === 'metadata') ||
+      (node.type === 'FunctionDeclaration' && node.id?.name === 'generateMetadata');
+    if (meta && node.type === 'ObjectExpression') {
+      const props = Object.fromEntries(node.properties.map((p) => [keyOf(p), p.value]));
+      const block = (k) => {
+        if (!props[k]) return undefined;
+        if (props[k].type !== 'ObjectExpression') return 'not a literal';
+        return props[k].properties.some((p) => keyOf(p) === 'images');
+      };
+      const og = block('openGraph');
+      const tw = block('twitter');
+      if (og !== undefined || tw !== undefined) found.push({ file, og, tw });
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'parent') continue;
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach((c) => visit(c, meta));
+      else if (v && typeof v === 'object') visit(v, meta);
+    }
+  };
+  visit(ast, false);
+  return found;
+}
+
+test('every segment below the root that sets its own openGraph/twitter names the social image', () => {
+  const files = walk('app').filter((f) => /(?:^|[\\/])(?:layout|page)\.js$/.test(f));
+  const problems = [];
+  let checked = 0;
+  for (const f of files) {
+    const rel = show(f);
+    if (rel === 'app/layout.js' || rel === 'app/page.js' || rel.startsWith('app/api/')) continue;
+    // A segment with its own opengraph-image file gets that file at its own level.
+    const dir = rel.slice(0, rel.lastIndexOf('/'));
+    if (['js', 'jsx', 'png', 'jpg'].some((x) => has(`${dir}/opengraph-image.${x}`))) continue;
+    for (const { og, tw } of ownSocialBlocks(readFileSync(f, 'utf8'), rel)) {
+      checked++;
+      if (og === 'not a literal' || tw === 'not a literal') problems.push(`${rel}: openGraph/twitter must be an object literal here`);
+      else if (og === false) problems.push(`${rel}: openGraph without images (the page unfurls with no picture)`);
+      else if (tw === false && og !== true) problems.push(`${rel}: twitter without images, and no openGraph images to fall back to`);
+    }
+  }
+  assert.deepEqual(problems, []);
+  assert.ok(checked >= 1, 'the scan sees /jobs (its layout sets openGraph and twitter)');
+});
+
+test('/jobs (and its shared ?job= links) carries the root social image, with its alt', async () => {
+  const { SOCIAL_IMAGE, SOCIAL_IMAGE_ALT } = await mod('lib/socialImage.js');
+  assert.deepEqual(SOCIAL_IMAGE, { url: '/opengraph-image', width: 1200, height: 630, type: 'image/png', alt: SOCIAL_IMAGE_ALT });
+  const jobs = await mod('app/jobs/layout.js');
+  for (const k of ['openGraph', 'twitter']) {
+    assert.deepEqual(jobs.metadata[k].images, [SOCIAL_IMAGE], `${k}.images`);
+  }
+  assert.equal(jobs.metadata.openGraph.url, 'https://opportumap.netlify.app/jobs', 'its own title/url stay');
+  assert.equal(jobs.metadata.twitter.card, 'summary_large_image');
+  // The URL is the root image route: the file itself sits at app/opengraph-image.js.
+  assert.ok(has('app/opengraph-image.js'));
+  assert.ok(!has('app/jobs/opengraph-image.js'), 'one image, generated once');
+});
+
+// The built page, when a build newer than the sources is on disk (npm run build): Next's own merge
+// is what put the image on /jobs, so check the tags it wrote. Without a fresh build, skip.
+const BUILT_JOBS = '.next/server/app/jobs.html';
+const builtFresh = () => {
+  if (!has(BUILT_JOBS)) return false;
+  const t = statSync(join(ROOT, BUILT_JOBS)).mtimeMs;
+  return ['app/jobs/layout.js', 'lib/socialImage.js', 'app/opengraph-image.js'].every((f) => statSync(join(ROOT, f)).mtimeMs <= t);
+};
+test('built /jobs: og:image and twitter:image point at the social image', { skip: builtFresh() ? false : 'no build newer than the sources' }, () => {
+  const html = read(BUILT_JOBS);
+  const tag = (attr, name) => new RegExp(`<meta ${attr}="${name}" content="([^"]*)"`).exec(html)?.[1];
+  for (const [attr, name] of [['property', 'og:image'], ['name', 'twitter:image']]) {
+    assert.equal(tag(attr, name), 'https://opportumap.netlify.app/opengraph-image', name);
+  }
+  assert.equal(tag('property', 'og:image:width'), '1200');
+  assert.equal(tag('property', 'og:image:height'), '630');
+  assert.match(tag('property', 'og:image:alt') ?? '', /Pick your gate\./);
+  assert.match(tag('name', 'twitter:image:alt') ?? '', /Pick your gate\./);
 });
 
 // ── /contact: the information desk ──────────────────────────────────────────────────────────

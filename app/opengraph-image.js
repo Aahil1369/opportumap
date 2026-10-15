@@ -6,10 +6,13 @@
 // default face.
 import { ImageResponse } from 'next/og';
 import { FALLBACK_ROWS } from '../lib/departures/board.js';
+import { SOCIAL_IMAGE_ALT, SOCIAL_IMAGE_SIZE, SOCIAL_IMAGE_TYPE } from '../lib/socialImage.js';
 
-export const alt = 'OpportuMap: a departures board of real roles worldwide. The world is hiring. Pick your gate.';
-export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+// alt, size and type live in lib/socialImage.js: a segment that sets its own openGraph (/jobs)
+// names this same image from there, since Next adds a file-based image only at this segment.
+export const alt = SOCIAL_IMAGE_ALT;
+export const size = SOCIAL_IMAGE_SIZE;
+export const contentType = SOCIAL_IMAGE_TYPE;
 
 const C = {
   hall: '#0a0b0d',
