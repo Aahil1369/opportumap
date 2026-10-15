@@ -311,6 +311,8 @@ const REDESIGNED = [
   // The desk on /jobs: the AI assistant and the relocation guide.
   'app/components/ChatWidget.js',
   'app/components/RelocationModal.js',
+  // The profile editor (/jobs "Set up profile", the navbar after a first sign-in).
+  'app/components/ProfileModal.js',
   'app/lab',
   'lib/departures',
   ...readdirSync(join(ROOT, 'app/components')).filter((n) => /^Job.*\.js$/.test(n)).map((n) => `app/components/${n}`),

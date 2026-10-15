@@ -1,0 +1,171 @@
+/* ─── The profile editor (ProfileModal.js, a kit Dialog panel) ───
+   The dark hall: --hall-2 panel (kit .dlg), Inter text, JetBrains Mono for the kicker and the
+   labels. Fields, pills and buttons are 16px (no iPhone zoom on focus) and at least 44px tall.
+   The backdrop is the kit's flat one (no blur over a flipping board); only transform moves (the
+   progress bar, a button press). The panel scrolls; the footer's buttons stay in reach. Loaded
+   with the dialog, on demand. */
+.dlg.pm { width: min(100%, 520px); }
+.pm {
+  --pm-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2));
+  color-scheme: dark;
+  font-family: var(--font-sans);
+}
+
+.pm-head { padding: 18px 18px 0; }
+.pm-headline { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pm-titles { min-width: 0; }
+.pm-kicker { margin: 0 0 6px; font: 500 12px/1.3 var(--font-board); letter-spacing: 0.2em; color: var(--sign); }
+.pm-title { margin: 0; font: 800 22px/1.2 var(--font-sans); letter-spacing: -0.01em; color: var(--ink); }
+.pm-x {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: 600 16px/1 var(--font-sans);
+  cursor: pointer;
+}
+.pm-progress { height: 2px; margin-top: 16px; background: var(--rule); overflow: hidden; }
+.pm-progress span {
+  display: block;
+  height: 100%;
+  background: var(--sign);
+  transform-origin: left center;
+  transition: transform 0.3s cubic-bezier(.22, 1, .36, 1);
+}
+
+.pm-body { display: flex; flex-direction: column; gap: 16px; padding: 18px; }
+.pm-welcome {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--sign);
+  border-radius: 10px;
+  background: var(--hall-3);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.pm-text { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); overflow-wrap: anywhere; }
+.pm-hint { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-sub); }
+.pm-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pm-label { margin: 0; font: 500 12px/1.3 var(--font-board); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+
+.pm-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 12px;
+  border: 1px solid var(--pm-field);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 400 16px/1.4 var(--font-sans);
+}
+.pm-input::placeholder { color: var(--ink-sub); opacity: 1; }
+.pm-input:focus { outline: 2px solid var(--sign); outline-offset: 1px; border-color: var(--sign); }
+.pm-area { resize: vertical; min-height: 96px; }
+.pm-select { position: relative; }
+.pm-select select { appearance: none; padding-right: 40px; cursor: pointer; }
+.pm-select::after {
+  content: '▾';
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  color: var(--ink-sub);
+  font-size: 16px;
+  pointer-events: none;
+}
+.pm-select option { background: var(--hall-3); color: var(--ink); }
+
+.pm-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pm-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--pm-field);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: 500 16px/1.2 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.pm-pill:hover { border-color: var(--ink-sub); }
+.pm-pill[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
+
+.pm-upload { position: relative; }
+/* The real file input stays in the tab order (keyboard, screen readers); its label is the target. */
+.pm-file { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.pm-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 120px;
+  padding: 16px;
+  border: 1px dashed var(--pm-field);
+  border-radius: 12px;
+  background: var(--hall-3);
+  text-align: center;
+  cursor: pointer;
+}
+.pm-drop:hover { border-color: var(--sign); }
+.pm-file:focus-visible + .pm-drop { outline: 2px solid var(--sign); outline-offset: 2px; border-color: var(--sign); }
+/* The scan's status: always in the page (a live region), with no height until it says something. */
+.pm-scan:not(:empty) { margin-top: 10px; }
+.pm-drop-main { font: 600 16px/1.4 var(--font-sans); color: var(--ink); overflow-wrap: anywhere; }
+.pm-drop-sub { font: 500 13px/1.3 var(--font-board); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-sub); }
+
+.pm-box { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--rule); border-radius: 10px; }
+.pm-check { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; font-size: 16px; line-height: 1.4; color: var(--ink-dim); }
+.pm-check input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--sign); }
+
+.pm-foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--rule);
+  background: var(--hall-2);
+}
+.pm-need { margin: 0; font-size: 16px; line-height: 1.4; color: var(--ink-sub); }
+.pm-actions { display: flex; gap: 12px; }
+.pm-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: 700 16px/1.2 var(--font-sans);
+  cursor: pointer;
+  transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
+}
+.pm-btn:active { transform: translateY(1px); }
+.pm-btn-sign { background: var(--sign); color: var(--sign-ink); }
+.pm-btn-ghost { background: transparent; color: var(--ink); border-color: var(--pm-field); }
+.pm-btn[aria-disabled='true'] { opacity: 0.6; }
+
+.pm-x:focus-visible,
+.pm-pill:focus-visible,
+.pm-btn:focus-visible,
+.pm-check input:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-progress span,
+  .pm-btn { transition: none; }
+  .pm-btn:active { transform: none; }
+}

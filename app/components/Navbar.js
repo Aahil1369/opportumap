@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { displayName } from '../../lib/displayName.js';
 import { isAdminUser } from '../../lib/admin.js';
+import { saveProfile } from '../../lib/saveProfile.js';
 import { Chip, FOCUS, isHere, Logo, MIGROVA, UserAvatar } from './navParts';
 
 // Keep Supabase and these interaction-gated modals out of the initial bundle.
@@ -169,18 +170,12 @@ export default function Navbar() {
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => setShowAuth(false)} />}
       {showProfileSetup && (
         <ProfileModal
+          welcome
           initialProfile={profileSetupData}
           onClose={() => setShowProfileSetup(false)}
-          onSave={async (profile, rememberOnDevice) => {
-            try {
-              await fetch('/api/user-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ profile_data: profile }),
-              });
-            } catch {}
-            if (rememberOnDevice) localStorage.setItem('opportumap_profile', JSON.stringify(profile));
-            else localStorage.removeItem('opportumap_profile');
+          onSave={(profile) => {
+            // The account copy ({ profile }) and, if they ticked it, this device's (inside profile).
+            saveProfile(profile, { signedIn: true });
             setShowProfileSetup(false);
           }}
         />

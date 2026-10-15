@@ -105,7 +105,7 @@
 }
 .pb-pay {
   margin: 0;
-  font-size: min(30px, (100cqi - 80px) / 13.8); /* 23 tiles fill the card */
+  font-size: min(30px, (100cqi - 87px) / 15); /* PLATE_TILES (25: "CHF 120K–150K · PREDICTED") fill the card */
   color: var(--sign);
 }
 .pb-note { margin: 14px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }

@@ -9,72 +9,28 @@
 //   PredictionBeat  beat 2: one row lifts out and its pay re-flaps to our salary model's
 //                   prediction (asked once, when the beat is in view; cached for the session).
 //   FounderBeat     beat 5: the board dims except the founder's row, lit gold.
+// Every board's LOCAL is on the visitor's clock after hydration (useBoardClock), so one city
+// never shows two times on the page, even on an ISR page hours old.
 // Reduced motion: FlapText shows plain text and the beats stay in their final state.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FlapBoard from '../kit/FlapBoard';
 import FlapText from '../kit/FlapText';
 import { localPay } from '../../../lib/departures/pay';
+import { FOUNDER_LAYOUT, LAYOUT, PLATE_TILES, plateText, retime, withLayout } from '../../../lib/departures/homeBoard';
 import { useBeat } from './Beat';
 
-// Tiles per column. Phones fold PAY and STATUS under ROLE, so both lines are 27 tiles: the
-// approved step-0 tile size at 390 px.
-const LAYOUT = {
-  time: { width: 5 },
-  code: { width: 3, tone: 'sign' },
-  role: { width: 19 },
-  pay: { width: 11, line: 2 },
-  status: { width: 8, tone: 'status', line: 2 },
-};
-// Beat 5: the route is the widest cell (29 tiles), on a line of its own on phones; no PAY.
-const FOUNDER_LAYOUT = {
-  time: { width: 5, line: 2 },
-  code: { width: 3, tone: 'sign', line: 2 },
-  role: { width: 29 },
-  status: { width: 9, tone: 'status', line: 2 },
-};
-const withLayout = (columns, layout) => columns.filter((c) => layout[c.key]).map((c) => ({ ...c, ...layout[c.key] }));
-
-const clocks = new Map();
-/** "HH:MM" in a time zone (24 h), or null when the engine does not know the zone. */
-function clockIn(tz, now) {
-  if (!clocks.has(tz)) {
-    let f = null;
-    try {
-      f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-    } catch {
-      f = null;
-    }
-    clocks.set(tz, f);
-  }
-  const parts = clocks.get(tz)?.formatToParts(now);
-  const h = parts?.find((p) => p.type === 'hour')?.value;
-  const m = parts?.find((p) => p.type === 'minute')?.value;
-  return h && m ? `${h.padStart(2, '0')}:${m.padStart(2, '0')}` : null;
-}
-
-/** Rows in their board slots, LOCAL re-timed to `now` (null: as the server rendered them). */
-function slotted(rows, now) {
-  return rows.map((row, i) => {
-    const time = now && row.tz ? clockIn(row.tz, now) : null;
-    return { ...row, id: `slot-${i}`, cells: time ? { ...row.cells, time } : row.cells };
-  });
-}
-
-export default function HomeBoard({ rows, columns, caption }) {
-  const ref = useRef(null);
+/**
+ * The visitor's clock for a board: null on the server and during hydration (the rows show the
+ * server's LOCAL), then the time from the first frame after hydration. It moves on at each
+ * minute while the board (`ref`) is on screen and the page is visible, and catches up when either
+ * comes back. Every board ticks on the same minute boundary, so they agree.
+ */
+function useBoardClock(ref) {
   const [now, setNow] = useState(null);
-  const [play, setPlay] = useState(false);
-  const cols = useMemo(() => withLayout(columns, LAYOUT), [columns]);
-  const shown = useMemo(() => slotted(rows, now), [rows, now]);
 
   useEffect(() => {
-    // The first frame after hydration: the board clacks in, already on the visitor's local times
-    // (an ISR page can be minutes old).
-    const first = requestAnimationFrame(() => {
-      setNow(new Date());
-      setPlay(true);
-    });
+    const first = requestAnimationFrame(() => setNow(new Date()));
     let timer = 0;
     let onScreen = true;
     const sync = () => {
@@ -104,11 +60,25 @@ export default function HomeBoard({ rows, columns, caption }) {
       clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, []);
+  }, [ref]);
+
+  return now;
+}
+
+/** Rows in their board slots, LOCAL re-timed to `now` (null: as the server rendered them). */
+const slotted = (rows, now) => rows.map((row, i) => ({ ...retime(row, now), id: `slot-${i}` }));
+
+export default function HomeBoard({ rows, columns, caption }) {
+  const ref = useRef(null);
+  // The first frame after hydration: the board clacks in, already on the visitor's local times
+  // (an ISR page can be minutes old).
+  const now = useBoardClock(ref);
+  const cols = useMemo(() => withLayout(columns, LAYOUT), [columns]);
+  const shown = useMemo(() => slotted(rows, now), [rows, now]);
 
   return (
     <div ref={ref} className="hb">
-      <FlapBoard columns={cols} rows={shown} play={play} caption={caption} />
+      <FlapBoard columns={cols} rows={shown} play={now !== null} caption={caption} />
     </div>
   );
 }
@@ -157,11 +127,10 @@ function predictPay(row) {
   return p;
 }
 
-const PAY_TILES = 23; // "C$185K–234K · PREDICTED"
-
 export function PredictionBeat({ row }) {
   const ref = useRef(null);
   const { state, seen } = useBeat(ref);
+  const now = useBoardClock(ref);
   const [predicted, setPredicted] = useState(undefined); // undefined: not asked; null: unavailable
 
   useEffect(() => {
@@ -180,17 +149,20 @@ export function PredictionBeat({ row }) {
   else if (predicted === null) note = "Our salary model's estimate is unavailable right now, so this is the pay the role lists.";
   else if (seen) note = 'Asking our salary model…';
 
+  // LOCAL on the visitor's clock, as on the board above (not the time the page was built).
+  const time = retime(row, now).cells.time;
+
   return (
     <figure ref={ref} className="pb" data-beat={state ?? undefined}>
       <div className="pb-card">
         <p className="pb-row">
-          <FlapText text={row.cells.time} play={false} width={5} />
-          <FlapText className="pb-code" text={row.cells.code} play={false} width={3} />
-          <FlapText text={row.cells.role} play={false} width={19} />
+          <FlapText text={time} play={false} width={LAYOUT.time.width} />
+          <FlapText className="pb-code" text={row.cells.code} play={false} width={LAYOUT.code.width} />
+          <FlapText text={row.cells.role} play={false} width={LAYOUT.role.width} />
         </p>
         <p className="pb-label">PAY</p>
         <p className="pb-pay">
-          <FlapText text={predicted ? `${predicted} · PREDICTED` : listed} from={listed} width={PAY_TILES} />
+          <FlapText text={predicted ? plateText(predicted) : listed} from={listed} width={PLATE_TILES} />
         </p>
       </div>
       <figcaption className="pb-note" aria-live="polite">
@@ -205,13 +177,15 @@ export function PredictionBeat({ row }) {
 export function FounderBeat({ rows, founder, columns }) {
   const ref = useRef(null);
   const { state } = useBeat(ref);
+  const now = useBoardClock(ref);
   const cols = useMemo(() => withLayout(columns, FOUNDER_LAYOUT), [columns]);
+  // The dimmed rows are the board's own, on the visitor's clock like the board above.
   const board = useMemo(
     () => [
-      ...rows.slice(0, 3).map((row, i) => ({ id: `off-${i}`, cells: row.cells, tone: 'off', play: false })),
+      ...rows.slice(0, 3).map((row, i) => ({ id: `off-${i}`, cells: retime(row, now).cells, tone: 'off', play: false })),
       { ...founder, tone: 'lit' },
     ],
-    [rows, founder],
+    [rows, founder, now],
   );
 
   return (

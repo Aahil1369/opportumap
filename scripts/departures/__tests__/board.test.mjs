@@ -130,7 +130,7 @@ test('jobs with listed pay come first; pay-less roles only fill what is left', (
   assert.equal(withPay.length, rows.length);
 });
 
-test('a role without pay reads NOT LISTED (it fits the 11-tile PAY column)', () => {
+test('a role without pay reads NOT LISTED (it fits the 13-tile PAY column)', () => {
   const rows = boardRowsFrom(
     [{ id: 'x1', title: 'Support Engineer', location: 'Lisbon', country: 'pt', source: 'arbeitnow' }],
     { now: NOW, fill: [] },

@@ -48,6 +48,7 @@ import {
 import { profileQuery } from '../../../lib/departures/profileQuery';
 import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
 import { loadHomeProfile } from '../home/homeProfile';
+import { PROFILE_KEY, saveProfile as storeProfile } from '../../../lib/saveProfile';
 import './jobs.css';
 
 const JobGate = dynamic(() => import('./JobGate'), { ssr: false });
@@ -59,7 +60,6 @@ const PER_PAGE = 24;
 const NO_FILTERS = { type: 'all', remote: false, country: 'all', saved: false };
 const ISO2 = /^[a-z]{2}$/;
 const SAVED_KEY = 'opportumap_saved';
-const PROFILE_KEY = 'opportumap_profile';
 const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token/;
 
 const LOAD_ERROR = "We couldn't load roles right now. Try again.";
@@ -149,6 +149,7 @@ export default function JobsBoard({ initial = null }) {
   const [latest] = useState(createLatest);
   const askRef = useRef(null);
   const moveRef = useRef(null);
+  const meRef = useRef(null); // "Set up profile": the profile dialog gives it focus back
   const wanted = useRef(null); // ?job= from the URL, opened once a board has that role
   const opener = useRef(null); // the row that opened the gate: the gate's Dialog gives it focus back
   const pushed = useRef(false); // the gate added a history entry (Back closes it)
@@ -340,19 +341,7 @@ export default function JobsBoard({ initial = null }) {
   const saveProfile = (p) => {
     setProfile(p);
     setEditing(false);
-    if (SESSION_COOKIE.test(document.cookie)) {
-      fetch('/api/user-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: p }),
-      }).catch(() => {});
-    }
-    try {
-      if (p?.rememberOnDevice) localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-      else localStorage.removeItem(PROFILE_KEY);
-    } catch {
-      // storage blocked: the profile still holds for this page
-    }
+    storeProfile(p, { signedIn: SESSION_COOKIE.test(document.cookie) });
   };
 
   // ── What the board says ──
@@ -425,7 +414,7 @@ export default function JobsBoard({ initial = null }) {
           <label className="jb-label" htmlFor="jb-q">
             Where to?
           </label>
-          <button type="button" className="jb-me" onClick={() => setEditing(true)}>
+          <button ref={meRef} type="button" className="jb-me" onClick={() => setEditing(true)}>
             {profile ? 'Edit profile' : 'Set up profile'}
             <span className="sr-only"> (it puts your best matches first)</span>
             {!profile && <span aria-hidden="true"> →</span>}
@@ -539,7 +528,7 @@ export default function JobsBoard({ initial = null }) {
 
       {openJob && <JobGate key={openJob.id} job={openJob} profile={profile} onClose={close} returnFocusRef={opener} />}
       {editing && (
-        <ProfileModal initialProfile={profile} onSave={saveProfile} onClose={() => setEditing(false)} />
+        <ProfileModal initialProfile={profile} onSave={saveProfile} onClose={() => setEditing(false)} returnFocusRef={meRef} />
       )}
       {chat.loaded && (
         <ChatWidget open={chat.open} onClose={closeChat} profile={profile ?? null} returnFocusRef={askRef} />
