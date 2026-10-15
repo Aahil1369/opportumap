@@ -15,6 +15,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEFAULT_TONE,
   TONES,
+  fitToText,
   isEdited,
   letterErrorFor,
   letterText,
@@ -237,19 +238,28 @@ export default function AirmailDesk() {
     return () => clearTimeout(t);
   }, [sealBusy]);
 
-  // The letter grows with its text, so the page scrolls and the letter never does.
+  // The letter grows with its text, so the page scrolls and the letter never does. fitToText
+  // measures it without the page ever getting shorter, so typing near the end of a long letter
+  // never moves the page.
   const shown = edited ?? result?.letter ?? '';
+  const fittedWidth = useRef(0);
   useLayout(() => {
     const el = refs.letter.current;
-    if (!el || seal) return undefined;
-    const fit = () => {
-      el.style.height = 'auto';
-      el.style.height = `${el.scrollHeight + 2}px`;
-    };
-    fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    if (el && !seal) fittedWidth.current = fitToText(el);
   }, [shown, seal, result]);
+
+  // A resize re-fits the letter only when its width changed: on a phone the toolbars showing and
+  // hiding resize the window, but never the letter's lines.
+  const letterOpen = Boolean(result) && !seal;
+  useEffect(() => {
+    if (!letterOpen) return undefined;
+    const refit = () => {
+      const el = refs.letter.current;
+      if (el && el.clientWidth !== fittedWidth.current) fittedWidth.current = fitToText(el);
+    };
+    window.addEventListener('resize', refit);
+    return () => window.removeEventListener('resize', refit);
+  }, [letterOpen, refs.letter]);
 
   // ── The resume ──
   const pickResume = () => refs.file.current?.click();

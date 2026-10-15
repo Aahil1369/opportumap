@@ -11,6 +11,7 @@ import * as espree from 'espree';
 const {
   DEFAULT_TONE,
   TONES,
+  fitToText,
   isEdited,
   letterErrorFor,
   letterText,
@@ -219,6 +220,118 @@ test('three tones, each one the route knows', () => {
   assert.equal(toneOf(undefined).id, DEFAULT_TONE);
 });
 
+// ── The letter fits its text without moving the page ────────────────────────────────────────
+
+/**
+ * Enough of a browser to show the jump: a page with `above` px before the letter and `below` px
+ * after it. Every geometry read lays the page out, and laying out a page that is shorter than
+ * scrollY + the viewport clamps scrollY, as browsers do. At height:auto the letter falls back to
+ * its rows (autoHeight). With a classic scrollbar (scrollbar > 0) a letter that overflows while
+ * measured wraps narrower, so its text is taller.
+ */
+function fakePage({ above = 600, below = 700, vh = 844, text = 2000, height = '', y = 0, autoHeight = 415, scrollbar = 0 } = {}) {
+  const log = { clamps: 0, scrollTo: [], shortest: Infinity };
+  const el = { text, style: { height, marginBottom: '', overflowY: '' } };
+  const px = (v) => parseFloat(v) || 0;
+  const box = () => (el.style.height === '' || el.style.height === 'auto' ? autoHeight : px(el.style.height));
+  const win = {
+    _x: 0,
+    _y: y,
+    scrollTo(x, to) {
+      log.scrollTo.push([x, to]);
+      win._y = Math.max(0, Math.min(to, layout()));
+    },
+  };
+  function layout() {
+    const page = above + box() + px(el.style.marginBottom) + below;
+    log.shortest = Math.min(log.shortest, page);
+    const max = Math.max(0, page - vh);
+    if (win._y > max) {
+      win._y = max;
+      log.clamps += 1;
+    }
+    return max;
+  }
+  Object.defineProperties(win, {
+    scrollX: { get: () => (layout(), win._x) },
+    scrollY: { get: () => (layout(), win._y) },
+  });
+  Object.defineProperties(el, {
+    offsetHeight: { get: () => (layout(), box()) },
+    clientHeight: { get: () => (layout(), box() - 2) }, // 1px borders
+    clientWidth: { get: () => (layout(), 352) },
+    scrollHeight: {
+      get() {
+        layout();
+        const client = box() - 2;
+        const wraps = el.style.overflowY !== 'hidden' && el.text > client ? scrollbar : 0;
+        return Math.max(el.text + wraps, client);
+      },
+    },
+  });
+  return { el, win, log };
+}
+
+/** The fit this page shipped with: collapse to auto, read, set. */
+function collapsingFit(el) {
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight + 2}px`;
+}
+
+test('the fake page shows the jump: collapsing the letter to measure it clamps scrollY', () => {
+  // A 2000 px letter whose end is mid-screen, 700 px of page below it.
+  const start = 600 + 2002 - 422;
+  const { el, win, log } = fakePage({ height: '2002px', y: start });
+  el.text = 2027; // one more line
+  collapsingFit(el);
+  assert.ok(log.clamps > 0);
+  assert.ok(win.scrollY < start - 1000, `thrown up the page: ${win.scrollY}`);
+});
+
+test('fitToText: the letter grows and shrinks to its text, borders included, and leaves nothing behind', () => {
+  const { el, win } = fakePage();
+  assert.equal(fitToText(el), 352, 'the width it was fitted at');
+  assert.equal(el.style.height, '2002px');
+  el.text = 1600;
+  fitToText(el);
+  assert.equal(el.style.height, '1602px');
+  el.text = 120; // shorter than its rows: it keeps its own height
+  fitToText(el);
+  assert.equal(el.style.height, '415px');
+  assert.equal(el.style.marginBottom, '');
+  assert.equal(el.style.overflowY, '');
+});
+
+test('fitToText: typing near the end of a long letter never moves the page', () => {
+  const start = 600 + 2002 - 422;
+  const { el, win, log } = fakePage({ height: '2002px', y: start });
+  for (const text of [2000, 2027, 2054, 2027, 1973, 2081]) {
+    el.text = text;
+    fitToText(el);
+    assert.equal(win.scrollY, start, `after a ${text} px letter`);
+    assert.equal(el.style.height, `${text + 2}px`);
+  }
+  assert.equal(log.clamps, 0, 'the page was never shorter than where it is scrolled to');
+  assert.ok(log.shortest >= 600 + 1975 + 700, `the page never got shorter than the letter's text: ${log.shortest}`);
+  assert.deepEqual(log.scrollTo, []);
+});
+
+test('fitToText: a real cut at the very end of the page clamps like any shorter page, and no further', () => {
+  const page = { above: 600, below: 700, vh: 844 };
+  const max = page.above + 2002 + page.below - page.vh;
+  const { el, win } = fakePage({ ...page, height: '2002px', y: max });
+  el.text = 1700; // a paragraph cut
+  fitToText(el);
+  assert.equal(el.style.height, '1702px');
+  assert.equal(win.scrollY, max - 300);
+});
+
+test('fitToText: measured without a scrollbar, so a classic one does not over-measure the letter', () => {
+  const { el, win } = fakePage({ height: '1802px', scrollbar: 48 });
+  fitToText(el);
+  assert.equal(el.style.height, '2002px');
+});
+
 // ── Copy and motion rules on the /cover-letter files ────────────────────────────────────────
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
@@ -328,6 +441,36 @@ test('the letter is an editable <textarea>, labelled, and nothing else holds it'
   assert.equal(editable, false, 'no contentEditable stand-in');
   assert.match(src, /htmlFor="cl-letter"/, 'a <label htmlFor="cl-letter">');
   assert.match(src, /onChange=\{onLetterChange\}/, 'edits are kept');
+});
+
+test('the letter is fitted by fitToText, and a resize re-fits it only when its width changed', () => {
+  const src = read(DESK);
+  assert.match(src, /fitToText\(/, 'the desk fits the letter with fitToText');
+  assert.doesNotMatch(src, /style\.height\s*=/, 'nothing in the desk collapses the letter to measure it');
+  // Every resize listener's handler compares the letter's width before it re-fits (on a phone the
+  // toolbars showing and hiding resize the window, never the letter's lines).
+  const handlers = [];
+  eachNode(parse(src, DESK), (node) => {
+    if (node.type !== 'CallExpression' || node.callee.property?.name !== 'addEventListener') return;
+    if (node.arguments[0]?.value !== 'resize') return;
+    handlers.push(node.arguments[1]);
+  });
+  assert.ok(handlers.length >= 1, 'a resize listener');
+  for (const h of handlers) {
+    const fn = h.type === 'Identifier' ? fnSource(src, h.name).text : src.slice(h.range[0], h.range[1]);
+    assert.match(fn, /clientWidth\s*!==|!==\s*[\w.]*clientWidth/, 'the handler checks the width first');
+    assert.match(fn, /fitToText\(/);
+  }
+});
+
+test('while the letter is typed in, no scroll anchoring moves the page, and the caret stays clear of the bars', () => {
+  const css = read('app/components/coverLetter/coverLetter.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [...css.matchAll(/html:has\(#cl-letter:focus\)\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  assert.ok(rules.length >= 1, 'an html:has(#cl-letter:focus) rule');
+  const all = rules.join(';');
+  assert.match(all, /overflow-anchor:\s*none/, 'no scroll anchoring while typing');
+  assert.match(all, /scroll-padding-bottom:/, 'the caret is kept above the sticky action bar');
+  assert.match(all, /scroll-padding-top:/, 'and below the sticky navbar');
 });
 
 test('Copy and Download use letterText (the edited text); the clipboard sits in try/catch with a fallback', () => {

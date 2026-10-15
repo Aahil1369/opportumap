@@ -211,6 +211,17 @@
 .cl-letter-l { margin-top: 2px; }
 .cl-paper { min-height: 320px; padding: 16px 18px; line-height: 1.7; resize: none; overflow-y: auto; }
 .cl-paper[data-busy] { opacity: 0.5; }
+
+/* While the letter is typed in, the page holds still. No scroll anchoring: Chromium would keep
+   whatever sits below the letter in place and push the line being typed up a line at every wrap.
+   When the caret does need revealing, it lands clear of the sticky navbar (61px) and of the
+   sticky action bar (two rows on a phone, one from 640px). */
+html:has(#cl-letter:focus) {
+  overflow-anchor: none;
+  scroll-padding-top: 72px;
+  scroll-padding-bottom: calc(128px + env(safe-area-inset-bottom));
+}
+
 .cl-edits { display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
 .cl-edits .cl-k { color: var(--amber); }
 
@@ -448,6 +459,7 @@
   .cl-bar .cl-btn { flex: 0 1 auto; }
   .cl-actions .cl-btn { flex: 0 1 auto; }
   .cl-paper { padding: 20px 24px; }
+  html:has(#cl-letter:focus) { scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
   .cl-sealed { --ew: 360px; --eh: 216px; --ph: 100px; --sw: 296px; }
   .env-label { top: 12px; left: 12px; padding: 5px 9px; }
   .env-label b { font-size: 15px; }
