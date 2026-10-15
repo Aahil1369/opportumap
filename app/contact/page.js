@@ -1,17 +1,31 @@
 'use client';
 
+// /contact — the information desk (i · INFORMATION). The form posts JSON to /api/contact, which
+// saves it to the admin inbox (Supabase submit_contact, read on /admin): the visitor's name,
+// email, subject and message, validated here and again on the server, with a hidden "hp_ref"
+// honeypot only bots fill. On failure the visitor keeps what they typed and sees the server's
+// friendly message; on success, the "Message sent." screen. Fields are 16px, each with its label.
+// Metadata: ./layout.js.
+
 import { useState } from 'react';
 import Navbar from '../components/Navbar';
-import Btn from '../components/ui/Btn';
-import Footnote from '../components/ui/Footnote';
-import { useScrollReveal } from '../components/ui/hooks/useScrollReveal';
-import { FOOTNOTES } from '../lib/pageCopy';
+import PageShell from '../components/kit/PageShell';
 import { submitContact, validateContact, CONTACT_LIMITS, SEND_FAILED } from '../../lib/contactForm.js';
 
 const EMPTY = { name: '', email: '', subject: '', message: '' };
 
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sign';
+const label = 'block mb-2 font-mono text-[12px] font-medium tracking-[0.14em] uppercase text-ink-dim';
+// The border is --ink-sub at 60% so the field's edge reads (≥ 3:1) on the card.
+const field =
+  'w-full min-h-[48px] px-3 py-3 rounded-[10px] bg-hall-3 border border-ink-sub/60 text-[16px] leading-[1.4] text-ink placeholder:text-ink-sub focus:outline-2 focus:outline-offset-1 focus:outline-sign';
+const DESK = [
+  { label: 'Replies', value: 'By email' },
+  { label: 'Twitter', value: '@opportumap' },
+  { label: 'LinkedIn', value: 'OpportuMap' },
+];
+
 export default function ContactPage() {
-  useScrollReveal();
   const [form, setForm] = useState(EMPTY);
   const [hpRef, setHpRef] = useState(''); // honeypot
   const [submitted, setSubmitted] = useState(false);
@@ -39,101 +53,97 @@ export default function ContactPage() {
     }
   };
 
-  const inputCls = 'w-full px-3 py-2.5 bg-paper-bg border border-paper-rule text-[14px] text-paper-ink placeholder-paper-ink-sub outline-none focus:border-accent transition-colors';
-  const labelCls = 'font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-1.5 block';
+  const another = () => {
+    setSubmitted(false);
+    setForm(EMPTY);
+    setHpRef('');
+  };
 
   return (
-    <div className="min-h-screen bg-paper-bg text-paper-ink">
+    <>
       <Navbar />
-
-      <section className="max-w-[1280px] mx-auto px-6 sm:px-10 py-12">
-        <div className="font-mono text-[11px] tracking-[0.18em] uppercase text-paper-ink-sub mb-4 flex items-center gap-3">
-          <span className="inline-block w-7 h-px bg-paper-ink-sub" />
-          <span>§ CONTACT</span>
-        </div>
-        <h1 className="font-display text-[40px] sm:text-[56px] leading-[1.0] tracking-[-0.02em] text-paper-ink">Get in touch.</h1>
-      </section>
-
-      <main className="max-w-[1280px] mx-auto px-6 sm:px-10 pb-24 border-t border-paper-rule">
-        <div className="py-14 max-w-2xl">
-          <p className="text-[14px] text-paper-ink-dim leading-[1.55] mb-8">
-            Have a question, feature idea, or want to partner with us? Your message goes
-            straight to the founder, and you&apos;ll get a reply by email.
-          </p>
-
-          {submitted ? (
-            <div className="border border-paper-rule bg-paper-bg-alt p-8 text-center" role="status">
-              <div className="font-mono text-[10px] tracking-[0.12em] text-paper-ink-sub mb-3">{'// MESSAGE SENT'}</div>
-              <h2 className="font-display text-[24px] leading-[1.15] text-paper-ink mb-2">Message sent.</h2>
-              <p className="text-[14px] text-paper-ink-dim mb-6">Thanks for reaching out. Your message went straight to the founder, and you&apos;ll get a reply by email at the address you gave.</p>
-              <Btn variant="secondary" as="button" onClick={() => { setSubmitted(false); setForm(EMPTY); setCompany(''); }}>
-                Send another message
-              </Btn>
-            </div>
-          ) : (
-            <div className="border border-paper-rule p-6 sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Honeypot: hidden from people, filled only by bots; the API drops those. */}
-                <p className="hidden" aria-hidden="true">
-                  <label>
-                    Company (leave this empty)
-                    <input name="hp_ref" value={hpRef} onChange={(e) => setHpRef(e.target.value)}
-                      tabIndex={-1} autoComplete="off" />
-                  </label>
-                </p>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="contact-name" className={labelCls}>Your name</label>
-                    <input id="contact-name" name="name" required value={form.name} onChange={(e) => set('name', e.target.value)}
-                      placeholder="Jane Doe" maxLength={CONTACT_LIMITS.name} autoComplete="name"
-                      className={inputCls} />
-                  </div>
-                  <div>
-                    <label htmlFor="contact-email" className={labelCls}>Email address</label>
-                    <input id="contact-email" name="email" required type="email" value={form.email} onChange={(e) => set('email', e.target.value)}
-                      placeholder="Where should the reply go?" maxLength={CONTACT_LIMITS.email} autoComplete="email"
-                      className={inputCls} />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="contact-subject" className={labelCls}>Subject</label>
-                  <input id="contact-subject" name="subject" required value={form.subject} onChange={(e) => set('subject', e.target.value)}
-                    placeholder="Feature request, bug report, partnership..." maxLength={CONTACT_LIMITS.subject}
-                    className={inputCls} />
-                </div>
-                <div>
-                  <label htmlFor="contact-message" className={labelCls}>Message</label>
-                  <textarea id="contact-message" name="message" required value={form.message} onChange={(e) => set('message', e.target.value)} rows={5}
-                    placeholder="Tell us what's on your mind..." maxLength={CONTACT_LIMITS.message}
-                    className={`${inputCls} resize-none`} />
-                </div>
-                {error && (
-                  <p role="alert" className="font-mono text-[12px] text-accent">{error}</p>
-                )}
-                <Btn variant="primary" as="button" type="submit" disabled={sending} className="w-full justify-center disabled:opacity-60">
-                  {sending ? 'Sending…' : 'Send message'}
-                </Btn>
-              </form>
-            </div>
-          )}
-
-          {/* Contact info */}
-          <div className="reveal mt-10 grid sm:grid-cols-3 gap-px bg-paper-rule border border-paper-rule">
-            {[
-              { label: 'Replies', value: 'By email' },
-              { label: 'Twitter', value: '@opportumap' },
-              { label: 'LinkedIn', value: 'OpportuMap' },
-            ].map((c) => (
-              <div key={c.label} className="bg-paper-bg p-4 text-center">
-                <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-1">{c.label}</p>
-                <p className="text-[13px] text-paper-ink">{c.value}</p>
-              </div>
-            ))}
+      <PageShell
+        sign={{ letter: 'i', label: 'INFORMATION' }}
+        title="Ask the"
+        accent="information desk."
+        sub="A question, an idea, a partnership or a bug: your message goes straight to the founder, and you'll get a reply by email."
+      >
+        {submitted ? (
+          <div className="rounded-[14px] border border-rule bg-hall-2 p-6 sm:p-8 text-center" role="status">
+            <p className="font-mono text-[12px] font-medium tracking-[0.22em] text-ok mb-3">MESSAGE SENT ✓</p>
+            <h2 className="font-sans text-[26px] font-extrabold leading-[1.15] tracking-[-0.01em] text-ink mb-2">Message sent.</h2>
+            <p className="text-[16px] leading-[1.5] text-ink-dim mb-6 max-w-[46ch] mx-auto">
+              Thanks for reaching out. Your message went straight to the founder, and you&apos;ll get a reply by email at the address you gave.
+            </p>
+            <button
+              type="button"
+              onClick={another}
+              className={`inline-flex items-center justify-center min-h-[48px] px-5 rounded-[10px] border border-rule text-[16px] font-semibold text-ink hover:border-ink-sub ${FOCUS}`}
+            >
+              Send another message
+            </button>
           </div>
+        ) : (
+          <div className="rounded-[14px] border border-rule bg-hall-2 p-5 sm:p-8">
+            <p className="font-mono text-[11px] font-medium tracking-[0.22em] text-sign mb-5">DESK OPEN · REPLIES BY EMAIL</p>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Honeypot: hidden from people, filled only by bots; the API drops those. */}
+              <p className="hidden" aria-hidden="true">
+                <label>
+                  Company (leave this empty)
+                  <input name="hp_ref" value={hpRef} onChange={(e) => setHpRef(e.target.value)}
+                    tabIndex={-1} autoComplete="off" />
+                </label>
+              </p>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="contact-name" className={label}>Your name</label>
+                  <input id="contact-name" name="name" required value={form.name} onChange={(e) => set('name', e.target.value)}
+                    placeholder="Jane Doe" maxLength={CONTACT_LIMITS.name} autoComplete="name"
+                    className={field} />
+                </div>
+                <div>
+                  <label htmlFor="contact-email" className={label}>Email address</label>
+                  <input id="contact-email" name="email" required type="email" value={form.email} onChange={(e) => set('email', e.target.value)}
+                    placeholder="Where should the reply go?" maxLength={CONTACT_LIMITS.email} autoComplete="email"
+                    className={field} />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="contact-subject" className={label}>Subject</label>
+                <input id="contact-subject" name="subject" required value={form.subject} onChange={(e) => set('subject', e.target.value)}
+                  placeholder="Feature request, bug report, partnership..." maxLength={CONTACT_LIMITS.subject}
+                  className={field} />
+              </div>
+              <div>
+                <label htmlFor="contact-message" className={label}>Message</label>
+                <textarea id="contact-message" name="message" required value={form.message} onChange={(e) => set('message', e.target.value)} rows={6}
+                  placeholder="Tell us what's on your mind..." maxLength={CONTACT_LIMITS.message}
+                  className={`${field} resize-y`} />
+              </div>
+              {error && (
+                <p role="alert" className="text-[16px] leading-[1.45] text-warn">{error}</p>
+              )}
+              <button
+                type="submit"
+                disabled={sending}
+                className={`w-full min-h-[48px] rounded-[10px] bg-sign text-sign-ink font-sans text-[16px] font-bold disabled:opacity-60 ${FOCUS}`}
+              >
+                {sending ? 'Sending…' : 'Send message'}
+              </button>
+            </form>
+          </div>
+        )}
 
-          <Footnote>{FOOTNOTES.contact}</Footnote>
-        </div>
-      </main>
-    </div>
+        <dl className="mt-8 grid sm:grid-cols-3 gap-px rounded-[12px] overflow-hidden border border-rule bg-rule">
+          {DESK.map((c) => (
+            <div key={c.label} className="bg-hall-2 px-4 py-4">
+              <dt className="font-mono text-[11px] font-medium tracking-[0.18em] uppercase text-ink-sub mb-1">{c.label}</dt>
+              <dd className="text-[16px] text-ink">{c.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </PageShell>
+    </>
   );
 }
