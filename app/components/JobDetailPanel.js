@@ -64,9 +64,10 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ job, profile }),
     })
-      .then((r) => r.json())
-      .then((d) => { setAdvice(d); setAdviceLoading(false); })
-      .catch(() => setAdviceLoading(false));
+      // A failure is 503 advice-unavailable (no canned verdict): say it is unavailable.
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { setAdvice(d?.headline ? d : { unavailable: true }); setAdviceLoading(false); })
+      .catch(() => { setAdvice({ unavailable: true }); setAdviceLoading(false); });
   }, [job?.id, profile]);
 
   if (!job) return null;
@@ -152,7 +153,7 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
                   </div>
                 )}
 
-                {!adviceLoading && advice && (
+                {!adviceLoading && advice && !advice.unavailable && (
                   <>
                     <p className="text-[14px] font-medium mb-3 leading-snug text-paper-ink">{advice.headline}</p>
                     <div className="space-y-1.5 mb-3">
@@ -174,8 +175,8 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
                   </>
                 )}
 
-                {!adviceLoading && !advice && !profile && (
-                  <p className="text-[13px] text-paper-ink-sub">Set up your profile to get personalized AI advice for every job.</p>
+                {!adviceLoading && advice?.unavailable && (
+                  <p className="text-[13px] text-paper-ink-sub">Advice unavailable right now.</p>
                 )}
               </div>
             )}

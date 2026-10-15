@@ -25,7 +25,8 @@
 //   here, from the same search) or from the visitor's own search once it lands (deepLink); if
 //   neither has the role, one /api/jobs?id= lookup asks for it (the two pages' boards can differ
 //   when a feed call failed for one of them), and only then does the board say it couldn't find
-//   it. JobDetailPanel stands in for the gate until JobGate (Task 6) replaces it.
+//   it. The gate is JobGate (the kit Dialog), loaded on first open; it hands focus back to the
+//   row that opened it as it closes (Esc, ✕, the backdrop or Back).
 // - The desk: the AI assistant (ChatWidget, /api/chat) behind the floating Ask AI button, and the
 //   relocation guide (RelocationModal) behind "I got the job". Both load when first opened.
 
@@ -49,7 +50,7 @@ import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
 import { loadHomeProfile } from '../home/homeProfile';
 import './jobs.css';
 
-const JobDetailPanel = dynamic(() => import('../JobDetailPanel'), { ssr: false });
+const JobGate = dynamic(() => import('./JobGate'), { ssr: false });
 const ProfileModal = dynamic(() => import('../ProfileModal'), { ssr: false });
 const ChatWidget = dynamic(() => import('../ChatWidget'), { ssr: false });
 const RelocationModal = dynamic(() => import('../RelocationModal'), { ssr: false });
@@ -149,7 +150,7 @@ export default function JobsBoard({ initial = null }) {
   const askRef = useRef(null);
   const moveRef = useRef(null);
   const wanted = useRef(null); // ?job= from the URL, opened once a board has that role
-  const opener = useRef(null); // the row that opened the gate: focus goes back there
+  const opener = useRef(null); // the row that opened the gate: the gate's Dialog gives it focus back
   const pushed = useRef(false); // the gate added a history entry (Back closes it)
 
   // The URL, the profile and the saved roles, once; Back / Forward open and close the gate.
@@ -168,10 +169,8 @@ export default function JobsBoard({ initial = null }) {
     });
     const onPop = () => {
       pushed.current = false;
-      const id = new URLSearchParams(window.location.search).get('job');
-      setOpenId(id);
-      if (!id && opener.current?.isConnected) opener.current.focus(); // Back closed the gate
-      if (!id) opener.current = null;
+      // Back closes the gate (its Dialog returns focus to the row); Forward opens it again.
+      setOpenId(new URLSearchParams(window.location.search).get('job'));
     };
     window.addEventListener('popstate', onPop);
     return () => {
@@ -305,6 +304,8 @@ export default function JobsBoard({ initial = null }) {
     [hrefFor],
   );
 
+  // Focus goes back to the row from the gate's Dialog as it unmounts (returnFocusRef = opener):
+  // focusing it here, while the Dialog is still open, would only be pulled back into the panel.
   const close = useCallback(() => {
     setOpenId(null);
     if (pushed.current) {
@@ -313,9 +314,6 @@ export default function JobsBoard({ initial = null }) {
     } else {
       window.history.replaceState(null, '', searchHref(asked?.text));
     }
-    const el = opener.current;
-    opener.current = null;
-    if (el?.isConnected) el.focus();
   }, [asked?.text]);
 
   const toggleSave = useCallback(
@@ -539,7 +537,7 @@ export default function JobsBoard({ initial = null }) {
         <span className="sr-only"> about visas, moving and settling in</span>
       </button>
 
-      {openJob && <JobDetailPanel job={openJob} profile={profile} onClose={close} />}
+      {openJob && <JobGate key={openJob.id} job={openJob} profile={profile} onClose={close} returnFocusRef={opener} />}
       {editing && (
         <ProfileModal initialProfile={profile} onSave={saveProfile} onClose={() => setEditing(false)} />
       )}

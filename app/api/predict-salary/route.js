@@ -16,7 +16,8 @@ export async function POST(request) {
         {
           role: 'user',
           content: `Estimate the salary range for this job. Return ONLY a JSON object, no markdown, no code blocks, no explanation:
-{"min":number,"max":number,"currency":"USD"|"GBP"|"CAD"|"AUD"|"EUR"|"INR"|"SGD","display":"formatted string e.g. $80,000 – $120,000"}
+{"min":number,"max":number,"low":number,"high":number,"currency":"USD"|"GBP"|"CAD"|"AUD"|"EUR"|"INR"|"SGD","display":"formatted string e.g. $80,000 – $120,000"}
+min/max: this job's yearly pay range. low/high: the yearly pay range for this kind of role in this city, from entry level to the most senior (low <= min, max <= high). All in the same currency.
 
 Job: ${title}
 Company: ${company}

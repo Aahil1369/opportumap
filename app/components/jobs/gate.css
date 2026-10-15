@@ -1,0 +1,199 @@
+/* ─── The job gate (JobGate, in the kit's Dialog: kit.css .dlg) ───────────────────────────
+   Header (the gate's number and code, the yellow GATE plate), the pay over its runway lights,
+   the announcement, and the two ways on (sticky at the panel's foot, so they stay in reach while
+   the panel scrolls). Loaded with the gate, on first open. Only opacity (the runway lights coming
+   on) and transform (a 1px lift on the buttons) move, and neither under reduced motion. */
+
+.dlg.gate { width: min(100%, 520px); }
+
+/* ── Header ── */
+.gate-head { padding: 6px 6px 18px 16px; border-bottom: 1px solid var(--rule); }
+.gate-top { display: flex; align-items: center; gap: 8px; }
+.gate-line {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 500 12px/1.3 var(--font-board);
+  letter-spacing: 0.14em;
+  color: var(--ink-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gate-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-dim);
+  font: 400 20px/1 var(--font-board);
+  cursor: pointer;
+}
+.gate-x:hover { background: var(--hall-3); color: var(--ink); }
+.gate-id { display: flex; align-items: flex-start; gap: 12px; margin-top: 2px; padding-right: 10px; }
+.gate-who { flex: 1; min-width: 0; }
+.gate-title {
+  margin: 0;
+  font: 800 22px/1.15 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.gate-sub { margin: 6px 0 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); overflow-wrap: anywhere; }
+.gate-plate {
+  flex: none;
+  margin: 2px 0 0;
+  padding: 6px 10px 7px;
+  border-radius: 8px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 800 20px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+}
+.gate-plate small {
+  display: block;
+  margin-bottom: 3px;
+  font: 600 10px/1 var(--font-board);
+  letter-spacing: 0.16em;
+}
+
+/* ── Sections ── */
+.gate-sec { padding: 16px; border-bottom: 1px solid var(--rule); }
+.gate-k {
+  margin: 0;
+  font: 600 11px/1.3 var(--font-board);
+  letter-spacing: 0.16em;
+  color: var(--ink-sub);
+}
+.gate-note { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.gate-src { margin: 12px 0 0; font-size: 16px; line-height: 1.45; color: var(--ink-sub); }
+
+/* The pay: FlapText tiles (or plain text under reduced motion), a size up from the board's. */
+.gate-pay { display: flex; align-items: center; min-height: 40px; margin-top: 10px; }
+.gate-pay .flap-tiles,
+.gate-pay .flap-sr,
+.gate-pay .flap-plain { font-size: 24px; }
+.gate-pay .flap,
+.gate-pay .flap-plain { color: var(--ink); }
+.gate-pay[data-kind='predicted'] .flap,
+.gate-pay[data-kind='predicted'] .flap-plain { color: var(--amber); }
+
+/* ── The runway: 12 lights over the city's range; the role's part lit (opacity only) ── */
+.rw { margin-top: 14px; }
+.rw-lights {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 12), 1fr);
+  align-items: center;
+  justify-items: center;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: var(--hall-3);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.rw-l { position: relative; width: 5px; height: 5px; }
+.rw-l::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--ink-sub);
+  opacity: 0.32;
+}
+.rw-on {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: var(--sign);
+  box-shadow: 0 0 6px 1px var(--sign);
+  animation: rw-on 0.32s ease-out both;
+}
+@keyframes rw-on { from { opacity: 0; } }
+.rw-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0 0;
+  font: 500 12px/1.3 var(--font-board);
+  letter-spacing: 0.06em;
+  color: var(--ink-sub);
+  white-space: nowrap;
+}
+.rw-cap { min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+
+/* ── The announcement ── */
+.gate-pa {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+}
+.gate-pa p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
+.gate-pa .gate-note { color: var(--ink-dim); }
+.gate-pa-lead { font-weight: 700; color: var(--sign); }
+
+/* ── The ways on ── */
+.gate-ctas {
+  position: sticky;
+  bottom: 0;
+  z-index: 3; /* over a flap's canvas */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px 16px;
+  background: var(--hall-2);
+}
+/* A fade above the buttons: there is more of the panel under them. */
+.gate-ctas::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, var(--hall-2));
+  pointer-events: none;
+}
+.gate-board,
+.gate-visa {
+  flex: 1 1 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font: 800 16px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
+}
+.gate-board { background: var(--sign); color: var(--sign-ink); }
+.gate-visa { border: 1px solid var(--rule); background: var(--hall-3); color: var(--ink); }
+.gate-board:hover,
+.gate-visa:hover { transform: translateY(-1px); }
+.gate-noapply { flex: 1 1 180px; align-self: center; }
+.gate-board:focus-visible,
+.gate-visa:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+.gate-x:focus-visible { outline: 2px solid var(--sign); outline-offset: -4px; } /* inside: clear of the plate */
+
+@media (min-width: 640px) {
+  .gate-title { font-size: 26px; }
+  .gate-pay .flap-tiles,
+  .gate-pay .flap-sr,
+  .gate-pay .flap-plain { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rw-on { animation: none; }
+  .gate-board,
+  .gate-visa { transition: none; }
+  .gate-board:hover,
+  .gate-visa:hover { transform: none; }
+}
