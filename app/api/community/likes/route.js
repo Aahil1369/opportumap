@@ -1,44 +1,51 @@
 import { createClient } from '../../../../lib/supabase-server.js';
-import { supabase, hasSupabase } from '../../../../lib/supabase.js';
+import { hasSupabase } from '../../../../lib/supabase.js';
+import { setEdge, wantFrom } from '../../../../lib/community.js';
+import { dbErrorStatus } from '../../../../lib/dbError.js';
 
+// POST { post_id, liked? }: like or unlike a post. `liked` is the state the user asked for
+// (what the button showed them); without it the like toggles. Already in that state = no
+// write, so a double tap never undoes itself. Every step runs on the user's session (RLS:
+// auth.uid() = user_id). posts.like_count is maintained by an AFTER INSERT/DELETE trigger on
+// `post_likes` (the liker is not the post owner, so an owner-only posts UPDATE policy would
+// reject a manual bump); it is read back after the write.
 export async function POST(request) {
   if (!hasSupabase) return Response.json({ error: 'Database unavailable' }, { status: 503 });
 
-  const authClient = await createClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
   if (!user) return Response.json({ error: 'Sign in to like' }, { status: 401 });
 
-  const { post_id } = await request.json();
-  if (!post_id) return Response.json({ error: 'Missing post_id' }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const postId = typeof body?.post_id === 'string' ? body.post_id : '';
+  if (!postId) return Response.json({ error: 'Missing post_id' }, { status: 400 });
 
-  const { data: existing } = await supabase
-    .from('post_likes').select('user_id').eq('user_id', user.id).eq('post_id', post_id).single();
+  const { data: existing, error: readError } = await db
+    .from('post_likes').select('user_id').eq('user_id', user.id).eq('post_id', postId).maybeSingle();
+  if (readError) return Response.json({ error: 'Could not update the like' }, { status: dbErrorStatus(readError) });
 
-  const { data: post } = await supabase.from('posts').select('like_count').eq('id', post_id).single();
-  const currentCount = post?.like_count || 0;
+  const result = await setEdge({
+    on: Boolean(existing),
+    want: wantFrom(body, 'liked'),
+    add: () => db.from('post_likes').insert({ user_id: user.id, post_id: postId }),
+    drop: () => db.from('post_likes').delete().eq('user_id', user.id).eq('post_id', postId),
+  });
+  if (result.error) return Response.json({ error: 'Could not update the like' }, { status: dbErrorStatus(result.error) });
 
-  // Toggle the like via the authenticated client so the RLS INSERT/DELETE check
-  // (auth.uid() = user_id) passes once RLS is locked down. posts.like_count is
-  // maintained by an AFTER INSERT/DELETE trigger on `post_likes` (the liker is
-  // not the post owner, so an owner-only posts UPDATE policy would reject a
-  // manual count bump). The returned count is optimistic for immediate UI
-  // feedback; the trigger is the source of truth for the stored value.
-  if (existing) {
-    await authClient.from('post_likes').delete().eq('user_id', user.id).eq('post_id', post_id);
-    return Response.json({ liked: false, like_count: Math.max(0, currentCount - 1) });
-  } else {
-    await authClient.from('post_likes').insert({ user_id: user.id, post_id });
-    return Response.json({ liked: true, like_count: currentCount + 1 });
-  }
+  const { data: post } = await db.from('posts').select('like_count').eq('id', postId).maybeSingle();
+  return Response.json({ liked: result.on, like_count: post?.like_count ?? null });
 }
 
-export async function GET(request) {
+// GET: the signed-in user's liked post ids. A failed read is an error (the lounge then does
+// not pretend nothing is liked), never an empty list.
+export async function GET() {
   if (!hasSupabase) return Response.json({ liked_post_ids: [] });
 
-  const authClient = await createClient();
-  const { data: { user } } = await authClient.auth.getUser();
+  const db = await createClient();
+  const { data: { user } } = await db.auth.getUser();
   if (!user) return Response.json({ liked_post_ids: [] });
 
-  const { data } = await supabase.from('post_likes').select('post_id').eq('user_id', user.id);
+  const { data, error } = await db.from('post_likes').select('post_id').eq('user_id', user.id);
+  if (error) return Response.json({ error: 'Could not load your likes' }, { status: dbErrorStatus(error) });
   return Response.json({ liked_post_ids: (data || []).map((r) => r.post_id) });
 }
