@@ -1,12 +1,17 @@
 'use client';
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 
 // Momentum smooth scroll for the whole document. No-ops when the user prefers
-// reduced motion. Renders nothing; it just drives window scrolling.
+// reduced motion, and on /map (the control tower's map takes the wheel and the drag; the page
+// itself fills the screen). Renders nothing; it just drives window scrolling.
 export default function SmoothScroll() {
+  const pathname = usePathname();
+  const off = pathname === '/map' || pathname?.startsWith('/map/');
+
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || off) return;
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (mq.matches) return;
 
@@ -35,7 +40,7 @@ export default function SmoothScroll() {
       cancelAnimationFrame(rafId);
       lenis.destroy();
     };
-  }, []);
+  }, [off]);
 
   return null;
 }
