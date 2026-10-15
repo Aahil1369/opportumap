@@ -156,3 +156,35 @@ test('GET /api/jobs keeps its { jobs, total, source } shape', async () => {
   assert.ok(Number.isFinite(lead.lng) && Number.isFinite(lead.lat));
   assert.ok(!calls.some((u) => /jobs\/zz\//.test(u)), 'unknown countries are dropped');
 });
+
+test('timeoutMs: a feed that has not answered in time adds nothing, the others still count', { timeout: 5000 }, async () => {
+  globalThis.fetch = async (url) => {
+    const u = String(url);
+    const m = u.match(/api\.adzuna\.com\/v1\/api\/jobs\/([a-z]{2})\//);
+    if (m) return Response.json({ results: ADZUNA[m[1]] || [] });
+    return new Promise(() => {}); // the remote feeds never answer
+  };
+  const started = Date.now();
+  const jobs = await fetchLiveJobs({ query: 'engineer', countries: ['ca'], timeoutMs: 150 });
+  assert.ok(Date.now() - started < 1500, `${Date.now() - started} ms`);
+  assert.equal(adzuna(jobs).length, 3);
+  assert.equal(jobs.length, 3);
+});
+
+test('revalidate: the homepage caches every feed for its own 10 minutes; /api/jobs keeps Adzuna at 5', async () => {
+  const inits = [];
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    inits.push([u.includes('api.adzuna.com') ? 'adzuna' : 'remote', init?.next?.revalidate]);
+    const m = u.match(/api\.adzuna\.com\/v1\/api\/jobs\/([a-z]{2})\//);
+    if (m) return Response.json({ results: ADZUNA[m[1]] || [] });
+    return new Response('unavailable', { status: 503 });
+  };
+  await fetchLiveJobs({ query: 'engineer', countries: ['ca', 'gb'], revalidate: 600 });
+  assert.ok(inits.length > 2, `${inits.length} requests`);
+  // A route's ISR window is the shortest one among its fetches, so none may be under the page's.
+  assert.deepEqual(inits.filter(([, r]) => r !== 600), [], 'every feed request is cached for 600 s');
+  inits.length = 0;
+  await fetchLiveJobs({ query: 'engineer', countries: ['ca'] });
+  assert.deepEqual(inits.filter(([k]) => k === 'adzuna').map(([, r]) => r), [300], 'the default stays 300 s');
+});
