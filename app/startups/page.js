@@ -8,7 +8,7 @@ import '../components/startups/startups.css';
 export const metadata = {
   title: 'Startups — OpportuMap',
   description:
-    'Early-stage startups, posted by their founders. Board one as a passenger, stand by for the pitch deck, or message the founder.',
+    'Early-stage startups, posted by their founders. Board one as a passenger, go on standby, or message the founder.',
 };
 
 export default function StartupsPage() {
@@ -19,7 +19,7 @@ export default function StartupsPage() {
         sign={{ letter: 'E', label: 'Hangar' }}
         title="Back a startup before it"
         accent="takes off."
-        sub="Early-stage companies, posted by their founders. Board one as a passenger, stand by for the pitch deck, or message the founder."
+        sub="Early-stage companies, posted by their founders. Board one as a passenger, go on standby, or message the founder."
         wide
       >
         <Hangar />

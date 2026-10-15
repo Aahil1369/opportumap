@@ -7,8 +7,9 @@
 // overwrites (upsert: false). The body is postPayload(draft): the server takes the owner from
 // the session, the database sets the founder's name and the counters.
 // The deck note promises no restriction: the pitch-decks bucket is public and the startups API
-// returns pitch_deck_url to everyone (the stand only hides the link). Real gating — drop the URL
-// from public selects and serve signed URLs — is a separate follow-up.
+// returns pitch_deck_url to everyone; the stand shows the link to every visitor and says it is
+// public. Real gating — drop the URL from public selects and serve signed URLs — is a separate
+// follow-up.
 
 import { useState } from 'react';
 import Dialog from '../kit/Dialog';

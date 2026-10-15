@@ -19,7 +19,7 @@ import { createLatest } from '../../../lib/departures/createLatest.js';
 import { STAGES, formatRaise, passengerLabel, passengerTiles, standFor } from '../../../lib/departures/hangar.js';
 import { safeHttpUrl } from '../../../lib/safeUrl.js';
 import { useViewer } from './useViewer';
-import { SignInButton, SignInPrompt } from './SignIn';
+import { SignInPrompt } from './SignIn';
 import TailFin from './TailFin';
 
 const TIMEOUT_MS = 15000;
@@ -285,9 +285,7 @@ export default function Stand({ id }) {
                       STANDBY
                     </button>
                     <p id="hg-int-state" className="hg-state-line" data-on={mine.interested ? '' : undefined}>
-                      {mine.interested
-                        ? `On standby ✓${deckUrl ? ' The pitch deck is open to you.' : ''}`
-                        : `Tell the founder you're interested${deckUrl ? ' and open the pitch deck' : ''}.`}
+                      {mine.interested ? 'On standby ✓' : "Tell the founder you're interested."}
                       {standby > 0 ? ` · ${standby} on standby` : ''}
                     </p>
                     <Link
@@ -302,7 +300,7 @@ export default function Stand({ id }) {
               </div>
             ) : (
               <SignInPrompt id="hg-signin" title="Sign in to board" onSignedIn={reloadQuietly}>
-                Add yourself as a passenger, stand by for the pitch deck, or message the founder.
+                Add yourself as a passenger, go on standby, or message the founder.
               </SignInPrompt>
             )}
 
@@ -336,31 +334,14 @@ export default function Stand({ id }) {
               <h2 id="hg-deck" className="hg-h2">
                 Pitch deck
               </h2>
-              {mine?.interested || isOwner ? (
+              {/* The deck is a public link (the pitch-decks bucket is public), so it is open to
+                  everyone who visits the stand, and the stand says so. */}
+              <div className="hg-deckbox">
+                <p>The founder shared this deck as a public link: anyone can open it.</p>
                 <a href={deckUrl} target="_blank" rel="noopener noreferrer" className="hg-btn hg-btn-sign">
                   Open the pitch deck ↗
                 </a>
-              ) : signedIn ? (
-                <div className="hg-locked">
-                  <p>Stand by to open the founder&apos;s pitch deck.</p>
-                  <button
-                    type="button"
-                    className="hg-btn hg-btn-ghost"
-                    aria-pressed={false}
-                    aria-disabled={pending === 'interest' || undefined}
-                    onClick={() => act('interest')}
-                  >
-                    STANDBY
-                  </button>
-                </div>
-              ) : (
-                <div className="hg-locked">
-                  <p>Sign in to board, then stand by to open the founder&apos;s pitch deck.</p>
-                  <SignInButton className="hg-btn hg-btn-ghost" onSignedIn={reloadQuietly}>
-                    Sign in to board
-                  </SignInButton>
-                </div>
-              )}
+              </div>
             </section>
           )}
         </div>

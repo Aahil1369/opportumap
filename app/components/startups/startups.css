@@ -441,17 +441,18 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
 .hg-rest > .hg-section:first-child { margin-top: 0; }
 .hg-h2 { margin: 0 0 12px; font: 500 12px/1.2 var(--font-board); letter-spacing: 0.22em; text-transform: uppercase; color: var(--sign); }
 .hg-about { margin: 0; max-width: 68ch; font-size: 17px; line-height: 1.65; color: var(--ink-dim); white-space: pre-line; overflow-wrap: anywhere; }
-.hg-locked {
+.hg-deckbox {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px 16px;
   padding: 18px;
-  border: 1px dashed var(--rule);
+  border: 1px solid var(--rule);
   border-radius: 12px;
+  background: var(--hall-2);
 }
-.hg-locked p { flex: 1 1 220px; margin: 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); }
+.hg-deckbox p { flex: 1 1 220px; margin: 0; font-size: 16px; line-height: 1.45; color: var(--ink-dim); }
 
 .hg-pass {
   display: flex;

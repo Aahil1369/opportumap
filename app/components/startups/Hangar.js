@@ -227,7 +227,7 @@ export default function Hangar() {
           </h2>
           <p className="hg-state-sub">
             Founders park their startup here: a tail fin painted from its name, the pitch and the raise. Builders and investors board as
-            passengers, stand by for the deck, and message the founder.
+            passengers, go on standby, and message the founder.
           </p>
           <div className="hg-state-actions">{postAction}</div>
           {notice && (
