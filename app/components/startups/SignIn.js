@@ -1,31 +1,22 @@
 'use client';
 
 // "Sign in to board": what signed-out visitors get in place of the hangar's actions (never a
-// disabled button or a 401). The button opens the sign-in modal; after signing in, useViewer
-// sees the new session and the page swaps the prompt for the real actions. onSignedIn also runs
-// then (a stand reloads its state: after an expired session the user id does not change).
+// disabled button or a 401). The button opens the shared sign-in dialog (useSignIn → AuthModal,
+// a kit Dialog: focus trap, Esc, focus back to this button). After signing in, useViewer sees
+// the new session and the page swaps the prompt for the real actions; focus lands on the one
+// marked data-after-signin. onSignedIn also runs then (a stand reloads its state: after an
+// expired session the user id does not change).
 
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
-
-const AuthModal = dynamic(() => import('../AuthModal'), { ssr: false });
+import { useSignIn } from '../useSignIn';
 
 export function SignInButton({ children = 'Sign in to board', className = 'hg-btn hg-btn-sign', onSignedIn }) {
-  const [open, setOpen] = useState(false);
+  const [openSignIn, signInModal] = useSignIn(onSignedIn);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
+      <button type="button" className={className} onClick={openSignIn}>
         {children}
       </button>
-      {open && (
-        <AuthModal
-          onClose={() => setOpen(false)}
-          onSuccess={() => {
-            setOpen(false);
-            onSignedIn?.();
-          }}
-        />
-      )}
+      {signInModal}
     </>
   );
 }

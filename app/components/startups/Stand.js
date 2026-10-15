@@ -259,6 +259,7 @@ export default function Stand({ id }) {
                   type="button"
                   className="hg-btn hg-toggle"
                   data-kind="passenger"
+                  data-after-signin=""
                   aria-pressed={!!mine.upvoted}
                   aria-disabled={pending === 'upvote' || undefined}
                   aria-describedby="hg-up-state"

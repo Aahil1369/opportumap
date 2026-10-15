@@ -97,6 +97,8 @@ test('display names come from lib/displayName.js wherever they are built', () =>
 
 test('AuthModal: the name field is required on sign-up', () => {
   const src = read('app/components/AuthModal.js');
-  assert.match(src, /placeholder="Your name"[^>]*\brequired\b/s);
+  const nameInput = [...src.matchAll(/<input\b((?:(?!\/>)[\s\S])*)\/>/g)].map((m) => m[1]).find((tag) => /autoComplete="name"/.test(tag));
+  assert.ok(nameInput, 'the sign-up form has a name field');
+  assert.match(nameInput, /\brequired\b/);
 });
 

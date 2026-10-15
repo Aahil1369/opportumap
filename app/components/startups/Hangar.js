@@ -156,7 +156,7 @@ export default function Hangar() {
   const clear = () => setFilters(DEFAULT_FILTERS);
 
   const postAction = signedIn ? (
-    <button ref={postButton} type="button" className="hg-btn hg-btn-sign" onClick={openPost}>
+    <button ref={postButton} type="button" className="hg-btn hg-btn-sign" onClick={openPost} data-after-signin="">
       + Post a startup
     </button>
   ) : viewer.ready ? (
