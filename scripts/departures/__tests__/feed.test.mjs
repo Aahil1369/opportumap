@@ -175,6 +175,9 @@ test('revalidate: the homepage caches every feed for its own 10 minutes; /api/jo
   const inits = [];
   globalThis.fetch = async (url, init) => {
     const u = String(url);
+    // Arbeitnow's page is over Next's 2 MB fetch-cache entry: it is fetched outside the fetch
+    // cache and its trimmed roles are cached for the same 600 s instead (chrome.test.mjs).
+    if (u.includes('arbeitnow.com')) return new Response('unavailable', { status: 503 });
     inits.push([u.includes('api.adzuna.com') ? 'adzuna' : 'remote', init?.next?.revalidate]);
     const m = u.match(/api\.adzuna\.com\/v1\/api\/jobs\/([a-z]{2})\//);
     if (m) return Response.json({ results: ADZUNA[m[1]] || [] });
