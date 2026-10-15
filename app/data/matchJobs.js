@@ -90,8 +90,33 @@ export function scoreJob(job, profile) {
   return Math.min(Math.max(score, 0), 99);
 }
 
-export function matchColor(score) {
-  if (score >= 55) return { text: 'text-green-400', bg: 'bg-green-400/10 border-green-400/20' };
-  if (score >= 25) return { text: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/20' };
-  return { text: 'text-zinc-500', bg: 'bg-zinc-700/20 border-zinc-700/30' };
+// ── One score, everywhere ──────────────────────────────────────────────────────────────────
+// scoreJob is the only score: the board sorts by it (best match first), every match badge shows
+// it, and jobStatus calls a role BOARDING when it reaches 75. (There used to be a second,
+// visa-weighted "opportunity" score for the sort and a third weighting for the badge, so the
+// order and the numbers disagreed. Visa questions go to Migrova, Passport Control.)
+
+/** The jobs best match first, each with `matchScore` (scoreJob). Ties, and no profile, keep the feed order. */
+export function rankJobs(jobs, profile) {
+  const list = Array.isArray(jobs) ? jobs : [];
+  if (!profile) return list.slice();
+  return list
+    .map((job, i) => ({ job: { ...job, matchScore: scoreJob(job, profile) }, i }))
+    .sort((a, b) => b.job.matchScore - a.job.matchScore || a.i - b.i)
+    .map(({ job }) => job);
+}
+
+const LABELS = [
+  [75, 'Excellent'],
+  [55, 'Strong'],
+  [40, 'Good'],
+  [28, 'Fair'],
+  [0, 'Low'],
+];
+
+/** What a row shows for its match: { value: scoreJob, text: '82%', label: 'Excellent' }, or null without a profile. */
+export function matchBadge(job, profile) {
+  if (!profile) return null;
+  const value = scoreJob(job, profile);
+  return { value, text: `${value}%`, label: LABELS.find(([min]) => value >= min)[1] };
 }

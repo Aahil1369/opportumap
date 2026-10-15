@@ -84,7 +84,11 @@ test('display names come from lib/displayName.js wherever they are built', () =>
   ]) {
     assert.match(read(f), /displayName\(/, `${f} uses displayName`);
   }
-  assert.match(read('app/jobs/page.js'), /realName\(/);
+  // /jobs (the departures board) no longer builds a name from the account at all: it shows the
+  // profile's own name, if it has one.
+  for (const f of ['app/jobs/page.js', 'app/components/jobs/JobsBoard.js']) {
+    assert.doesNotMatch(read(f), /user_metadata|\.email\b/, `${f} builds no name from the account`);
+  }
   const follows = read('app/api/community/follows/route.js');
   assert.match(follows, /follower_name:\s*''/);
   assert.match(follows, /following_name:\s*''/);

@@ -3,17 +3,8 @@
 import { useState } from 'react';
 import { getVisaStatus } from '../data/visaData';
 import { ADZUNA_COUNTRIES } from '../data/countries';
-import { matchColor } from '../data/matchJobs';
-
-// Visa ease — much gentler penalties. A visa requirement is an obstacle, not a dealbreaker.
-const VISA_EASE = {
-  citizen:    100,
-  free:        95,
-  e_visa:      85,
-  on_arrival:  78,
-  required:    62,  // was 20 — having to get a visa is fine, just more work
-  unknown:     75,
-};
+import { matchBadge } from '../data/matchJobs';
+import { safeHttpUrl } from '../../lib/safeUrl.js';
 
 const VISA_BADGE = {
   citizen:    { label: 'Citizen' },
@@ -23,21 +14,6 @@ const VISA_BADGE = {
   required:   { label: 'Visa Req.' },
   unknown:    { label: 'Remote' },
 };
-
-export function opportunityScore(matchScore, nationality, jobCountry) {
-  const visaStatus = nationality ? getVisaStatus(nationality, jobCountry) : 'unknown';
-  const visaPoints = VISA_EASE[visaStatus] ?? 75;
-  // Skills are 85% of the score — your skills matter most, not your passport
-  return Math.round(matchScore * 0.85 + visaPoints * 0.15);
-}
-
-export function oppScoreColor(score) {
-  if (score >= 75) return { label: 'Excellent' };
-  if (score >= 55) return { label: 'Strong' };
-  if (score >= 40) return { label: 'Good' };
-  if (score >= 28) return { label: 'Fair' };
-  return             { label: 'Low' };
-}
 
 function getJobFreshness(job) {
   const now = Date.now();
@@ -68,8 +44,9 @@ export default function JobCard({ job, profile, selected, onClick, predictedSala
   const countryInfo = ADZUNA_COUNTRIES.find((c) => c.code === job.country);
   const visaStatus = profile?.nationality ? getVisaStatus(profile.nationality, job.country) : 'unknown';
   const visaBadge = VISA_BADGE[job.remote ? 'unknown' : (visaStatus || 'unknown')];
-  const oppScore = profile ? opportunityScore(job.matchScore || 0, profile.nationality, job.country) : null;
-  const oppColor = oppScore !== null ? oppScoreColor(oppScore) : null;
+  // The same score the jobs board sorts by and shows (matchJobs.js).
+  const match = matchBadge(job, profile);
+  const applyUrl = safeHttpUrl(job.url);
   const salary = job.salary !== 'Salary not listed' ? job.salary
     : predictedSalary ? `~${predictedSalary}` : null;
   const isEstimated = predictedSalary && job.salary === 'Salary not listed';
@@ -150,17 +127,17 @@ export default function JobCard({ job, profile, selected, onClick, predictedSala
         )}
       </div>
 
-      {/* Opportunity Score */}
-      {oppScore !== null && (
+      {/* Match score */}
+      {match && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub">Opportunity Score</span>
-            <span className="font-mono text-[11px] text-accent">{oppScore} · {oppColor.label}</span>
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-paper-ink-sub">Match</span>
+            <span className="font-mono text-[11px] text-accent">{match.text} · {match.label}</span>
           </div>
           <div className="h-1.5 bg-paper-rule">
             <div
-              className="h-1.5 bg-accent transition-all duration-700"
-              style={{ width: `${oppScore}%` }}
+              className="h-1.5 bg-accent origin-left"
+              style={{ transform: `scaleX(${match.value / 100})` }}
             />
           </div>
         </div>
@@ -168,9 +145,9 @@ export default function JobCard({ job, profile, selected, onClick, predictedSala
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-1 pt-3 border-t border-paper-rule">
-        {job.url ? (
+        {applyUrl ? (
           <a
-            href={job.url}
+            href={applyUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}

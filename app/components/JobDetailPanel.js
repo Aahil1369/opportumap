@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { getVisaStatus, VISA_INFO, SETTLEMENT_INFO } from '../data/visaData';
 import { ADZUNA_COUNTRIES } from '../data/countries';
-import { opportunityScore, oppScoreColor } from './JobCard';
-import { matchColor } from '../data/matchJobs';
+import { matchBadge } from '../data/matchJobs';
+import { safeHttpUrl } from '../../lib/safeUrl.js';
 
 const VISA_BADGE = {
   citizen:    { label: 'You are a citizen' },
@@ -76,8 +76,10 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
   const visaBadge = VISA_BADGE[visaStatus || 'unknown'];
   const visaInfo = VISA_INFO?.[job.country];
   const settlement = SETTLEMENT_INFO?.[job.country];
-  const oppScore = profile ? opportunityScore(job.matchScore || 0, profile.nationality, job.country) : null;
-  const oppColor = oppScore !== null ? oppScoreColor(oppScore) : null;
+  // The same score the jobs board sorts by and shows on its rows (matchJobs.js).
+  const match = matchBadge(job, profile);
+  const oppScore = match ? match.value : null;
+  const applyUrl = safeHttpUrl(job.url);
   const salary = job.salary !== 'Salary not listed' ? job.salary
     : predictedSalary ? `~${predictedSalary}` : null;
   const isEstimated = !job.salary || job.salary === 'Salary not listed';
@@ -94,7 +96,7 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
 
   return (
     /* Full-screen modal overlay */
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose} data-lenis-prevent>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Modal container */}
@@ -184,8 +186,8 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
                 <div className="border border-paper-rule p-4 flex items-center gap-4">
                   <OppRing score={oppScore} />
                   <div>
-                    <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-1">Opp. Score</p>
-                    <p className="text-[12px] text-paper-ink-dim">{job.matchScore || 0}% skill match</p>
+                    <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-ink-sub mb-1">Match</p>
+                    <p className="text-[12px] text-paper-ink-dim">{match?.label} match for your profile</p>
                     {profile?.nationality && !job.remote && (
                       <p className="text-[12px] mt-1 text-paper-ink-dim">{visaBadge.label}</p>
                     )}
@@ -289,9 +291,9 @@ export default function JobDetailPanel({ job, profile, predictedSalary, onClose 
         {/* Sticky footer CTA */}
         <div className="flex-shrink-0 px-6 py-4 border-t border-paper-rule bg-paper-bg/95 backdrop-blur-sm">
           <div className="flex gap-3">
-            {job.url ? (
+            {applyUrl ? (
               <a
-                href={job.url}
+                href={applyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 py-3.5 bg-paper-ink text-paper-bg hover:bg-[#2a3a2f] font-medium text-[14px] text-center transition-colors"

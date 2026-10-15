@@ -1,0 +1,346 @@
+/* ─── /jobs, the departures board (spec §7) ──────────────────────────────────────────────────
+   Search, gate chips and the board, on the hall (PageShell). Rows: one line on a wide board
+   (CODE · role · company · match · PAY · STATUS), two on a narrow one (code + role / company ·
+   pay · status). The layout keys on the board's own width (container queries), so it never
+   overflows: the role and the company give way (ellipsis), the tiles keep their fixed widths.
+   Motion is the kit's split-flap only (FlapText); nothing here animates but opacity. */
+
+.jb { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+/* ── Search ── */
+.jb-search { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.jb-labelrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.jb-label {
+  font: 500 12px/1.2 var(--font-board);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+}
+.jb-field { display: flex; gap: 8px; }
+.jb-input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--hall-3);
+  color: var(--ink);
+  font: 400 16px/1.3 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+.jb-input::placeholder { color: var(--ink-sub); opacity: 1; }
+.jb-input:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+.jb-go {
+  flex: none;
+  min-width: 64px;
+  height: 52px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: var(--sign);
+  color: var(--sign-ink);
+  font: 700 15px/1 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.jb-go:focus-visible,
+.jb-btn:focus-visible,
+.gf-clear:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+.jb-me {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--sign);
+  font: 500 12px/1.2 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.jb-me:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+/* ── Gate chips ──
+   One rail: on a phone it scrolls sideways (one line, so the board starts on the first screen);
+   from 960px it wraps. */
+.gf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding: 2px;
+  margin: -2px;
+}
+.gf::-webkit-scrollbar { display: none; }
+.gf-types { display: flex; gap: 6px; flex: none; }
+.gf-rule { flex: none; width: 1px; height: 24px; margin: 0 4px; background: var(--rule); }
+.gf-chip,
+.gf-select {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall-2);
+  color: var(--ink-dim);
+  font: 500 13px/1 var(--font-board);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.gf-chip { cursor: pointer; }
+.gf-chip:hover { border-color: var(--ink-sub); color: var(--ink); }
+.gf-chip[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
+.gf-chip:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
+.gf-lamp { width: 7px; height: 7px; border-radius: 50%; background: var(--info); }
+.gf-chip[aria-pressed='true'] .gf-lamp { background: var(--sign-ink); }
+.gf-select { position: relative; padding-right: 0; }
+.gf-select:focus-within { outline: 2px solid var(--sign); outline-offset: -2px; }
+.gf-select select {
+  appearance: none;
+  min-height: 38px;
+  max-width: 180px;
+  padding: 0 30px 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 400 16px/1.2 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.gf-select select:focus { outline: none; }
+.gf-select option { background: var(--hall-2); color: var(--ink); }
+.gf-select::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--ink-sub);
+  border-bottom: 1.5px solid var(--ink-sub);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.gf-clear {
+  flex: none;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--sign);
+  font: 500 13px/1 var(--font-board);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+@media (min-width: 960px) {
+  .gf { flex-wrap: wrap; overflow: visible; }
+  .gf-types { flex-wrap: wrap; flex: 1 1 100%; }
+  .gf-rule { display: none; }
+}
+
+.jb-notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--sign);
+  border-radius: 8px;
+  background: var(--hall-2);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+/* ── The board ── */
+.jb-board {
+  container-type: inline-size;
+  min-width: 0;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 12px 0 4px;
+}
+.jb-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 0 12px 10px;
+}
+.jb-cap {
+  margin: 0;
+  min-width: 0;
+  font: 600 12px/1.35 var(--font-board);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sign);
+  overflow-wrap: anywhere;
+}
+.jb-live { margin: 0; font: 500 12px/1.35 var(--font-board); letter-spacing: 0.12em; color: var(--ink-sub); }
+.jb-live:empty { display: none; }
+.jb-where { flex-basis: 100%; margin: 0; font-size: 16px; line-height: 1.4; color: var(--ink-dim); }
+.jb-list { margin: 0; padding: 0; list-style: none; transition: opacity 0.2s ease; }
+.jb-board[aria-busy='true'] .jb-list { opacity: 0.5; }
+
+/* One row. Tile sizes: the code at 17px; pay and status at --tile-fs (12px on a phone board,
+   14px from 480px, 15px on the one-line board). Their columns are their tiles' exact widths
+   (12 and 8 tiles: 0.6em + 2.5px wide, 1px apart, kit.css). */
+.jr { position: relative; border-top: 1px solid var(--rule); }
+.jr-grid,
+.jr-link {
+  --tile-fs: 12px;
+  --pay-w: calc(12 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
+  --status-w: calc(8 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) var(--pay-w) var(--status-w);
+  grid-template-areas:
+    'code role role side'
+    'where where pay status';
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 6px;
+  padding: 10px 12px;
+}
+.jr-link { color: var(--ink); text-decoration: none; border-radius: 6px; }
+.jr-link:hover { background: var(--hall-3); }
+.jr-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
+.jr-code { grid-area: code; display: flex; font-size: 17px; color: var(--sign); }
+.jr-role {
+  grid-area: role;
+  min-width: 0;
+  font: 600 16px/1.35 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jr-where {
+  grid-area: where;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jr-side { grid-area: side; display: flex; justify-content: flex-end; padding-right: 40px; min-width: 0; }
+.jr-match {
+  padding: 3px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font: 500 12px/1.2 var(--font-board);
+  letter-spacing: 0.06em;
+  color: var(--sign);
+  white-space: nowrap;
+}
+.jr-pay,
+.jr-status { display: flex; min-width: 0; font-size: var(--tile-fs); }
+.jr-pay { grid-area: pay; }
+.jr-pay[data-est] { color: var(--amber); }
+.jr-status { grid-area: status; }
+.jr-paynote { font: 400 14px/1.25 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink-sub); }
+.jr-save {
+  position: absolute;
+  z-index: 1;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink-sub);
+  cursor: pointer;
+}
+.jr-save:hover { color: var(--ink); background: var(--hall-3); }
+.jr-save[aria-pressed='true'] { color: var(--sign); }
+.jr-save:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
+
+/* The column labels: only on the one-line board. */
+.jb-head { display: none; padding-top: 0; padding-bottom: 8px; }
+.jb-head > span {
+  font: 500 10.5px/1.2 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.jr-ghost { display: grid; grid-template-columns: 44px 1fr; gap: 8px 12px; padding: 14px 12px; }
+.jr-ghost span { height: 14px; border-radius: 4px; background: var(--hall-3); }
+.jr-ghost span:first-child { grid-row: span 2; height: 24px; }
+.jr-ghost span:last-child { width: 60%; }
+
+@container (max-width: 339px) {
+  /* 320px phones: smaller pay/status tiles so the two lines still fit. */
+  .jr-grid,
+  .jr-link { --tile-fs: 11px; column-gap: 6px; padding-inline: 8px; }
+}
+
+@container (min-width: 480px) {
+  .jr-grid,
+  .jr-link { --tile-fs: 14px; column-gap: 12px; }
+}
+
+@container (min-width: 880px) {
+  .jr-grid,
+  .jr-link {
+    --tile-fs: 15px;
+    grid-template-columns: auto minmax(0, 3fr) minmax(0, 2fr) 0 var(--pay-w) var(--status-w) 36px;
+    grid-template-areas: 'code role where side pay status save';
+    column-gap: 16px;
+    padding: 8px 16px;
+  }
+  .jb-board[data-match] :is(.jr-grid, .jr-link) {
+    grid-template-columns: auto minmax(0, 3fr) minmax(0, 2fr) 48px var(--pay-w) var(--status-w) 36px;
+  }
+  .jr-side { padding-right: 0; }
+  .jr-save { top: 50%; right: 12px; transform: translateY(-50%); }
+  .jb-head { display: grid; }
+  .jb-head .jr-code { min-width: calc(3 * (0.6 * 17px + 3.5px) - 1px); }
+  .jr-ghost { grid-template-columns: 44px 3fr 2fr 1fr; }
+  .jr-ghost span:first-child { grid-row: auto; height: 22px; }
+}
+
+/* ── Messages, more, footnote ── */
+.jb-msg { padding: 28px 16px 32px; border-top: 1px solid var(--rule); text-align: center; }
+.jb-msg-t { margin: 0; font: 600 18px/1.4 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink); }
+.jb-msg-s { margin: 6px 0 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.jb-msg .jb-btn { margin-top: 16px; }
+.jb-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--sign);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sign);
+  font: 600 14px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.jb-btn:hover { background: var(--sign); color: var(--sign-ink); }
+.jb-more { display: flex; justify-content: center; padding: 14px 12px 12px; border-top: 1px solid var(--rule); }
+.jb-foot { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--ink-sub); }
+
+@media (prefers-reduced-motion: reduce) {
+  .jb-list { transition: none; }
+}
