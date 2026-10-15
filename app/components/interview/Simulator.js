@@ -16,7 +16,7 @@ import {
   CLEARED,
   averageScore,
   interviewProgress,
-  nextOpen,
+  nextStop,
   normalizeFeedback,
   normalizeQuestions,
   previewText,
@@ -533,8 +533,9 @@ export default function Simulator() {
     focusNext.current = 'verdict';
   };
 
+  // The answer being scored counts as open, so the run cannot end with a score in flight.
   const advance = (snapshot) => {
-    const next = nextOpen(keys, snapshot, current);
+    const next = nextStop(keys, snapshot, current, scoring);
     setSimError(null);
     if (next === -1) {
       showVerdictFor(snapshot);
@@ -615,7 +616,11 @@ export default function Simulator() {
     }
   };
 
+  // A fresh run: a score still on its way belongs to the old one, so it is dropped.
   const runAgain = () => {
+    sessionRef.current = sessions.next();
+    feedbackAbort.current?.abort();
+    setScoring(null);
     shownVerdict.current = '';
     setResults({});
     setSimError(null);
@@ -633,7 +638,12 @@ export default function Simulator() {
 
   // ── Render ──
   const hasChecklist = questions.length > 0 && briefing;
-  const nextIndex = q ? nextOpen(keys, results, current) : -1;
+  const nextIndex = q ? nextStop(keys, results, current, scoring) : -1;
+  // The plate's words come from the same live results as its average, so the two always agree.
+  const plateVerdict = verdict ? takeoffVerdict(scoresOf(keys, results)) : null;
+  useEffect(() => {
+    if (plateVerdict) shownVerdict.current = plateVerdict;
+  }, [plateVerdict]);
   const nextLabel = nextIndex === -1 ? 'See the verdict →' : 'Next question →';
   const busyHere = q && scoring === q.key;
 
@@ -815,7 +825,7 @@ export default function Simulator() {
             {verdict ? (
               <>
                 <VerdictPlate
-                  verdict={verdict.text}
+                  verdict={plateVerdict}
                   from={verdict.from}
                   avg={averageScore(scoresOf(keys, results))}
                   counts={counts}

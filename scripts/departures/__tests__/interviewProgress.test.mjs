@@ -16,6 +16,7 @@ const {
   averageScore,
   interviewProgress,
   nextOpen,
+  nextStop,
   normalizeFeedback,
   normalizeQuestions,
   previewText,
@@ -90,6 +91,28 @@ test('nextOpen goes forward to the next question not yet done, wrapping round', 
   // The current question itself is the last resort, when it is the only one left.
   assert.equal(nextOpen(keys, { a: skipped, b: skipped, d: skipped }, 2), 2);
   assert.equal(nextOpen([], {}, 0), -1);
+});
+
+test('nextStop: an answer still being scored counts as open, so no verdict while a score is in flight', () => {
+  const keys = ['a', 'b', 'c', 'd'];
+  // Every question is done, but b (skipped earlier) is being answered after all.
+  const done = { a: answered(8), b: skipped, c: answered(6), d: answered(9) };
+  assert.equal(nextOpen(keys, done, 2), -1, 'by done-ness alone the run would end');
+  assert.equal(nextStop(keys, done, 2, 'b'), 1, 'the run goes to b and waits for its score');
+  assert.equal(nextStop(keys, done, 0, 'b'), 1);
+  assert.equal(nextStop(keys, done, 3, 'b'), 1);
+  assert.deepEqual(done.b, skipped, 'the results are not changed');
+  // Nothing scoring, or a key not on this checklist: the same as nextOpen.
+  for (const s of [null, undefined, 'gone']) assert.equal(nextStop(keys, done, 2, s), -1, String(s));
+  // An open question being scored was open already: nothing changes.
+  const partial = { a: answered(8), c: skipped };
+  for (const from of [0, 1, 2, 3]) assert.equal(nextStop(keys, partial, from, 'b'), nextOpen(keys, partial, from));
+  // Once its score lands (scoring cleared), the run ends — on a verdict that matches the average.
+  const landed = { ...done, b: answered(4) };
+  assert.equal(nextStop(keys, landed, 1, null), -1);
+  assert.equal(takeoffVerdict(scoresOf(keys, landed)), GO_AROUND);
+  assert.equal(averageScore(scoresOf(keys, landed)), 6.8);
+  assert.equal(nextStop(undefined, undefined, 0, 'b'), -1);
 });
 
 // ── The verdict ─────────────────────────────────────────────────────────────────────────────
@@ -392,6 +415,53 @@ test('every fetch checks res.ok before reading the answer; the inputs are labell
     assert.ok(src.includes(`htmlFor="${id}"`) || src.includes(`htmlFor={\`${lit}`), `a <label htmlFor> for ${id}`);
   }
   assert.match(src, />\s*Skip\b/, 'a Skip button');
+});
+
+/** The source of `const name = …` (or `function name`) in `src`. */
+function declared(src, name) {
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true }, range: true });
+  let found = null;
+  const visit = (node) => {
+    if (found || !node || typeof node.type !== 'string') return;
+    if (node.type === 'VariableDeclarator' && node.id?.name === name && node.init) found = node.init;
+    else if (node.type === 'FunctionDeclaration' && node.id?.name === name) found = node;
+    for (const key of Object.keys(node)) {
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(ast);
+  assert.ok(found, `${name} is declared`);
+  return src.slice(found.range[0], found.range[1]);
+}
+
+test('the run never ends with a score in flight: Next and the verdict both count the scoring answer open', () => {
+  const src = read('app/components/interview/Simulator.js');
+  assert.match(declared(src, 'advance'), /nextStop\(\s*keys\s*,\s*snapshot\s*,\s*current\s*,\s*scoring\s*\)/);
+  assert.match(declared(src, 'nextIndex'), /nextStop\(\s*keys\s*,\s*results\s*,\s*current\s*,\s*scoring\s*\)/);
+  assert.doesNotMatch(src, /\bnextOpen\(/, 'no path decides the next stop without the scoring answer');
+});
+
+test('"Run it again" drops a score still on its way: new session, aborted request, nothing scoring', () => {
+  const src = read('app/components/interview/Simulator.js');
+  const run = declared(src, 'runAgain');
+  assert.match(run, /sessionRef\.current\s*=\s*sessions\.next\(\)/, 'a new session, so a late score is ignored');
+  assert.match(run, /feedbackAbort\.current\?\.abort\(\)/, 'the request in flight is aborted');
+  assert.match(run, /setScoring\(null\)/, 'Score works again at once in the new run');
+  assert.match(run, /setResults\(\{\}\)/);
+  // A score only lands for the session it was asked in.
+  assert.match(declared(src, 'submit'), /sessions\.isCurrent\(sid\)/);
+});
+
+test('the verdict plate reads its words from the same live results as its average', () => {
+  const src = read('app/components/interview/Simulator.js');
+  assert.match(declared(src, 'plateVerdict'), /takeoffVerdict\(\s*scoresOf\(\s*keys\s*,\s*results\s*\)\s*\)/);
+  const plate = /<VerdictPlate\b([\s\S]*?)\/>/.exec(src);
+  assert.ok(plate, 'the plate is rendered');
+  assert.match(plate[1], /verdict=\{plateVerdict\}/);
+  assert.match(plate[1], /avg=\{averageScore\(scoresOf\(keys,\s*results\)\)\}/);
+  assert.doesNotMatch(plate[1], /verdict\.text/, 'not a verdict stored when the run ended');
 });
 
 test('the altimeter is a real progressbar that moves by transform', () => {
