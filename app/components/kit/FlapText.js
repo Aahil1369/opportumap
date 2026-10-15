@@ -51,10 +51,8 @@ if (typeof document !== 'undefined' && document.fonts) {
   document.fonts.load?.('500 16px "OM Board Glyphs"', '→✓')?.catch?.(() => {});
 }
 
-function cssVar(name, fallback) {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v || fallback;
-}
+// The tile shades are kit.css / globals.css tokens (always loaded with this file).
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 function atlasFor(st) {
   let a = atlases.get(st.key);
@@ -74,11 +72,11 @@ function atlasFor(st) {
     slots: new Map(),
     base: Math.round((st.h - (ascent + descent)) / 2 + ascent), // the line box centres the font
     colors: {
-      hi: cssVar('--flap-hi', '#1d2026'),
-      mid: cssVar('--hall-3', '#16181c'),
-      lo: cssVar('--flap-lo', '#111316'),
-      foot: cssVar('--flap-foot', '#0d0f12'),
-      edge: cssVar('--flap-edge', '#2a2e35'),
+      hi: cssVar('--flap-hi'),
+      mid: cssVar('--hall-3'),
+      lo: cssVar('--flap-lo'),
+      foot: cssVar('--flap-foot'),
+      edge: cssVar('--flap-edge'),
     },
   };
   atlases.set(st.key, a);
@@ -270,6 +268,15 @@ function land(job, ch = job.walk[job.k ?? 0]) {
   queue.cancel(job);
   faceOf(job.tile).nodeValue = ch;
   if (job.tile.__flap === job) job.tile.__flap = null;
+  const batch = job.batch;
+  if (batch?.first) {
+    // The cell's first tile is down: its status colour changes now (not before the flip), and
+    // the tiles still flipping take the new colour with it.
+    batch.first();
+    batch.first = null;
+    const color = getComputedStyle(job.tile).color;
+    for (const j of batch.jobs) j.color = color;
+  }
 }
 
 function advance(job, now) {
@@ -332,14 +339,21 @@ function snapTo(strip, text) {
   });
 }
 
-/** Queues the flips that take `strip` from showing `from` to showing `to`. */
-function flapTo(strip, from, to, rowDelayMs) {
+/**
+ * Queues the flips that take `strip` from showing `from` to showing `to`. `first` runs when the
+ * first of them lands (at once when nothing flips).
+ */
+function flapTo(strip, from, to, rowDelayMs, first) {
   const diff = flapDiff(from, to);
   ensureTiles(strip, diff.length);
   const layer = layerFor(strip);
   const hostRect = layer.host.getBoundingClientRect();
   const stripRect = strip.getBoundingClientRect();
-  if (!hostRect.width || !stripRect.width) return snapTo(strip, to); // not on the page: no motion
+  const batch = { first, jobs: [] };
+  if (!hostRect.width || !stripRect.width) {
+    snapTo(strip, to); // not on the page: no motion
+    return first?.();
+  }
   fitLayer(layer, hostRect);
   const st = styleOf(strip, layer.dpr);
   const x0 = (stripRect.left - hostRect.left) * layer.dpr;
@@ -358,11 +372,14 @@ function flapTo(strip, from, to, rowDelayMs) {
       steps: cell.steps,
       walk: [faceOf(tile).nodeValue, ...cell.steps],
       due: t0 + cell.delayMs,
+      batch,
     };
+    batch.jobs.push(job);
     tile.__flap = job;
     queue.add(job);
     layer.queued.add(job);
   }
+  if (!batch.jobs.length) first?.();
   if (!raf) raf = requestAnimationFrame(frame);
 }
 
@@ -383,9 +400,10 @@ function tileText(text, width, upper = true) {
 
 /**
  * The aria-hidden tile strip. React renders its characters once, when it mounts; from then on
- * the engine owns them, so a re-render never fights a flip in motion.
+ * the engine owns them, so a re-render never fights a flip in motion. `tone` (a status word) is
+ * handed to `onTone` once the tiles show it: when the first tile of its flip lands.
  */
-function FlapTiles({ target, start, play, delayMs }) {
+function FlapTiles({ target, start, play, delayMs, tone, onTone }) {
   const strip = useRef(null);
   const shown = useRef(target); // what the tiles show (or are flipping to)
   const played = useRef(false);
@@ -400,24 +418,37 @@ function FlapTiles({ target, start, play, delayMs }) {
 
   useEffect(() => {
     const el = strip.current;
+    // A flip cut short by a newer text can still land a tile later: its colour is stale by then.
+    const show = tone
+      ? () => {
+          if (shown.current !== target) return;
+          el.parentElement.setAttribute('data-status', tone);
+          onTone(tone);
+        }
+      : undefined;
     if (!play) {
       if (shown.current !== target) {
         snapTo(el, target);
         shown.current = target;
       }
-      return;
+      return show?.();
     }
     // First play: flip from `from` over the final text already on screen; later, from what it showed.
     const prev = played.current ? shown.current : start;
     played.current = true;
     shown.current = target;
-    if (prev !== target) flapTo(el, prev, target, delayMs);
-  }, [target, start, play, delayMs]);
+    if (prev !== target) flapTo(el, prev, target, delayMs, show);
+    else show?.();
+  }, [target, start, play, delayMs, tone, onTone]);
 
-  // Nothing keeps flipping on tiles that are gone.
+  // Nothing keeps flipping on tiles that are gone. A remount (React StrictMode runs effects
+  // twice in development) plays the first cascade again.
   useEffect(() => {
     const el = strip.current;
-    return () => stopAll(el);
+    return () => {
+      stopAll(el);
+      played.current = false;
+    };
   }, []);
 
   return (
@@ -427,18 +458,32 @@ function FlapTiles({ target, start, play, delayMs }) {
   );
 }
 
-export default function FlapText({ text, from = '', play = true, className, width, delayMs = 0, upper = true }) {
+/**
+ * `status`: the text is a status word (BOARDING, NEW …) and colours the cell (kit.css); when it
+ * changes, the old colour holds until the first tile of the new word lands.
+ */
+export default function FlapText({ text, from = '', play = true, className, width, delayMs = 0, upper = true, status }) {
   const reduced = usePrefersReducedMotion();
   const label = text == null ? '' : String(text);
-  if (reduced) return <span className={className ? `flap-plain ${className}` : 'flap-plain'}>{label}</span>;
+  const word = status ? label.toUpperCase() : undefined;
+  const [lit, setLit] = useState(word); // the status word the tiles show
+  if (reduced) {
+    return (
+      <span className={className ? `flap-plain ${className}` : 'flap-plain'} data-status={word}>
+        {label}
+      </span>
+    );
+  }
   return (
-    <span className={className ? `flap ${className}` : 'flap'}>
+    <span className={className ? `flap ${className}` : 'flap'} data-status={status ? lit : undefined}>
       <span className="flap-sr">{label}</span>
       <FlapTiles
         target={tileText(text, width, upper)}
         start={tileText(from, width, upper)}
         play={play}
         delayMs={delayMs}
+        tone={word}
+        onTone={setLit}
       />
     </span>
   );

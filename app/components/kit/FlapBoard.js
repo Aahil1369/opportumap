@@ -1,15 +1,17 @@
 // A departures board: table semantics (role="table", real header + cell text) with every cell a
 // FlapText. Columns are fixed tile counts, so rows never grow wider than the board and a long
 // title is cut on '…' (the full text stays in the accessible cell). Rows ripple 120 ms apart;
-// FlapText's engine caps how many tiles flip at once. No hooks here, so a server page can render
-// a board directly; only the FlapText cells hydrate.
+// FlapText's engine caps how many tiles flip at once. Its only hook is useId (allowed in server
+// components), so a server page can render a board directly; only the FlapText cells hydrate.
 //
 // columns: [{ key, label, width, tone?: 'status' | 'sign' | 'dim', line?: 2 }]
 //   width: tiles in the column. tone 'status' colours by the status word (BOARDING, NEW, ...).
 //   line 2: on phones the column drops to a second line, under the last line-1 column.
-// rows:    [{ id, cells: { [key]: string }, href? }]
+// rows:    [{ id, cells: { [key]: string }, href?, tone?, play? }]
+//   tone: a data-tone on the row, for page styles; play: this row's own play (default the board's).
 
 import Link from 'next/link';
+import { useId } from 'react';
 import FlapText from './FlapText';
 import './kit.css';
 
@@ -65,11 +67,10 @@ function boardLayout(columns) {
   return layout;
 }
 
-const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-
 export default function FlapBoard({ columns, rows, play = true, caption, id, className }) {
   const layout = boardLayout(columns);
-  const captionId = caption ? id || `fb-${slug(caption) || 'board'}` : undefined;
+  const autoId = useId(); // unique per board, even when two boards share a caption
+  const captionId = caption ? id || autoId : undefined;
   const tableStyle = {
     '--fb-cols': layout.cols,
     '--fb-fs': layout.fs,
@@ -105,7 +106,7 @@ export default function FlapBoard({ columns, rows, play = true, caption, id, cla
         </div>
         <div className="fb-body" role="rowgroup">
           {rows.map((row, r) => (
-            <div key={row.id} className="fb-row" role="row">
+            <div key={row.id} className="fb-row" role="row" data-tone={row.tone}>
               {columns.map((c, i) => {
                 const value = row.cells?.[c.key] ?? '';
                 return (
@@ -114,7 +115,6 @@ export default function FlapBoard({ columns, rows, play = true, caption, id, cla
                     className="fb-cell"
                     role="cell"
                     data-tone={c.tone && c.tone !== 'status' ? c.tone : undefined}
-                    data-status={c.tone === 'status' ? String(value).toUpperCase() : undefined}
                     style={cellStyle(c.key)}
                   >
                     {i === 0 && row.href && (
@@ -124,7 +124,13 @@ export default function FlapBoard({ columns, rows, play = true, caption, id, cla
                         aria-label={columns.map((col) => row.cells?.[col.key]).filter(Boolean).join(' · ')}
                       />
                     )}
-                    <FlapText text={value} width={tilesOf(c)} play={play} delayMs={r * ROW_STAGGER_MS} />
+                    <FlapText
+                      text={value}
+                      width={tilesOf(c)}
+                      play={row.play ?? play}
+                      delayMs={r * ROW_STAGGER_MS}
+                      status={c.tone === 'status'}
+                    />
                   </span>
                 );
               })}

@@ -48,18 +48,17 @@
   white-space: pre;
   border-radius: 2px;
   contain: size layout style;
-  background: linear-gradient(var(--flap-hi), var(--hall-3) 50%, var(--flap-lo) 50%, var(--flap-foot));
+  /* The split is a 1px black band in the background, under the character: a hairline drawn
+     over it would erase strokes that sit on the middle line (the shaft of →, the dash in pay). */
+  background: linear-gradient(
+    var(--flap-hi),
+    var(--hall-3) calc(50% - 0.5px),
+    #000 calc(50% - 0.5px),
+    #000 calc(50% + 0.5px),
+    var(--flap-lo) calc(50% + 0.5px),
+    var(--flap-foot)
+  );
   box-shadow: inset 0 1px 0 var(--flap-edge), inset 0 -1px 0 #000;
-}
-.flap-t::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  margin-top: -0.5px;
-  background: #000;
 }
 .flap-canvas {
   position: absolute;
@@ -132,11 +131,12 @@
 }
 .fb-cell[data-tone='sign'] { color: var(--sign); }
 .fb-cell[data-tone='dim'] { color: var(--ink-dim); }
-.fb-cell[data-status='BOARDING'] { color: var(--ok); }
-.fb-cell[data-status='NEW'] { color: var(--new); }
-.fb-cell[data-status='ON TIME'],
-.fb-cell[data-status='ANY GATE'] { color: var(--info); }
-.fb-cell[data-status='CANCELLED'] { color: var(--warn); }
+/* A status cell's colour is on its FlapText (data-status), which holds the old word's colour
+   until the first tile of the new one lands. */
+:is(.flap, .flap-plain)[data-status='BOARDING'] { color: var(--ok); }
+:is(.flap, .flap-plain)[data-status='NEW'] { color: var(--new); }
+:is(.flap, .flap-plain):is([data-status='ON TIME'], [data-status='ANY GATE']) { color: var(--info); }
+:is(.flap, .flap-plain)[data-status='CANCELLED'] { color: var(--warn); }
 .fb-link { position: absolute; inset: 0; z-index: 3; border-radius: 6px; }
 .fb-link:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
 
