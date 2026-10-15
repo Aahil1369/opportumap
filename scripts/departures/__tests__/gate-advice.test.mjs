@@ -29,7 +29,8 @@ test('the route no longer carries the canned "solid opportunity" verdict', () =>
   assert.ok(!/verdict:\s*'maybe'/.test(src), 'no hard-coded maybe verdict');
 });
 
-test('a failing model call answers 503 { error: advice-unavailable }', async () => {
+test('a failing model call answers 503 { error: advice-unavailable }', async (t) => {
+  t.mock.method(console, 'warn', () => {}); // the route logs the failure; keep it out of the output
   const req = new Request('http://localhost/api/job-advice', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -320,7 +321,9 @@ test("predict-salary asks for the city's range (low/high) in the same single ans
   const src = read('app/api/predict-salary/route.js');
   assert.match(src, /"low":number/);
   assert.match(src, /"high":number/);
-  assert.equal((src.match(/chat\.completions\.create\(/g) || []).length, 1, 'still one model call');
+  // The call goes through lib/aiRoute.js (completer: one chat.completions.create per call).
+  assert.equal((src.match(/\bawait complete\(/g) || []).length, 1, 'still one model call');
+  assert.equal((read('lib/aiRoute.js').match(/chat\.completions\.create\(/g) || []).length, 1);
 });
 
 test('usePredictedPay hands the gate the numbers, the rows the text, one queue for both', () => {
