@@ -6,11 +6,18 @@ let pending = null;
 
 const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token/;
 
-/** The profile, or null (signed out, no profile saved, or the request failed). */
+/**
+ * The profile, or null (signed out, no profile saved, or the request failed). It is kept only
+ * while the session cookie is there: a visitor who signs in or out later (no reload) and comes
+ * back to / is asked again.
+ */
 export function loadHomeProfile() {
+  if (!SESSION_COOKIE.test(document.cookie)) {
+    pending = null;
+    return Promise.resolve(null);
+  }
   if (pending) return pending;
   pending = (async () => {
-    if (!SESSION_COOKIE.test(document.cookie)) return null;
     const res = await fetch('/api/user-profile');
     if (!res.ok) return null;
     const { profile } = await res.json();
