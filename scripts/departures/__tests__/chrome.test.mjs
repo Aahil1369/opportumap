@@ -155,6 +155,13 @@ test('layout: the footer renders once for every page; the motion/ping/fps island
   assert.doesNotMatch(stripCss(read('app/components/home/home.css')), /\.hp-foot\b/);
 });
 
+test('footer.css: the footer is hidden on /map via :has(.mt-tower)', () => {
+  const css = stripCss(read(FOOTER_CSS));
+  assert.match(css, /body:has\(\.mt-tower\)\s*footer\.sf\s*{\s*display:\s*none;/, 'the rule exists and names the tower root class');
+  const ctrl = read('app/components/map/ControlTower.js');
+  assert.match(ctrl, /className="mt-tower"/, 'ControlTower exports its root with the class mt-tower');
+});
+
 // ── Metadata ────────────────────────────────────────────────────────────────────────────────
 
 const META = /export\s+const\s+metadata\s*=|export\s+(?:async\s+)?function\s+generateMetadata\b/;
@@ -167,11 +174,20 @@ test('every route has its own metadata (in the page, or in a layout beside a cli
   assert.match(read('app/startups/[id]/page.js'), /generateMetadata[\s\S]*data\.name/, 'the stand is named after its startup');
 });
 
-// /map and /saved belong to wave 2 (branch departures-w2, running in parallel: this task may not
-// touch app/map or app/saved). Their metadata lands with that wave; drop the todo after the merge.
-test('/map and /saved have metadata', { todo: 'wave 2 (departures-w2) owns app/map and app/saved' }, () => {
-  assert.ok(hasMeta('map'), '/map');
-  assert.ok(hasMeta('saved'), '/saved');
+// /map and /saved: wave 2 metadata tests. Each route exports metadata with a title and description.
+test('/map and /saved have metadata', () => {
+  assert.ok(hasMeta('map'), '/map has metadata');
+  assert.ok(hasMeta('saved'), '/saved has metadata');
+  // Both routes must export metadata with title and description, like other routes.
+  const mapSrc = read('app/map/page.js');
+  assert.match(mapSrc, /export\s+const\s+metadata\s*=\s*{[\s\S]*?title:/);
+  assert.match(mapSrc, /description:/);
+  assert.match(mapSrc, /— OpportuMap/);
+  const savedSrc = read('app/saved/page.js');
+  assert.match(savedSrc, /export\s+const\s+metadata\s*=\s*{[\s\S]*?title:/);
+  assert.match(savedSrc, /description:/);
+  assert.match(savedSrc, /— OpportuMap/);
+  assert.match(savedSrc, /robots:\s*{[\s\S]*?index:\s*false/, '/saved is noindex');
 });
 
 test('/admin is noindex; /contact names the desk', async () => {

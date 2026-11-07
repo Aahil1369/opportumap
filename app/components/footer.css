@@ -110,3 +110,6 @@
   .sf-gate .gs { transition: none; }
   .sf-gate:hover .gs { transform: none; }
 }
+
+/* Hide the footer on /map (the ControlTower fills 100svh and the footer would sit below it). */
+body:has(.mt-tower) footer.sf { display: none; }
