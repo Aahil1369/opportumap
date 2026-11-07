@@ -191,3 +191,130 @@ test('T4-5 a row without pay names it "Pay not listed" for its link; its tiles k
     /aria-label=\{columns\.map\(\(col\) => row\.spoken\?\.\[col\.key\] \?\? row\.cells\?\.\[col\.key\]\)\.filter\(Boolean\)\.join\(' · '\)\}/,
   );
 });
+
+// ── Part 3 · T3-2, T3-4, T7-12, K2: the nav's focus ring, hover-only CSS, kit.css's header ─────
+
+/** <a>, <button> and <Link> elements in a file whose className carries none of `rings`. */
+function unringed(rel, rings) {
+  const src = read(rel);
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true }, range: true, loc: true });
+  const missing = [];
+  const visit = (node) => {
+    if (!node || typeof node.type !== 'string') return;
+    if (node.type === 'JSXOpeningElement' && ['a', 'button', 'Link'].includes(node.name?.name)) {
+      const cls = node.attributes.find((a) => a.type === 'JSXAttribute' && a.name?.name === 'className');
+      const text = cls ? src.slice(cls.range[0], cls.range[1]) : '';
+      if (!rings.some((r) => text.includes(r))) missing.push(`${rel}:${node.loc.start.line}`);
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'parent') continue;
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(ast);
+  return missing;
+}
+
+test('T3-2 every link and button in the night navbar and its drawer shows the sign-yellow focus ring', () => {
+  assert.deepEqual(unringed('app/components/Navbar.js', ['FOCUS', 'menuItem']), []);
+  assert.deepEqual(unringed('app/components/NavDrawer.js', ['FOCUS', 'account']), []);
+  assert.deepEqual(unringed('app/components/navParts.js', ['FOCUS']), []);
+  // The shared class strings carry the ring themselves.
+  assert.match(read('app/components/Navbar.js'), /const menuItem = `[^`]*\$\{FOCUS\}`;/);
+  assert.match(read('app/components/NavDrawer.js'), /const account = `[^`]*\$\{FOCUS\}`;/);
+  assert.match(
+    read('app/components/navParts.js'),
+    /export const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sign';/,
+  );
+});
+
+test('T3-4 the desktop menus name their panel in aria-controls only while it exists', () => {
+  const src = read('app/components/Navbar.js');
+  assert.match(src, /aria-controls=\{toolsOpen \? 'nav-tools' : undefined\}/);
+  assert.match(src, /aria-controls=\{userMenuOpen \? 'nav-account' : undefined\}/);
+  assert.doesNotMatch(src, /aria-controls="nav-(?:tools|account)"/);
+  // The panels with those ids render only while open.
+  assert.match(src, /\{toolsOpen && \(\s*<div id="nav-tools"/);
+  assert.match(src, /\{userMenuOpen && \(\s*<div id="nav-account"/);
+});
+
+/** Every style rule in a stylesheet: its selector and body (spaces collapsed) and the at-rules around it. */
+function cssRules(css) {
+  const rules = [];
+  const open = [];
+  let text = '';
+  for (const ch of stripCss(css)) {
+    if (ch === '{') {
+      open.push(text.trim().replace(/\s+/g, ' '));
+      text = '';
+    } else if (ch === '}') {
+      const head = open.pop();
+      const body = text.trim().replace(/\s+/g, ' ');
+      if (head && !head.startsWith('@')) rules.push({ selector: head, body, within: open.filter((h) => h.startsWith('@')) });
+      text = '';
+    } else {
+      text += ch;
+    }
+  }
+  return rules;
+}
+
+const HOVER_MEDIA = /^@media \(hover: ?hover\)$/;
+const HOVER_RULES = {
+  'app/components/kit/kit.css': [
+    ['a.gs:hover', 'transform: translateY(-1px);'],
+    ['a.gs:hover', 'transform: none;'],
+  ],
+  'app/components/desk.css': [
+    ['.desk-x:hover', 'background: var(--hall-3); color: var(--ink);'],
+    ['.desk-sugg button:hover', 'border-color: var(--ink-sub); color: var(--ink);'],
+  ],
+  'app/components/footer.css': [
+    ['.sf-gate:hover .gs', 'transform: translateY(-1px);'],
+    ['.sf-gate:hover .sf-sub', 'color: var(--ink);'],
+    ['.sf-desk:hover', 'border-color: var(--ink-sub);'],
+    ['.sf-gate:hover .gs', 'transform: none;'],
+  ],
+  'app/components/home/home.css': [
+    ['.hp-more:hover', 'text-decoration: underline; text-underline-offset: 3px;'],
+    ['.gw-link:hover .gw-go', 'transform: translateX(3px);'],
+    ['.wt-go:hover', 'transform: translateY(-1px);'],
+    ['.gw-link:hover .gw-go, .wt-go:hover', 'transform: none;'],
+  ],
+  'app/components/AuthModal.css': [],
+};
+
+test('T7-12 every :hover rule in group K CSS sits in @media (hover: hover); nothing else does', () => {
+  for (const [file, expected] of Object.entries(HOVER_RULES)) {
+    const rules = cssRules(read(file));
+    const hovers = rules.filter((r) => /:hover\b/.test(r.selector));
+    assert.deepEqual(hovers.map((r) => [r.selector, r.body]), expected, `${file}: the :hover rules, in order, unchanged`);
+    for (const r of hovers) {
+      assert.ok(r.within.some((w) => HOVER_MEDIA.test(w)), `${file}: "${r.selector}" is outside @media (hover: hover)`);
+      assert.doesNotMatch(r.selector, /:focus|:active/, `${file}: "${r.selector}" also names :focus or :active`);
+    }
+    for (const r of rules.filter((x) => !/:hover\b/.test(x.selector))) {
+      assert.ok(!r.within.some((w) => HOVER_MEDIA.test(w)), `${file}: "${r.selector}" has no :hover but sits in @media (hover: hover)`);
+    }
+  }
+  // The reduced-motion overrides are still under reduced motion (and still after the lifts they undo).
+  for (const [file, selector] of [
+    ['app/components/kit/kit.css', 'a.gs:hover'],
+    ['app/components/footer.css', '.sf-gate:hover .gs'],
+    ['app/components/home/home.css', '.gw-link:hover .gw-go, .wt-go:hover'],
+  ]) {
+    const last = cssRules(read(file)).filter((r) => r.selector === selector).at(-1);
+    assert.ok(last.within.some((w) => /^@media \(prefers-reduced-motion: ?reduce\)$/.test(w)), `${file}: the last "${selector}"`);
+    assert.equal(last.body, 'transform: none;');
+  }
+});
+
+test('K2 kit.css says where it ships: every page (SiteFooter imports it from the root layout)', () => {
+  const css = read('app/components/kit/kit.css');
+  assert.doesNotMatch(css, /only ships on pages that use them/);
+  assert.match(css, /by SiteFooter, which the root layout renders on every page, so it is in every page's CSS\./);
+  assert.match(read('app/components/SiteFooter.js'), /^import '\.\/kit\/kit\.css';$/m);
+  assert.match(read('app/layout.js'), /<SiteFooter \/>/);
+});

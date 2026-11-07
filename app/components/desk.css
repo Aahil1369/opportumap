@@ -50,7 +50,9 @@
   font: 400 20px/1 var(--font-board);
   cursor: pointer;
 }
-.desk-x:hover { background: var(--hall-3); color: var(--ink); }
+@media (hover: hover) {
+  .desk-x:hover { background: var(--hall-3); color: var(--ink); }
+}
 .desk-x:focus-visible,
 .desk-sugg button:focus-visible,
 .desk-send:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
@@ -111,7 +113,9 @@
   text-align: left;
   cursor: pointer;
 }
-.desk-sugg button:hover { border-color: var(--ink-sub); color: var(--ink); }
+@media (hover: hover) {
+  .desk-sugg button:hover { border-color: var(--ink-sub); color: var(--ink); }
+}
 
 .desk-form {
   display: flex;

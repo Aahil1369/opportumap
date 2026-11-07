@@ -1,8 +1,8 @@
 /* ─── Departures kit ───────────────────────────────────────────────────────────
    The split-flap board and the hall chrome (gate signs, page shell, status pills, airport codes,
    dialogs). The palette lives in app/globals.css (:root + @theme: --hall … --warn) and the mono
-   stack is --font-board (JetBrains Mono + the board glyphs). Imported by the kit components, so
-   it only ships on pages that use them. */
+   stack is --font-board (JetBrains Mono + the board glyphs). Imported by the kit components and
+   by SiteFooter, which the root layout renders on every page, so it is in every page's CSS. */
 :root {
   /* Tile shading around --hall-3, lit from above, so each tile and its split read on the board.
      On :root because the flap engine reads them from there (FlapText.js, cssVar). */
@@ -200,7 +200,9 @@
 }
 .gs-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 a.gs { transition: transform 0.16s cubic-bezier(.22, 1, .36, 1); }
-a.gs:hover { transform: translateY(-1px); }
+@media (hover: hover) {
+  a.gs:hover { transform: translateY(-1px); }
+}
 a.gs:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
 
 /* ─── PageShell ───
@@ -323,7 +325,9 @@ a.gs:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   a.gs { transition: none; }
-  a.gs:hover { transform: none; }
+  @media (hover: hover) {
+    a.gs:hover { transform: none; }
+  }
   /* As specific as the drawer's own animation rule, so it wins there too. */
   .dlg-root[data-placement] .dlg,
   .dlg-root[data-placement] .dlg-backdrop { animation: none; }

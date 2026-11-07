@@ -59,7 +59,9 @@
   font-weight: 600;
   text-decoration: none;
 }
-.hp-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+@media (hover: hover) {
+  .hp-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
 .hp-more:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; border-radius: 3px; }
 
 .hp-beat { padding: 56px 0; border-top: 1px solid var(--rule); }
@@ -189,7 +191,9 @@
 .gw-link .gs { flex: none; width: 10.6em; }
 .gw-what { flex: 1; min-width: 0; font-size: 16px; line-height: 1.4; color: var(--ink-dim); }
 .gw-go { flex: none; color: var(--sign); font: 500 18px/1 var(--font-board); transition: transform 0.18s var(--ease); }
-.gw-link:hover .gw-go { transform: translateX(3px); }
+@media (hover: hover) {
+  .gw-link:hover .gw-go { transform: translateX(3px); }
+}
 .gw-link:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
 
 /* ── 5 · Your row: the board dims, the founder's row is lit gold ── */
@@ -259,7 +263,9 @@
   cursor: pointer;
   transition: transform 0.16s var(--ease);
 }
-.wt-go:hover { transform: translateY(-1px); }
+@media (hover: hover) {
+  .wt-go:hover { transform: translateY(-1px); }
+}
 .wt-pc {
   display: inline-grid;
   gap: 4px;
@@ -313,6 +319,8 @@
 @media (prefers-reduced-motion: reduce) {
   .gw-go,
   .wt-go { transition: none; }
-  .gw-link:hover .gw-go,
-  .wt-go:hover { transform: none; }
+  @media (hover: hover) {
+    .gw-link:hover .gw-go,
+    .wt-go:hover { transform: none; }
+  }
 }

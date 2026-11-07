@@ -163,7 +163,7 @@ export default function Navbar() {
     );
   };
 
-  const menuItem = 'flex items-center gap-3 w-full rounded-[6px] px-2.5 py-2 text-left font-sans text-[14px] text-ink hover:bg-hall-3';
+  const menuItem = `flex items-center gap-3 w-full rounded-[6px] px-2.5 py-2 text-left font-sans text-[14px] text-ink hover:bg-hall-3 ${FOCUS}`;
 
   return (
     <>
@@ -206,9 +206,9 @@ export default function Navbar() {
                 ref={toolsButton}
                 type="button"
                 aria-expanded={toolsOpen}
-                aria-controls="nav-tools"
+                aria-controls={toolsOpen ? 'nav-tools' : undefined}
                 onClick={() => setToolsOpen((o) => !o)}
-                className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.12em] uppercase ${
+                className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.12em] uppercase ${FOCUS} ${
                   isToolActive ? 'bg-sign text-sign-ink' : 'text-ink-dim hover:text-ink'
                 }`}
               >
@@ -246,9 +246,9 @@ export default function Navbar() {
                   ref={userButton}
                   type="button"
                   aria-expanded={userMenuOpen}
-                  aria-controls="nav-account"
+                  aria-controls={userMenuOpen ? 'nav-account' : undefined}
                   onClick={() => setUserMenuOpen((o) => !o)}
-                  className="flex items-center gap-2 h-9 pl-1 pr-2.5 rounded-[6px] text-ink hover:bg-hall-3 font-mono text-[12px] font-medium tracking-[0.06em]"
+                  className={`flex items-center gap-2 h-9 pl-1 pr-2.5 rounded-[6px] text-ink hover:bg-hall-3 font-mono text-[12px] font-medium tracking-[0.06em] ${FOCUS}`}
                 >
                   <UserAvatar user={user} />
                   <span className="max-w-[120px] truncate">{userName}</span>
@@ -281,7 +281,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setShowAuth(true)}
-                className="inline-flex items-center h-9 px-3 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.14em] uppercase text-ink ring-1 ring-inset ring-rule hover:ring-ink-sub"
+                className={`inline-flex items-center h-9 px-3 rounded-[6px] font-mono text-[12px] font-medium tracking-[0.14em] uppercase text-ink ring-1 ring-inset ring-rule hover:ring-ink-sub ${FOCUS}`}
               >
                 Sign in
               </button>
@@ -293,7 +293,7 @@ export default function Navbar() {
               aria-haspopup="dialog"
               aria-expanded={mobileOpen}
               onClick={() => { setDrawerWanted(true); setMobileOpen(true); }}
-              className="lg:hidden w-11 h-11 -mr-2 flex flex-col items-center justify-center gap-[5px] rounded-[6px] hover:bg-hall-3"
+              className={`lg:hidden w-11 h-11 -mr-2 flex flex-col items-center justify-center gap-[5px] rounded-[6px] hover:bg-hall-3 ${FOCUS}`}
             >
               <span className="block w-[18px] h-[1.5px] bg-ink" />
               <span className="block w-[18px] h-[1.5px] bg-ink" />
