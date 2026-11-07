@@ -29,6 +29,7 @@ import {
 } from '../../../lib/departures/coverLetter';
 import { MAX_RESUME_LABEL, sizeLabel } from '../../../lib/departures/resumeVerdict';
 import { createLatest } from '../../../lib/departures/createLatest';
+import { errorText } from '../../../lib/fetchJson';
 import { usePrefersReducedMotion } from '../kit/useReducedMotion';
 import Envelope from './Envelope';
 import './coverLetter.css';
@@ -44,13 +45,7 @@ const useLayout = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 /** What to say about a non-OK answer: letterErrorFor words it from the status (and a 400's text). */
 async function errorFrom(response, opts) {
-  let error;
-  try {
-    error = (await response.json())?.error;
-  } catch {
-    // not JSON (a platform error page): worded from the status alone
-  }
-  return letterErrorFor(response.status, error, opts);
+  return letterErrorFor(response.status, await errorText(response), opts);
 }
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];

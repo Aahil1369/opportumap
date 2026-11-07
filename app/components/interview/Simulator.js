@@ -27,6 +27,7 @@ import {
   tally,
 } from '../../../lib/departures/interviewProgress';
 import { createLatest } from '../../../lib/departures/createLatest';
+import { errorText } from '../../../lib/fetchJson';
 import Altimeter from './Altimeter';
 import './interview.css';
 
@@ -52,13 +53,7 @@ const loadFlap = () =>
 
 /** What to say about a non-OK answer: simErrorFor words it from the status (and a 400's text). */
 async function errorFrom(response, stage) {
-  let error;
-  try {
-    error = (await response.json())?.error;
-  } catch {
-    // not JSON (a platform error page): worded from the status alone
-  }
-  return simErrorFor(response.status, error, stage);
+  return simErrorFor(response.status, await errorText(response), stage);
 }
 
 // ── Small parts ─────────────────────────────────────────────────────────────────────────────
