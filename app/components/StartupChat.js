@@ -9,7 +9,8 @@
 // - Realtime: only the other person's messages in this thread (acceptIncoming). My own sends come
 //   back from the POST, so their echo is ignored; everything is de-duplicated by id. A message
 //   that arrives while the thread is open is marked read with a quiet re-fetch (after a moment,
-//   and only while the page is visible), so it is not "unread" on the next visit.
+//   and only while the page is visible), so it is not "unread" on the next visit. Coming back to
+//   the page re-fetches the thread too: iOS drops the Realtime socket while a tab sleeps.
 // - Sending: shown at once ("Sending…"); a failed send stays in the thread marked "Not sent" with
 //   Retry and Edit, plus an alert saying why (a 401 offers sign-in, then Retry).
 // - Scrolling happens inside the message container only (data-lenis-prevent; scrollTop, never
@@ -21,7 +22,7 @@ import { fetchJson } from '../../lib/fetchJson.js';
 import { isUuid } from '../../lib/uuid.js';
 import { displayName } from '../../lib/displayName.js';
 import { initials } from '../../lib/departures/lounge.js';
-import { dayLabel } from '../../lib/departures/gateChat.js';
+import { dayLabel, onPageVisible } from '../../lib/departures/gateChat.js';
 import { acceptIncoming, appendUnique, markFailed, markPending, replaceTemp } from './chatMessages.js';
 
 const MAX_MESSAGE = 4000; // the startup_messages_content_len constraint
@@ -69,6 +70,10 @@ export default function StartupChat({ startupId, receiverId, currentUser, partne
   useEffect(() => {
     callbacks.current = { onLoaded, onSent };
   });
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  });
 
   const threadUrl = `/api/messages/${encodeURIComponent(startupId)}?with=${encodeURIComponent(receiverId)}`;
 
@@ -113,16 +118,18 @@ export default function StartupChat({ startupId, receiverId, currentUser, partne
     }, SEEN_DELAY_MS);
   }, [refresh]);
 
+  // Back in view (another tab, the phone waking up): fetch the thread again. iOS drops the
+  // Realtime socket while a tab sleeps, so this brings in what arrived meanwhile and marks what
+  // was seen as read. Only once the thread is on screen: a first load still out, or a failed one
+  // (it has its own retry), is left alone.
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && seenLater.current) {
-        seenLater.current = false;
-        refresh();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
+    const stop = onPageVisible(() => {
+      if (statusRef.current !== 'ready') return;
+      seenLater.current = false;
+      refresh();
+    });
     return () => {
-      document.removeEventListener('visibilitychange', onVisible);
+      stop();
       clearTimeout(seenTimer.current);
     };
   }, [refresh]);

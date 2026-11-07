@@ -9,7 +9,9 @@
 //   list is a history entry, so the iPhone's swipe back returns to the list.
 // - The inbox (GET /api/messages) follows new messages sent to me live (Realtime): the thread
 //   moves to the top and its unread badge counts up, unless it is the open one. The badge clears
-//   when a conversation opens (once its messages have loaded, which marks them read).
+//   when a conversation opens (once its messages have loaded, which marks them read). Coming
+//   back to the page (another tab, the phone waking up) fetches the inbox again: iOS drops the
+//   Realtime socket while a tab sleeps.
 // - A deep link to a conversation that has no messages yet is checked against the startup first
 //   (only a conversation with its founder can exist), then opens empty; the first message sent
 //   puts it in the inbox.
@@ -27,6 +29,7 @@ import {
   bumpInbox,
   draftThread,
   markOpened,
+  onPageVisible,
   partnerName,
   partnerRole,
   threadFromParams,
@@ -303,6 +306,17 @@ export default function GateChat() {
       if (channel) supabase.removeChannel(channel);
     };
   }, [me]);
+
+  // Back from the background: iOS drops the Realtime socket while a tab sleeps, so the inbox is
+  // fetched again and messages that arrived meanwhile show up (not only on the next visit).
+  // Not while the first load is still out: its answer will have them.
+  useEffect(() => {
+    if (!me) return undefined;
+    return onPageVisible(() => {
+      const cur = inboxRef.current;
+      if (cur.userId === me && cur.status !== 'loading') reloadQuietly();
+    });
+  }, [me, reloadQuietly]);
 
   // ── opening and leaving a conversation ──
   const pushed = useRef(false);
