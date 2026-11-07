@@ -21,7 +21,7 @@ export default function SavedPage() {
     <>
       <Navbar />
       <PageShell
-        sign={{ letter: '—', label: 'ITINERARY' }}
+        sign={{ label: 'ITINERARY' }}
         title="Your"
         accent="itinerary."
         sub="The roles you saved, on one board. Tap a row to open its gate."

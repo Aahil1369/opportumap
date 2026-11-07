@@ -261,6 +261,7 @@ export default function Itinerary() {
             index={i}
             stage={stages.get(entry.id) || null}
             looking={looking && !!entry.pending}
+            position={i + 1}
             onOpen={open}
             onRemove={remove}
             buttonRef={keepButton}

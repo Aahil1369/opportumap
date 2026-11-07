@@ -32,7 +32,7 @@ const NO_CODE = '---';
 const NO_DETAILS = {
   looking: { role: 'Looking up this role…', where: 'Saved before the board kept details' },
   later: { role: 'Details unavailable right now', where: 'We will look it up again next visit' },
-  gone: { role: 'Details unavailable', where: 'No longer on the board' },
+  gone: { role: 'Details unavailable', where: 'Couldn\'t find its details' },
 };
 
 function payLabel(row, predicted, state) {
@@ -44,9 +44,9 @@ function payLabel(row, predicted, state) {
 /**
  * entry: the saved entry (lib/departures/savedStore.js). row: jobRow(entry) for a role with
  * details, else null. looking: its id is being looked up right now. stage: null | 'cancelled' | 'gone'.
- * buttonRef(id, el): the board keeps the Remove buttons, to move focus after a removal.
+ * position: 1-based position (for no-details rows' aria-labels). buttonRef(id, el): the board keeps the Remove buttons, to move focus after a removal.
  */
-function ItineraryRow({ entry, row, href, index, stage, looking, onOpen, onRemove, buttonRef }) {
+function ItineraryRow({ entry, row, href, index, stage, looking, position, onOpen, onRemove, buttonRef }) {
   const ref = useRef(null);
   const { on, first } = useOnScreen(ref);
   const { pay: predicted, state } = usePredictedPay(row?.ask ?? null, { visible: on && !stage });
@@ -60,6 +60,9 @@ function ItineraryRow({ entry, row, href, index, stage, looking, onOpen, onRemov
 
   const status = stage ? 'CANCELLED' : row?.status ?? '';
   const name = row?.role || 'this saved role';
+  const removeLabel = row
+    ? `Remove ${name} from your itinerary`
+    : `Remove the saved role in row ${position} (details unavailable) from your itinerary`;
   const statusCell = (
     <span className="it-status">
       <FlapText {...flap(status)} width={STATUS_TILES} status />
@@ -144,7 +147,7 @@ function ItineraryRow({ entry, row, href, index, stage, looking, onOpen, onRemov
         ref={setButton}
         type="button"
         className="it-x"
-        aria-label={`Remove ${name} from your itinerary`}
+        aria-label={removeLabel}
         aria-disabled={stage ? 'true' : undefined}
         onClick={() => {
           if (!stage) onRemove(id);

@@ -397,7 +397,8 @@ test('/saved: a server page with metadata, the ITINERARY sign, "Your itinerary."
   assert.doesNotMatch(page, /^\s*['"]use client['"]/m, 'the hall header renders on the server');
   assert.match(page, /export const metadata\b/);
   assert.match(page, /'Saved — OpportuMap'/);
-  assert.match(page, /sign=\{\{ letter: '—', label: 'ITINERARY' \}\}/);
+  assert.match(page, /sign=\{\{ label: 'ITINERARY' \}\}/);
+  assert.doesNotMatch(page, /letter:\s*'—'/);
   assert.match(page, /title="Your"/);
   assert.match(page, /accent="itinerary\."/);
   for (const f of SAVED_FILES) {
@@ -465,4 +466,16 @@ test('/saved copy: no "flight" or "fare", no totals', () => {
     }
     assert.doesNotMatch(src, /\{\s*(?:list|shown|rows|saved)(?:\?)?\.(?:length|size)\s*\}/, `${f}: a count rendered`);
   }
+});
+
+test('ItineraryRow: no-details rows use honest copy "Couldn\'t find its details", not "No longer on the board"', () => {
+  const row = read('app/saved/ItineraryRow.js');
+  assert.match(row, /Couldn\\?'t find its details/, 'uses "Couldn\'t find its details"');
+  assert.doesNotMatch(row, /No longer on the board/, 'old copy is gone');
+});
+
+test('ItineraryRow: no-details rows get distinct Remove button names with position', () => {
+  const row = read('app/saved/ItineraryRow.js');
+  assert.match(row, /position/, 'position prop is accepted');
+  assert.match(row, /Remove the saved role in row.*position.*details unavailable.*from your itinerary/, 'aria-label includes position and details-unavailable note');
 });
