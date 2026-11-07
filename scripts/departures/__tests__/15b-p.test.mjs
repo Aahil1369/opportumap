@@ -4,9 +4,11 @@
 // beacon label inherits its board font from it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, posix } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { ESLint } from 'eslint';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
@@ -66,4 +68,35 @@ test('globals.css: one Mapbox popup rule stays, for the font the /map beacon lab
     .filter((m) => m[1].includes('mapboxgl-'))
     .map((m) => [m[1].trim(), m[2].trim()]);
   assert.deepEqual(rules, [['.mapboxgl-popup-content', 'font-family: var(--font-board);']]);
+});
+
+// ── Part 2: the page bar's lint error, dead exports, a quiet test script, the 4 MB docs ─────
+
+const SELF = 'scripts/departures/__tests__/15b-p.test.mjs';
+
+/** Every file under `rel` as a repo path with forward slashes (node_modules and .next skipped). */
+function files(rel) {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) return [];
+  if (!statSync(abs).isDirectory()) return [rel];
+  return readdirSync(abs)
+    .filter((name) => name !== 'node_modules' && name !== '.next')
+    .flatMap((name) => files(posix.join(rel, name)));
+}
+
+/** The text of every .js/.mjs file under app/ and scripts/, except this test and `skip`. */
+const sources = (skip) =>
+  [...files('app'), ...files('scripts')]
+    .filter((f) => /\.m?js$/.test(f) && f !== SELF && f !== skip)
+    .map(read)
+    .join('\n');
+
+test('PageTransition: no lint error; the grow starts on the next frame and schedules its own shrink (P9)', async () => {
+  const [res] = await new ESLint({ cwd: ROOT }).lintFiles(['app/components/ui/PageTransition.js']);
+  assert.deepEqual(res.messages.filter((m) => m.severity === 2).map((m) => `${m.line}: ${m.ruleId} ${m.message}`), []);
+  const src = read('app/components/ui/PageTransition.js');
+  assert.match(src, /const start = requestAnimationFrame\(\(\) => \{\s*setRunning\(true\);\s*stop = setTimeout\(\(\) => setRunning\(false\), 260\);\s*\}\);/);
+  assert.match(src, /return \(\) => \{\s*cancelAnimationFrame\(start\);\s*clearTimeout\(stop\);\s*\};/);
+  assert.match(src, /\}, \[pathname\]\);/);
+  assert.match(src, /<div className=\{`page-transition-bar\$\{running \? ' running' : ''\}`\} \/>/);
 });
