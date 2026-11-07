@@ -245,7 +245,8 @@ export default function Stand({ id }) {
               {raise ? (
                 <>
                   <span className="hg-pass-big">{raise}</span>
-                  <span className="hg-pass-cap">RAISING{equity ? ` · ${equity} EQUITY` : ''}</span>
+                  <span className="hg-pass-cap">RAISING</span>
+                  {equity && <span className="hg-pass-equity">{equity} equity offered</span>}
                 </>
               ) : (
                 <span className="hg-pass-cap">RAISE NOT DISCLOSED</span>
@@ -324,7 +325,12 @@ export default function Stand({ id }) {
                 Visit the website ↗
               </a>
             )}
-            {s.user_name && <p className="hg-founder">FOUNDER · {s.user_name}</p>}
+            {s.user_name && (
+              <p className="hg-founder">
+                <span className="hg-pass-cap">FOUNDER</span>
+                <span className="hg-founder-name">{s.user_name}</span>
+              </p>
+            )}
           </section>
         </aside>
 

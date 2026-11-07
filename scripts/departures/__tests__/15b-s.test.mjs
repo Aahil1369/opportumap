@@ -327,3 +327,28 @@ test('S3 the post form shows friendly lines, never storage or network error text
   assert.match(form, /err\?\.status === 400\s*\?\s*err\.message/, 'only the API\'s 400 answers (the field to fix) are shown');
   assert.match(form, /'Could not post your startup\. Check your connection and try again\.'/);
 });
+
+// ── T12-M6: equity and the founder's name are content, not 11px labels ─────────────────────
+
+test('T12-M6 equity and the founder\'s name render at 16px (at least 14), apart from the 11px captions', () => {
+  const stand = code('app/components/startups/Stand.js');
+  assert.ok(!/RAISING\{equity/.test(stand), 'equity is no longer inside the 11px caption');
+  assert.match(stand, /<span className="hg-pass-equity">\{equity\} equity offered<\/span>/);
+  assert.match(stand, /<span className="hg-founder-name">\{s\.user_name\}<\/span>/);
+  assert.ok(!/FOUNDER · \{s\.user_name\}/.test(stand));
+  const rules = cssRules(read('app/components/startups/startups.css'));
+  for (const sel of ['.hg-pass-equity', '.hg-founder-name']) {
+    const rule = rules.find((r) => r.selectors.includes(sel));
+    assert.ok(rule, `${sel} is styled`);
+    const px = Number(/font-size:\s*(\d+)px/.exec(rule.body)?.[1] ?? /font:\s*\d{3}\s+(\d+)px/.exec(rule.body)?.[1]);
+    assert.ok(px >= 14, `${sel} is ${px}px`);
+  }
+});
+
+// ── T12-M8: the stands sit under an h2 ─────────────────────────────────────────────────────
+
+test('T12-M8 the stand cards\' h3 headings have an h2 above them', () => {
+  const page = code('app/components/startups/Hangar.js');
+  assert.match(page, /<h2 id="hg-grid-h" className="sr-only">\s*Startups in the hangar\s*<\/h2>\s*<ul className="hg-grid" aria-labelledby="hg-grid-h">/);
+  assert.match(code('app/components/startups/StandCard.js'), /<h3 className="hg-name">/);
+});

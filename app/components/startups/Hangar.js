@@ -306,11 +306,16 @@ export default function Hangar() {
               </button>
             </div>
           ) : (
-            <ul className="hg-grid" aria-label="Startups in the hangar">
-              {shown.map((s, i) => (
-                <StandCard key={s.id} startup={s} rise={rise && i < RISE_MAX} k={i} />
-              ))}
-            </ul>
+            <>
+              <h2 id="hg-grid-h" className="sr-only">
+                Startups in the hangar
+              </h2>
+              <ul className="hg-grid" aria-labelledby="hg-grid-h">
+                {shown.map((s, i) => (
+                  <StandCard key={s.id} startup={s} rise={rise && i < RISE_MAX} k={i} />
+                ))}
+              </ul>
+            </>
           )}
         </>
       )}

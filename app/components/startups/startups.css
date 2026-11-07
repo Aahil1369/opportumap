@@ -465,6 +465,7 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
 .hg-pass-raise { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .hg-pass-big { font: 800 34px/1 var(--font-inter), ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; color: var(--sign); }
 .hg-pass-cap { font: 500 11px/1.3 var(--font-board); letter-spacing: 0.18em; color: var(--ink-sub); }
+.hg-pass-equity { font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--ink-dim); }
 .hg-pax-row {
   display: flex;
   align-items: center;
@@ -489,7 +490,8 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
 .hg-toggle[data-kind='standby'][aria-pressed='true'] { background: var(--info); border-color: var(--info); }
 .hg-state-line { margin: 6px 0 14px; font-size: 16px; line-height: 1.4; color: var(--ink-sub); }
 .hg-state-line[data-on] { color: var(--ok); }
-.hg-founder { margin: 2px 0 0; font: 500 11px/1.4 var(--font-board); letter-spacing: 0.16em; color: var(--ink-sub); overflow-wrap: anywhere; }
+.hg-founder { margin: 2px 0 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.hg-founder-name { font-size: 16px; font-weight: 600; line-height: 1.35; color: var(--ink); overflow-wrap: anywhere; }
 .hg-standpage .hg-foot { margin-top: 28px; }
 
 @media (prefers-reduced-motion: reduce) {
