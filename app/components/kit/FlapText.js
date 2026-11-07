@@ -14,9 +14,12 @@
 // Measured at 4x CPU throttling on an emulated iPhone 13 board (12 rows, 120 tiles mid-flip):
 // CSS scaleY on DOM half-tiles never got p95 under ~85 ms per frame (style/layout/paint/
 // layerization per element), the canvas holds ~12 ms. Nothing in the DOM moves while it flips.
+// The canvases keep to lib/departures/flapCanvas.js's pixel budgets (at most 2x; iOS refuses big
+// canvases), and a canvas's pixels are freed as soon as the last FlapText on it unmounts.
 
 import { useEffect, useRef, useState } from 'react';
 import { createFlapQueue, fitFlap, flapDiff, flapSchedule } from '../../../lib/departures/flap';
+import { atlasGrid, layerScale } from '../../../lib/departures/flapCanvas';
 import { usePrefersReducedMotion } from './useReducedMotion';
 import './kit.css';
 
@@ -35,12 +38,20 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Atlas: whole tiles (background, edges, glyph) per style + character + colour ─────────────
+// 32 tiles a row and as many rows (4–16) as fit the atlas budget (lib/departures/flapCanvas.js
+// atlasGrid), so a big plate's tiles never make an atlas iOS refuses.
 
-const ATLAS_COLS = 32;
-const ATLAS_ROWS = 16;
+const MAX_ATLASES = 4; // tile styles kept at once (phone/desktop, resizes, a plate)
 const atlases = new Map(); // style key -> atlas
 
+/** Frees a canvas's pixels now: WebKit frees a dropped canvas only at its next collection. */
+function freeCanvas(canvas) {
+  canvas.width = 0;
+  canvas.height = 0;
+}
+
 function resetAtlases() {
+  for (const a of atlases.values()) freeCanvas(a.canvas);
   atlases.clear();
 }
 if (typeof document !== 'undefined' && document.fonts) {
@@ -54,14 +65,20 @@ if (typeof document !== 'undefined' && document.fonts) {
 // The tile shades are kit.css / globals.css tokens (always loaded with this file).
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
+/** The atlas for a tile style, or null when the browser refuses the canvas (out of canvas memory). */
 function atlasFor(st) {
   let a = atlases.get(st.key);
   if (a) return a;
-  if (atlases.size >= 4) atlases.clear(); // tile sizes seen on this page (phone/desktop, resizes)
+  if (atlases.size >= MAX_ATLASES) resetAtlases();
+  const { cols, rows } = atlasGrid(st.w, st.h);
   const canvas = document.createElement('canvas');
-  canvas.width = ATLAS_COLS * st.w;
-  canvas.height = ATLAS_ROWS * st.h;
+  canvas.width = cols * st.w;
+  canvas.height = rows * st.h;
   const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    freeCanvas(canvas);
+    return null;
+  }
   ctx.font = st.font;
   const m = ctx.measureText('M');
   const ascent = m.fontBoundingBoxAscent ?? st.h * 0.4;
@@ -69,6 +86,8 @@ function atlasFor(st) {
   a = {
     canvas,
     ctx,
+    cols,
+    cap: cols * rows, // tiles it holds
     slots: new Map(),
     base: Math.round((st.h - (ascent + descent)) / 2 + ascent), // the line box centres the font
     colors: {
@@ -83,18 +102,20 @@ function atlasFor(st) {
   return a;
 }
 
-/** Atlas square for `ch` in `color` (drawn on first use). */
-function glyph(st, ch, color) {
-  const a = atlasFor(st);
+/** Empties an atlas: its tiles are drawn again on next use. */
+function clearAtlas(a) {
+  a.slots.clear();
+  a.ctx.clearRect(0, 0, a.canvas.width, a.canvas.height);
+}
+
+/** The square on atlas `a` for `ch` in `color` (drawn on first use). */
+function glyph(a, st, ch, color) {
   const key = `${ch}\u0000${color}`;
   let s = a.slots.get(key);
   if (s) return s;
-  if (a.slots.size >= ATLAS_COLS * ATLAS_ROWS) {
-    a.slots.clear();
-    a.ctx.clearRect(0, 0, a.canvas.width, a.canvas.height);
-  }
+  if (a.slots.size >= a.cap) clearAtlas(a);
   const i = a.slots.size;
-  s = { x: (i % ATLAS_COLS) * st.w, y: Math.floor(i / ATLAS_COLS) * st.h };
+  s = { x: (i % a.cols) * st.w, y: Math.floor(i / a.cols) * st.h };
   a.slots.set(key, s);
   const { ctx, colors } = a;
   const { w, h, half, px } = st;
@@ -132,21 +153,30 @@ function glyph(st, ch, color) {
 // ── Layers: one canvas per board (or standalone FlapText), over its tiles ─────────────────────
 
 const layers = new WeakMap(); // host element -> layer
+const live = new Set(); // layers with a canvas on the page (when the last one goes, the atlases go)
 
-function layerFor(strip) {
-  const host = strip.closest('.fb-table') || strip.parentElement;
+/** What a strip's flips are drawn over: its board's table, or its own FlapText. */
+const hostOf = (strip) => strip.closest('.fb-table') || strip.parentElement;
+
+/** The host's layer (made on its first flip), or null when the browser refuses the canvas. */
+function layerFor(host) {
   let layer = layers.get(host);
   if (layer && layer.canvas.isConnected) return layer;
+  if (layer) dropLayer(layer); // its canvas left the page under it
   const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
   canvas.className = 'flap-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   host.appendChild(canvas);
   layer = {
     host,
     canvas,
-    ctx: canvas.getContext('2d'),
+    ctx,
     jobs: new Set(), // flipping now
     queued: new Set(), // waiting for their turn, placed on the geometry they were queued on
+    strips: new Set(), // the FlapTexts that flip on it: the last one to unmount frees it
+    ro: null,
     w: 0,
     h: 0,
     dpr: 1,
@@ -154,19 +184,44 @@ function layerFor(strip) {
     cssH: 0,
   };
   layers.set(host, layer);
+  live.add(layer);
   if (typeof ResizeObserver !== 'undefined') {
     // The board changed size under the canvas (rotation, resize): every flip on it ends now;
     // the canvas is re-fitted on the next flip. Sizes the last flip already fitted are not a change.
-    new ResizeObserver(([entry]) => {
+    layer.ro = new ResizeObserver(([entry]) => {
       const box = entry.borderBoxSize?.[0];
       const w = box ? box.inlineSize : entry.contentRect.width;
       const h = box ? box.blockSize : entry.contentRect.height;
       if (Math.abs(w - layer.cssW) < 0.5 && Math.abs(h - layer.cssH) < 0.5) return;
       landLayer(layer);
       layer.w = 0;
-    }).observe(host);
+    });
+    layer.ro.observe(host);
   }
   return layer;
+}
+
+/**
+ * Takes a layer off the page and frees its pixels now: its last FlapText unmounted, or its canvas
+ * left the page. With no layer left, the atlases go too (the next page draws its own).
+ */
+function dropLayer(layer) {
+  if (!live.delete(layer)) return;
+  landLayer(layer);
+  layer.ro?.disconnect();
+  if (layers.get(layer.host) === layer) layers.delete(layer.host);
+  layer.canvas.remove();
+  freeCanvas(layer.canvas);
+  if (!live.size) resetAtlases();
+}
+
+/** A FlapText unmounted: it no longer flips on its layer, and the last one to go frees the layer. */
+function releaseStrip(strip) {
+  const layer = strip.__flapLayer;
+  if (!layer) return;
+  strip.__flapLayer = null;
+  layer.strips.delete(strip);
+  if (!layer.strips.size) dropLayer(layer);
 }
 
 /**
@@ -179,9 +234,12 @@ function landLayer(layer) {
   for (const job of [...layer.jobs, ...layer.queued]) land(job, job.walk.at(-1));
 }
 
-/** Sizes the canvas to its host (a resize clears it, so every flip on it lands first). */
+/**
+ * Sizes the canvas to its host, at most 2 device pixels per CSS pixel and within the layer budget
+ * (lib/departures/flapCanvas.js layerScale). A resize clears it, so every flip on it lands first.
+ */
 function fitLayer(layer, hostRect) {
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = layerScale(hostRect.width, hostRect.height, window.devicePixelRatio);
   const w = Math.round(hostRect.width * dpr);
   const h = Math.round(hostRect.height * dpr);
   layer.cssW = hostRect.width;
@@ -230,10 +288,15 @@ function draw(job, oldCh, newCh, top, bottom, blankUnder = false) {
   const { ctx } = job.layer;
   const { st, x, y, color } = job;
   const { w, h, half, px } = st;
-  const atlas = atlasFor(st).canvas;
-  const o = glyph(st, oldCh, color);
-  const n = glyph(st, newCh, color);
-  const under = blankUnder ? glyph(st, ' ', color) : o;
+  const a = atlasFor(st);
+  if (!a) return; // no atlas (the browser refused the canvas): the tile shows its old face, then lands
+  // Room for this frame's three tiles first: emptying the atlas between two of them would wipe one
+  // already fetched (Task 1 review, minor 4).
+  if (a.slots.size > a.cap - 3) clearAtlas(a);
+  const atlas = a.canvas;
+  const o = glyph(a, st, oldCh, color);
+  const n = glyph(a, st, newCh, color);
+  const under = blankUnder ? glyph(a, st, ' ', color) : o;
   ctx.clearRect(x, y, w, h);
   ctx.drawImage(atlas, n.x, n.y, w, half, x, y, w, half); // new top, revealed as the flap falls
   ctx.drawImage(atlas, under.x, under.y + half, w, h - half, x, y + half, w, h - half); // old bottom
@@ -346,14 +409,21 @@ function snapTo(strip, text) {
 function flapTo(strip, from, to, rowDelayMs, first) {
   const diff = flapDiff(from, to);
   ensureTiles(strip, diff.length);
-  const layer = layerFor(strip);
-  const hostRect = layer.host.getBoundingClientRect();
+  const host = hostOf(strip);
+  const hostRect = host.getBoundingClientRect();
   const stripRect = strip.getBoundingClientRect();
-  const batch = { first, jobs: [] };
-  if (!hostRect.width || !stripRect.width) {
-    snapTo(strip, to); // not on the page: no motion
+  // Not on the page, or no canvas to flip on (the browser refused one): the text changes at once.
+  const layer = hostRect.width && stripRect.width ? layerFor(host) : null;
+  if (!layer) {
+    snapTo(strip, to);
     return first?.();
   }
+  if (strip.__flapLayer !== layer) {
+    strip.__flapLayer?.strips.delete(strip);
+    layer.strips.add(strip);
+    strip.__flapLayer = layer;
+  }
+  const batch = { first, jobs: [] };
   fitLayer(layer, hostRect);
   const st = styleOf(strip, layer.dpr);
   const x0 = (stripRect.left - hostRect.left) * layer.dpr;
@@ -441,12 +511,14 @@ function FlapTiles({ target, start, play, delayMs, tone, onTone }) {
     else show?.();
   }, [target, start, play, delayMs, tone, onTone]);
 
-  // Nothing keeps flipping on tiles that are gone. A remount (React StrictMode runs effects
-  // twice in development) plays the first cascade again.
+  // Nothing keeps flipping on tiles that are gone, and the last FlapText on a canvas frees it
+  // (releaseStrip). A remount (React StrictMode runs effects twice in development) plays the
+  // first cascade again.
   useEffect(() => {
     const el = strip.current;
     return () => {
       stopAll(el);
+      releaseStrip(el);
       played.current = false;
     };
   }, []);
