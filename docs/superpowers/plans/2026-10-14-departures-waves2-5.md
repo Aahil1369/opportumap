@@ -11,7 +11,7 @@
 ## Review Focus
 1. **Signed-out visitors** on social pages (startups, community, messages, profile) → clear sign-in prompts, no 401 dead ends, no infinite spinners. Pinned in Tasks 12–14.
 2. **Empty database** (0 startups/posts/messages today) → designed empty states are the main screen and look intentional. Pinned in Tasks 12–14.
-3. **Large/invalid uploads** (resume > 10 MB, image-only PDF, non-PDF) → friendly errors before/after upload, server enforces too. Pinned in Task 9.
+3. **Large/invalid uploads** (resume > 4 MB, image-only PDF, non-PDF) → friendly errors before/after upload, server enforces too. Pinned in Task 9. The limit is 4 MB on purpose: the route runs as a Netlify Function, which takes at most 6 MB of request body, and a PDF arrives Base64-encoded, about a third larger.
 4. **Map with thousands of jobs on iPhone** → clustered layer stays smooth, old results cleared on new search, no hydration mismatch. Pinned in Task 7.
 5. **Saved jobs no longer returned by search** → still shown from stored snapshots. Pinned in Task 8.
 
@@ -35,9 +35,10 @@
 
 ### Task 9: /resume — security X-ray
 - Files: `app/resume/page.js`, `app/components/resume/Scanner.js`, `app/components/resume/resume.css`, `app/api/resume-grade/route.js`, `lib/departures/resumeVerdict.js`, test `scripts/departures/__tests__/resumeVerdict.test.mjs`.
-- `resumeVerdict(score) → { label: 'CLEARED' | 'BAG CHECK', tone }` (CLEARED ≥ 60); `validateResumeFile(file) → { ok } | { ok: false, error }` (PDF only, ≤ 10 MB).
-- UI: sign `C · SECURITY`, title "Put your resume through", accent "security."; keyboard-accessible dropzone (a real button + hidden input; same file re-selectable); on upload the PDF tile slides through a scanner frame (transform) while grading; result: big `CLEARED 81` / `BAG CHECK 47` plate, section bars that actually animate (scaleX), clichés listed as "PROHIBITED ITEMS", red flags as alarms, rewrites before/after, job matches linking `/jobs?q=<role>`. Server: reject > 10 MB (413) and image-only PDFs (extracted text < 200 chars → 422 "We couldn't read text in this PDF — export it as a text PDF."). `res.ok` handling.
-- Tests: verdict threshold; file validation. Browser: mocked grade response renders; 11 MB file shows the error without uploading.
+- `resumeVerdict(score) → { label: 'CLEARED' | 'BAG CHECK', tone }` (CLEARED ≥ 60); `validateResumeFile(file) → { ok } | { ok: false, error }` (PDF only, ≤ 4 MB = 4,000,000 bytes, `MAX_RESUME_BYTES`; why 4 MB: Review Focus 3).
+- UI: sign `C · SECURITY`, title "Put your resume through", accent "security."; keyboard-accessible dropzone (a real button + hidden input; same file re-selectable); on upload the PDF tile slides through a scanner frame (transform) while grading; result: big `CLEARED 81` / `BAG CHECK 47` plate, section bars that actually animate (scaleX), clichés listed as "PROHIBITED ITEMS", red flags as alarms, rewrites before/after, job matches linking `/jobs?q=<role>`. Server: reject > 4 MB (413) and image-only PDFs (extracted text < 200 chars → 422 "We couldn't read text in this PDF — export it as a text PDF."). `res.ok` handling.
+- Tests: verdict threshold; file validation. Browser: mocked grade response renders; a 5 MB file shows the error without uploading.
+- Deviation (wave 3 fix round): the limit is 4 MB, down from the first plan's figure, so that every file the page accepts also reaches the route on Netlify; sizes are worded in decimal MB, as iPhone Files and macOS show them (Ruling R16). The over-limit and platform-413 browser checks were not re-run against the 4 MB wording; `scripts/departures/__tests__/resumeVerdict.test.mjs` covers both paths, and the Scanner applies them before any upload.
 
 ### Task 10: /interview — flight simulator
 - Files: `app/interview/page.js`, `app/components/interview/Altimeter.js`, `app/components/interview/interview.css`, `lib/departures/interviewProgress.js`, test.

@@ -1,39 +1,3 @@
-// Visa status for each nationality (passport) → destination country
-// Status: 'citizen' | 'free' | 'e_visa' | 'on_arrival' | 'required'
-// Destination countries: us, gb, ca, au, de, in, sg
-
-export const VISA_DATA = {
-  us: { us: 'citizen', gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  gb: { us: 'free',    gb: 'citizen',  ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  ca: { us: 'free',    gb: 'free',     ca: 'citizen',  au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  au: { us: 'free',    gb: 'free',     ca: 'free',     au: 'citizen',  de: 'free',     in: 'e_visa',    sg: 'free'     },
-  de: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'citizen',  in: 'e_visa',    sg: 'free'     },
-  fr: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  it: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  es: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  jp: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  kr: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  sg: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'free',      sg: 'citizen'  },
-  ae: { us: 'free',    gb: 'free',     ca: 'free',     au: 'free',     de: 'free',     in: 'free',      sg: 'free'     },
-  br: { us: 'required',gb: 'free',     ca: 'e_visa',   au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  mx: { us: 'free',    gb: 'free',     ca: 'e_visa',   au: 'free',     de: 'free',     in: 'e_visa',    sg: 'free'     },
-  in: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'citizen',   sg: 'required' },
-  pk: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'required',  sg: 'required' },
-  bd: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'required',  sg: 'required' },
-  cn: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'e_visa',    sg: 'required' },
-  ng: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'required',  sg: 'required' },
-  ke: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'e_visa',    sg: 'required' },
-  ug: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'e_visa',    sg: 'required' },
-  za: { us: 'required',gb: 'required', ca: 'e_visa',   au: 'required', de: 'required', in: 'e_visa',    sg: 'free'     },
-  eg: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'on_arrival',sg: 'required' },
-  sa: { us: 'required',gb: 'free',     ca: 'required', au: 'required', de: 'free',     in: 'e_visa',    sg: 'free'     },
-  tr: { us: 'required',gb: 'free',     ca: 'required', au: 'required', de: 'free',     in: 'e_visa',    sg: 'free'     },
-  ph: { us: 'required',gb: 'free',     ca: 'required', au: 'required', de: 'free',     in: 'e_visa',    sg: 'free'     },
-  id: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'free',      sg: 'free'     },
-  ru: { us: 'required',gb: 'required', ca: 'required', au: 'required', de: 'required', in: 'e_visa',    sg: 'required' },
-  ua: { us: 'required',gb: 'free',     ca: 'required', au: 'required', de: 'free',     in: 'e_visa',    sg: 'free'     },
-};
-
 export const VISA_INFO = {
   us: {
     workVisa: 'H-1B (employer-sponsored), O-1 (extraordinary ability), L-1 (intracompany transfer)',
@@ -353,20 +317,4 @@ export const SETTLEMENT_INFO = {
     reddit: 'r/russia, r/moscow, r/expats',
     meetup: 'meetup.com/find/?keywords=expats+moscow',
   },
-};
-
-export function getVisaStatus(nationality, destinationCountry) {
-  if (!nationality || !destinationCountry) return 'unknown';
-  const data = VISA_DATA[nationality];
-  if (!data) return 'unknown';
-  return data[destinationCountry] || 'required';
-}
-
-export const VISA_COLORS = {
-  citizen:    { hex: '#6366f1', label: 'Your country',     emoji: '🏠' },
-  free:       { hex: '#22c55e', label: 'Visa free',         emoji: '✅' },
-  e_visa:     { hex: '#84cc16', label: 'e-Visa available',  emoji: '💻' },
-  on_arrival: { hex: '#eab308', label: 'Visa on arrival',   emoji: '🛬' },
-  required:   { hex: '#ef4444', label: 'Visa required',     emoji: '📋' },
-  unknown:    { hex: '#6366f1', label: 'Unknown',           emoji: '❓' },
 };

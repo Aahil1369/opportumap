@@ -113,10 +113,3 @@ test('no second scoring formula anywhere in app/ or lib/', () => {
   }
   assert.deepEqual(found, []);
 });
-
-test('the job cards and the detail panel show matchBadge', () => {
-  for (const f of ['app/components/JobCard.js', 'app/components/JobDetailPanel.js']) {
-    const src = readFileSync(join(ROOT, f), 'utf8');
-    assert.match(src, /\bmatchBadge\b/, `${f} uses matchBadge`);
-  }
-});

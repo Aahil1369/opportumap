@@ -3,8 +3,7 @@
 @import "./components/footer.css";
 
 /* ─── Design tokens ───
-   Departures (the night-time airport): every redesigned page and the night navbar.
-   Paper/terminal (Field Notes): kept until each old page is redesigned. */
+   Departures (the night-time airport): every page and the night navbar. */
 :root {
   /* Departures: the terminal hall, its signs and the board's status lamps */
   --hall:           #0a0b0d;
@@ -27,27 +26,6 @@
      the line's first available font. */
   --font-board:     "OM Board Glyphs", var(--font-jb-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Paper register */
-  --paper-bg:       #e6dfc9;
-  --paper-bg-alt:   #efe9d8;
-  --paper-ink:      #1d2920;
-  --paper-ink-dim:  #3d443a;
-  --paper-ink-sub:  #5a6b4a;
-  --paper-rule:     rgba(29, 41, 32, 0.15);
-
-  /* Terminal register */
-  --term-bg:        #1d2920;
-  --term-bg-alt:    #243029;
-  --term-ink:       #e6dfc9;
-  --term-ink-sub:   #8aa085;
-  --term-rule:      #2d3a32;
-
-  /* Universal accents */
-  --accent:         #c75d2c;
-  --accent-hover:   #b04d20;
-  --data:           #b8cf5d;
-  --data-dim:       #8aa04a;
-
   /* Motion */
   --ease:           cubic-bezier(.22,1,.36,1);
 }
@@ -68,25 +46,6 @@
   --color-info:           var(--info);
   --color-warn:           var(--warn);
 
-  --color-paper-bg:       var(--paper-bg);
-  --color-paper-bg-alt:   var(--paper-bg-alt);
-  --color-paper-ink:      var(--paper-ink);
-  --color-paper-ink-dim:  var(--paper-ink-dim);
-  --color-paper-ink-sub:  var(--paper-ink-sub);
-  --color-paper-rule:     var(--paper-rule);
-
-  --color-term-bg:        var(--term-bg);
-  --color-term-bg-alt:    var(--term-bg-alt);
-  --color-term-ink:       var(--term-ink);
-  --color-term-ink-sub:   var(--term-ink-sub);
-  --color-term-rule:      var(--term-rule);
-
-  --color-accent:         var(--accent);
-  --color-accent-hover:   var(--accent-hover);
-  --color-data:           var(--data);
-  --color-data-dim:       var(--data-dim);
-
-  --font-display:         var(--font-instrument-serif), Georgia, serif;
   --font-sans:            var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono:            var(--font-board);
 }
@@ -112,8 +71,7 @@
   unicode-range: U+20A9, U+20B9, U+2190, U+2192, U+2197-2198, U+2713, U+2715;
 }
 
-/* The hall is the page under everything (overscroll, short pages, the night navbar); pages not
-   redesigned yet paint their own paper body on top. */
+/* The hall is the page under everything (overscroll, short pages, the night navbar). */
 html {
   scroll-behavior: smooth;
   background: var(--hall);
@@ -129,44 +87,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* ─── Scroll reveal ─── */
-.reveal {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.44s var(--ease), transform 0.44s var(--ease);
-  will-change: transform, opacity;
-}
-.reveal.revealed { opacity: 1; transform: translateY(0); }
-.reveal-d1 { transition-delay: 0.06s; }
-.reveal-d2 { transition-delay: 0.12s; }
-.reveal-d3 { transition-delay: 0.18s; }
-.reveal-d4 { transition-delay: 0.24s; }
-.reveal-d5 { transition-delay: 0.30s; }
-
-/* ─── Hero entrance (CSS-driven so it paints instantly, no JS dependency) ─── */
-@keyframes hero-rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.hero-anim > * { animation: hero-rise 0.6s var(--ease) both; }
-.hero-anim > *:nth-child(1) { animation-delay: 0.04s; }
-.hero-anim > *:nth-child(2) { animation-delay: 0.12s; }
-.hero-anim > *:nth-child(3) { animation-delay: 0.20s; }
-.hero-anim > *:nth-child(4) { animation-delay: 0.28s; }
-.hero-anim > *:nth-child(5) { animation-delay: 0.36s; }
-
-/* ─── Italic draw-in ─── */
-.italic-draw {
-  background-image: linear-gradient(var(--accent), var(--accent));
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  background-size: 0% 1.5px;
-  transition: background-size 0.32s var(--ease);
-  padding-bottom: 2px;
-}
-.italic-draw.drawn { background-size: 100% 1.5px; }
-
-/* ─── Page-transition bar ─── */
+/* ─── Page-transition bar (app/components/ui/PageTransition.js) ─── */
 .page-transition-bar {
   position: fixed;
   top: 0; left: 0;
@@ -180,90 +101,16 @@ body {
 }
 .page-transition-bar.running { transform: scaleX(1); }
 
-/* ─── Noise texture (paper register) ─── */
-.noise-overlay {
-  position: absolute; inset: 0;
-  pointer-events: none;
-  opacity: 0.02;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* ─── Glyph stroke-draw hover ─── */
-.glyph-strokes path,
-.glyph-strokes circle,
-.glyph-strokes rect,
-.glyph-strokes ellipse,
-.glyph-strokes line {
-  stroke-dasharray: 300;
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 0.42s var(--ease);
-}
-.glyph-strokes:hover path,
-.glyph-strokes:hover circle,
-.glyph-strokes:hover rect,
-.glyph-strokes:hover ellipse,
-.glyph-strokes:hover line {
-  animation: redraw 0.42s var(--ease);
-}
-@keyframes redraw {
-  from { stroke-dashoffset: 300; }
-  to   { stroke-dashoffset: 0; }
-}
-
-/* ─── Tool-card hover underline ─── */
-.tool-card-underline {
-  position: relative;
-}
-.tool-card-underline::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0;
-  width: 100%;
-  height: 1px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.3s var(--ease);
-}
-.tool-card-underline:hover::after { transform: scaleX(1); }
-
-/* ─── Mapbox popups (terminal register) ─── */
-.mapboxgl-popup-content {
-  padding: 0 !important;
-  border-radius: 0 !important;
-  background: var(--term-bg) !important;
-  border: 1px solid var(--term-rule) !important;
-  color: var(--term-ink);
-  font-family: var(--font-mono);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;
-}
-.mapboxgl-popup-tip { border-top-color: var(--term-bg) !important; border-bottom-color: var(--term-bg) !important; }
-.popup-inner { padding: 12px 14px; }
-.popup-title { font-size: 12px; font-weight: 500; margin: 0 0 4px; color: var(--term-ink); }
-.popup-company { font-size: 11px; margin: 0 0 2px; color: var(--term-ink-sub); }
-.popup-location { font-size: 10px; margin: 0 0 6px; color: var(--term-ink-sub); }
-.popup-salary { font-size: 12px; font-weight: 500; margin: 0 0 6px; color: var(--data); }
-.popup-link { font-size: 11px; color: var(--accent); text-decoration: none; }
-.popup-link:hover { opacity: 0.8; }
-
-/* ─── Map job marker ─── */
-.job-marker {
-  border-radius: 50%;
-  background: var(--accent);
-  border: 2px solid var(--paper-bg);
-  cursor: pointer;
-  transition: transform 0.2s var(--ease);
-}
-.job-marker:hover { transform: scale(1.3); }
+/* ─── Mapbox popups ───
+   The /map beacon label (app/components/map/beaconLabel.js) is a Mapbox popup that map.css
+   styles (.mt-pop*). Its company and hint lines set no font of their own: they inherit the
+   board font from this rule. */
+.mapboxgl-popup-content { font-family: var(--font-board); }
 
 /* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .italic-draw, .page-transition-bar, .glyph-strokes *, .tool-card-underline::after {
+  .page-transition-bar {
     transition: none !important;
     animation: none !important;
   }
-  .reveal { opacity: 1; transform: none; }
-  .italic-draw { background-size: 100% 1.5px; }
-  .hero-anim > * { animation: none !important; opacity: 1; transform: none; }
 }

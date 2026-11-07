@@ -1,18 +1,10 @@
-import { Instrument_Serif, Inter, JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import PingTracker from './components/PingTracker';
 import PageTransition from './components/ui/PageTransition';
 import SmoothScroll from './components/motion/SmoothScroll';
 import FpsLoader from './components/FpsLoader';
 import SiteFooter from './components/SiteFooter';
-
-const instrumentSerif = Instrument_Serif({
-  variable: '--font-instrument-serif',
-  subsets: ['latin'],
-  weight: '400',
-  style: ['normal', 'italic'],
-  display: 'swap',
-});
 
 const inter = Inter({
   variable: '--font-inter',
@@ -54,7 +46,7 @@ export const viewport = { themeColor: '#0a0b0d' };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${instrumentSerif.variable} ${inter.variable} ${jbMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jbMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-hall text-ink">
         <SmoothScroll />
         <PageTransition />

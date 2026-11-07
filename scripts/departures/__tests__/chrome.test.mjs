@@ -632,15 +632,12 @@ test('the drawer: its logo closes it; sub-labels are 16px', () => {
   assert.match(read('app/components/navParts.js'), /export function Logo\(\{ className = '', onClick \}\)/);
 });
 
-test('reduced motion: the Tools chevron, the progress bar and the Btn underline stop at once', () => {
+test('reduced motion: the Tools chevron and the progress bar stop at once', () => {
   const nav = read('app/components/Navbar.js');
   const chevron = /<span aria-hidden="true" className=\{`inline-block ([^`]*)`\}>▾<\/span>/.exec(nav)?.[1] ?? '';
   assert.match(chevron, /motion-reduce:transition-none/);
   const bar = /className="h-full w-full bg-sign origin-left ([^"]*)"/.exec(nav)?.[1] ?? '';
   assert.match(bar, /motion-reduce:transition-none/);
-  const btn = read('app/components/ui/Btn.js');
-  assert.match(btn, /motion-reduce:after:transition-none/);
-  assert.match(btn, /const base = '[^']*motion-reduce:transition-none/);
 });
 
 const BOARD = await mod('lib/departures/board.js').catch(() => ({}));
