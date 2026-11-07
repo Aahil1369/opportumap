@@ -100,3 +100,18 @@ test('PageTransition: no lint error; the grow starts on the next frame and sched
   assert.match(src, /\}, \[pathname\]\);/);
   assert.match(src, /<div className=\{`page-transition-bar\$\{running \? ' running' : ''\}`\} \/>/);
 });
+
+const visa = await import(new URL('../../../app/data/visaData.js', import.meta.url));
+
+test('visaData.js exports only the two tables the relocation guide reads (P2)', () => {
+  assert.deepEqual(Object.keys(visa).sort(), ['SETTLEMENT_INFO', 'VISA_INFO']);
+  const others = sources('app/data/visaData.js');
+  for (const name of Object.keys(visa)) assert.match(others, new RegExp(String.raw`\b${name}\b`), `${name} is read somewhere`);
+  for (const gone of ['VISA_DATA', 'getVisaStatus', 'VISA_COLORS']) assert.doesNotMatch(others, new RegExp(String.raw`\b${gone}\b`), `${gone} is still named`);
+  for (const [code, v] of Object.entries(visa.VISA_INFO)) {
+    for (const k of ['workVisa', 'applyAt', 'processingTime', 'tips']) assert.ok(typeof v[k] === 'string' && v[k], `VISA_INFO.${code}.${k}`);
+  }
+  for (const [code, s] of Object.entries(visa.SETTLEMENT_INFO)) {
+    for (const k of ['avgRent', 'safety', 'healthcare', 'legal']) assert.ok(typeof s[k] === 'string' && s[k], `SETTLEMENT_INFO.${code}.${k}`);
+  }
+});
