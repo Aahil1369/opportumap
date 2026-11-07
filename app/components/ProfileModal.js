@@ -12,6 +12,7 @@
 import { useId, useRef, useState } from 'react';
 import Dialog from './kit/Dialog';
 import { NATIONALITIES, ADZUNA_COUNTRIES } from '../data/countries';
+import { MAX_RESUME_LABEL, scanErrorFor, validateResumeFile } from '../../lib/departures/resumeVerdict';
 import './ProfileModal.css';
 
 const EXPERIENCE_LEVELS = [
@@ -25,6 +26,11 @@ const EXPERIENCE_LEVELS = [
 const JOB_TYPES = ['Software Engineering', 'Data Science / ML', 'Product Management', 'Design', 'DevOps / Cloud', 'Research', 'Finance / Fintech', 'Other'];
 
 const TOTAL_STEPS = 5;
+
+// What the résumé step says when the scan could not run at all; every other failure is the
+// scanner's own line (scanErrorFor, as on /resume).
+const SCAN_OFFLINE = "Couldn't reach the resume scanner. Check your connection and try again, or type your skills on the last step.";
+const SCAN_ODD = 'The resume scanner sent back an unreadable answer. Try again, or type your skills on the last step.';
 
 const list = (v) => (Array.isArray(v) ? v : []);
 
@@ -47,6 +53,7 @@ export default function ProfileModal({ open = true, onSave, initialProfile, onCl
   const [profile, setProfile] = useState(() => startFrom(initialProfile));
   const [resumeFile, setResumeFile] = useState(null);
   const [scan, setScan] = useState('idle'); // 'idle' | 'scanning' | 'done' | 'failed'
+  const [scanError, setScanError] = useState(''); // what 'failed' says
   const [resumeSummary, setResumeSummary] = useState(initialProfile?.resumeSummary || '');
   const [rememberOnDevice, setRememberOnDevice] = useState(initialProfile?.rememberOnDevice ?? false);
   const nationalityRef = useRef(null);
@@ -60,22 +67,46 @@ export default function ProfileModal({ open = true, onSave, initialProfile, onCl
     setProfile((p) => ({ ...p, [key]: p[key].includes(v) ? p[key].filter((x) => x !== v) : [...p[key], v] }));
 
   const handleResumeUpload = async (file) => {
-    if (!file || file.type !== 'application/pdf') return;
+    if (!file) return;
+    const failWith = (message) => {
+      setScanError(message);
+      setScan('failed');
+    };
+    // /resume's upload rules (a PDF, at most MAX_RESUME_LABEL, not empty), before any upload.
+    const check = validateResumeFile(file);
+    if (!check.ok) {
+      setResumeFile(null);
+      failWith(check.error);
+      return;
+    }
     setResumeFile(file);
+    setScanError('');
     setScan('scanning');
+    let res;
+    let data = null;
     try {
       const formData = new FormData();
       formData.append('resume', file);
-      const res = await fetch('/api/resume', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok || data?.error) throw new Error('scan failed');
-      if (data.skills) set('skills', data.skills);
-      if (data.summary) setResumeSummary(data.summary);
-      if (data.experience) set('experience', data.experience);
-      setScan('done');
+      res = await fetch('/api/resume', { method: 'POST', body: formData });
+      data = await res.json().catch(() => null);
     } catch {
-      setScan('failed');
+      failWith(SCAN_OFFLINE);
+      return;
     }
+    // Not OK: the route's own line (429 busy, 422 unreadable, 415 not a PDF…), or a plain one for
+    // the status when the body is not the route's (scanErrorFor; a 413 can only be the platform's now).
+    if (!res.ok) {
+      failWith(scanErrorFor(res.status, data?.error, file.size));
+      return;
+    }
+    if (!data || typeof data !== 'object') {
+      failWith(SCAN_ODD);
+      return;
+    }
+    if (data.skills) set('skills', data.skills);
+    if (data.summary) setResumeSummary(data.summary);
+    if (data.experience) set('experience', data.experience);
+    setScan('done');
   };
 
   const handleSave = () => {
@@ -257,13 +288,13 @@ export default function ProfileModal({ open = true, onSave, initialProfile, onCl
                 id={id('resume')}
                 className="pm-file"
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,.pdf"
                 aria-describedby={id('resume-state')}
                 onChange={(e) => handleResumeUpload(e.target.files?.[0])}
               />
               <label htmlFor={id('resume')} className="pm-drop">
                 <span className="pm-drop-main">{resumeFile ? resumeFile.name : 'Choose your resume'}</span>
-                <span className="pm-drop-sub">{resumeFile ? 'Choose another PDF' : 'PDF only'}</span>
+                <span className="pm-drop-sub">{resumeFile ? 'Choose another PDF' : `PDF up to ${MAX_RESUME_LABEL}`}</span>
               </label>
               <p id={id('resume-state')} className="pm-hint pm-scan" role="status">
                 {scan === 'scanning'
@@ -271,7 +302,7 @@ export default function ProfileModal({ open = true, onSave, initialProfile, onCl
                   : scan === 'done'
                     ? 'Scanned. Your skills are on the last step.'
                     : scan === 'failed'
-                      ? "We couldn't read that PDF. You can type your skills on the last step."
+                      ? scanError
                       : ''}
               </p>
             </div>

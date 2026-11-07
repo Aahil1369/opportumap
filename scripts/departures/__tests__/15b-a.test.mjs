@@ -437,3 +437,122 @@ test("A3 /api/jobs?id=: 200 + [] only when the id's feed answered without it; 50
     globalThis.fetch = real;
   }
 });
+
+// ── Part 2 ───────────────────────────────────────────────────────────────────────────────────
+// A9: one upload limit, 4,000,000 bytes, worded in decimal MB · A10: one reader for a failed
+// answer, the X-ray art's shades as page-local properties · A5: a 413 from the simulator gets its
+// own line · A4: the profile modal checks the PDF first and shows the scanner's own words.
+
+const FETCH = await mod('lib/fetchJson.js');
+const SIM = await mod('lib/departures/interviewProgress.js');
+const IVAPI = await mod('lib/interviewApi.js');
+const SCAN = await mod('lib/resumeScan.js');
+
+test('A9 the upload limit is 4,000,000 bytes, and sizes read in decimal MB, as iPhone Files and macOS show them', () => {
+  assert.equal(VERDICT.MAX_RESUME_BYTES, 4_000_000);
+  assert.equal(VERDICT.MAX_RESUME_LABEL, '4 MB');
+  assert.equal(VERDICT.sizeLabel(4_300_000), '4.3 MB');
+  assert.equal(VERDICT.sizeLabel(300_000), '300 KB');
+  assert.equal(VERDICT.megabytes(4_300_000), '4.3');
+  assert.equal(VERDICT.megabytes(4_000_001), '4.1', 'rounded up: just over the limit never reads 4.0');
+  assert.equal(VERDICT.megabytes(4_194_304), '4.2', 'the old 4 MiB limit, as Files shows it');
+  assert.equal(VERDICT.megabytes(1_100_000), '1.1', 'whole tenths: no floating-point round-up');
+  assert.deepEqual(VERDICT.validateResumeFile({ name: 'cv.pdf', type: 'application/pdf', size: 4_000_000 }), { ok: true });
+  const over = VERDICT.validateResumeFile({ name: 'cv.pdf', type: 'application/pdf', size: 4_300_000 });
+  assert.equal(over.reason, 'size');
+  assert.match(over.error, /That PDF is 4\.3 MB — the limit is 4 MB\./);
+  assert.match(
+    DESK.resumeAttachError({ name: 'cv.pdf', type: 'application/pdf', size: 4_300_000 }),
+    /That PDF is 4\.3 MB — the limit is 4 MB\./,
+    'the letter words the size the same way',
+  );
+  assert.doesNotMatch(read('lib/departures/resumeVerdict.js'), /MiB|1024/, 'no binary units left');
+  assert.doesNotMatch(read('lib/departures/coverLetter.js'), /1024/, 'no second size formula');
+});
+
+test('A9 /resume, /cover-letter and the profile modal state the limit from the one constant, in one wording', () => {
+  assert.match(read('app/components/resume/Scanner.js'), /· PDF up to \{MAX_RESUME_LABEL\} ·/);
+  assert.match(read('app/components/coverLetter/AirmailDesk.js'), /optional · PDF up to \{MAX_RESUME_LABEL\}/);
+  assert.match(read('app/components/ProfileModal.js'), /`PDF up to \$\{MAX_RESUME_LABEL\}`/);
+  for (const f of ['app/components/resume/Scanner.js', 'app/components/coverLetter/AirmailDesk.js', 'app/components/ProfileModal.js']) {
+    const src = read(f);
+    assert.doesNotMatch(src, /PDF only/, `${f}: the one wording`);
+    assert.doesNotMatch(src, /\b\d+(?:\.\d+)?\s?MB\b/, `${f} hard-codes a size`);
+  }
+});
+
+test("A10 errorText: an answer's error text, or undefined; it never throws", async () => {
+  assert.equal(await FETCH.errorText(Response.json({ error: 'The scanner is busy right now.' }, { status: 429 })), 'The scanner is busy right now.');
+  assert.equal(await FETCH.errorText(Response.json({ error: 42 }, { status: 400 })), undefined);
+  assert.equal(await FETCH.errorText(Response.json({ ok: false }, { status: 500 })), undefined);
+  assert.equal(await FETCH.errorText(Response.json(null, { status: 500 })), undefined);
+  assert.equal(await FETCH.errorText(new Response('<html>Bad gateway</html>', { status: 502 })), undefined);
+  assert.equal(await FETCH.errorText(new Response('', { status: 413 })), undefined);
+});
+
+test('A10 the three pages read a failed answer with errorText; resumeAttachError uses megabytes', () => {
+  for (const f of ['app/components/interview/Simulator.js', 'app/components/coverLetter/AirmailDesk.js', 'app/components/resume/Scanner.js']) {
+    const src = read(f);
+    assert.match(src, /import \{ errorText \} from '\.\.\/\.\.\/\.\.\/lib\/fetchJson'/, `${f} imports errorText`);
+    assert.match(src, /await errorText\(response\)/, `${f} reads the error with errorText`);
+    assert.doesNotMatch(src, /\(await response\.json\(\)\)\?\.error/, `${f}: no copy of the reader`);
+  }
+  assert.match(read('lib/departures/coverLetter.js'), /megabytes\(Number\(file\.size\)\)/);
+});
+
+test("A10 resume.css: the X-ray art's own shades are page-local custom properties on .rs", () => {
+  const css = read('app/components/resume/resume.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const root = /(?:^|\})\s*\.rs\s*\{([^}]*)\}/.exec(css);
+  assert.ok(root, 'the .rs rule');
+  const props = Object.fromEntries([...root[1].matchAll(/(--rs-[\w-]+)\s*:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) => [m[1], m[2].toLowerCase()]));
+  assert.deepEqual(props, {
+    '--rs-slat': '#2a2e35',
+    '--rs-paper-line': '#c9c5b8',
+    '--rs-paper-ink': '#5d6168',
+    '--rs-film': '#08131d',
+    '--rs-window': '#050608',
+  });
+  const rest = css.replace(root[0], '');
+  assert.doesNotMatch(rest, /#[0-9a-f]{3,8}\b/i, "no hex literal outside .rs's declarations");
+  assert.equal((rest.match(/var\(--rs-slat\)/g) || []).length, 2, 'both belt gradients');
+  for (const v of ['--rs-paper-line', '--rs-paper-ink', '--rs-film', '--rs-window']) assert.match(rest, new RegExp(`var\\(${v}\\)`), v);
+});
+
+test("A5 a 413 from the simulator's routes gets its own line, not the generic one", async (t) => {
+  t.mock.method(console, 'error', quiet);
+  const feedback = SIM.simErrorFor(413, undefined, 'feedback');
+  assert.equal(feedback, 'That answer is too long to score. Shorten it, then score it again.');
+  assert.notEqual(feedback, SIM.simErrorFor(500, undefined, 'feedback'));
+  assert.equal(SIM.simErrorFor(413, undefined, 'questions'), 'That job description is too long. Shorten it, then try again.');
+  assert.equal(SIM.simErrorFor(413, IVAPI.ANSWER_TOO_LONG, 'feedback'), IVAPI.ANSWER_TOO_LONG, "the route's own short line");
+  assert.equal(SIM.simErrorFor(413, 'x'.repeat(300), 'feedback'), feedback, 'a long text is not shown');
+  // The real routes refuse a body declared over 64 KB with 413, and the page shows their words.
+  const { POST: score } = await mod('app/api/interview/feedback/route.js');
+  const { POST: build } = await mod('app/api/interview/route.js');
+  const big = (path) => new Request(`http://localhost${path}`, { method: 'POST', body: '{}', headers: { 'content-length': String(70 * 1024) } });
+  const scored = await score(big('/api/interview/feedback'));
+  assert.equal(scored.status, 413);
+  assert.equal(SIM.simErrorFor(413, (await scored.json()).error, 'feedback'), IVAPI.ANSWER_TOO_LONG);
+  const built = await build(big('/api/interview'));
+  assert.equal(built.status, 413);
+  assert.match(SIM.simErrorFor(413, (await built.json()).error, 'questions'), /job description is too long/i);
+});
+
+test("A4 ProfileModal checks the file like /resume, then shows the scanner's own words, not one fixed line", () => {
+  const src = read('app/components/ProfileModal.js');
+  assert.match(src, /import \{ MAX_RESUME_LABEL, scanErrorFor, validateResumeFile \} from '\.\.\/\.\.\/lib\/departures\/resumeVerdict'/);
+  assert.doesNotMatch(src, /We couldn't read that PDF/);
+  assert.doesNotMatch(src, /file\.type !== 'application\/pdf'/, 'a non-PDF is refused out loud, not ignored');
+  const check = src.indexOf('validateResumeFile(file)');
+  const upload = src.indexOf("fetch('/api/resume'");
+  assert.ok(check > -1 && upload > check, 'the rules are checked before any upload');
+  assert.match(src, /scanErrorFor\(res\.status, data\?\.error, file\.size\)/);
+  assert.match(src, /: scan === 'failed'\s*\?\s*scanError/);
+  assert.match(src, /accept="application\/pdf,\.pdf"/);
+  // What the modal then shows for /api/resume's answers: the route's friendly line, else one for the status.
+  const size = 1_200_000;
+  assert.equal(VERDICT.scanErrorFor(429, SCAN.SCAN_BUSY, size), SCAN.SCAN_BUSY);
+  assert.equal(VERDICT.scanErrorFor(502, SCAN.SCAN_FAILED, size), SCAN.SCAN_FAILED);
+  assert.equal(VERDICT.scanErrorFor(422, VERDICT.UNREADABLE_PDF, size), VERDICT.UNREADABLE_PDF);
+  assert.match(VERDICT.scanErrorFor(413, VERDICT.OVER_LIMIT, size), /\(1\.2 MB\) was too large for the scanner to receive/);
+});
