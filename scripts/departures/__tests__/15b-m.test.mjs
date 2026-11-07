@@ -105,3 +105,58 @@ test('T7-5: /jobs and /map no longer overwrite the search box or the search when
     assert.doesNotMatch(src, /setInput\(q\)/, `${f}: the profile no longer replaces the typed text`);
   }
 });
+
+// ── T8-7 (second half) + T8-3: /saved's Remove ──────────────────────────────────────────────────
+
+/** `const <name> = useCallback(fn, deps)` in a file: { fn (its source), deps (each dependency's source) }, or null. */
+function callbackOf(src, name) {
+  const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true }, range: true });
+  let found = null;
+  const visit = (node) => {
+    if (found || !node || typeof node.type !== 'string') return;
+    if (
+      node.type === 'VariableDeclarator' &&
+      node.id.type === 'Identifier' &&
+      node.id.name === name &&
+      node.init?.type === 'CallExpression' &&
+      node.init.callee.name === 'useCallback'
+    ) {
+      const [fn, deps] = node.init.arguments;
+      found = {
+        fn: src.slice(...fn.range),
+        deps: deps?.type === 'ArrayExpression' ? deps.elements.map((d) => src.slice(...d.range)) : null,
+      };
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      if (key === 'range') continue;
+      const v = node[key];
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(ast);
+  return found;
+}
+
+test('T8-7: /saved\'s remove is one function for the life of the page, so a removal re-renders only its own row', () => {
+  const src = read('app/saved/Itinerary.js');
+  const remove = callbackOf(src, 'remove');
+  assert.ok(remove, 'Itinerary has const remove = useCallback(…)');
+  assert.deepEqual(remove.deps, [], 'remove depends on nothing that changes');
+  assert.match(remove.fn, /= onBoard\.current;/, 'it reads the board as of the last render');
+  assert.match(src, /const onBoard = useRef\(/);
+  assert.match(src, /useEffect\(\(\) => \{\s*onBoard\.current = \{ list, stages, rows \};\s*\}\);/, 'the ref follows every render');
+  assert.match(read('app/saved/ItineraryRow.js'), /export default memo\(ItineraryRow\);/, 'rows are memo\'d');
+});
+
+test('T8-3: when this device refuses the removal, /saved keeps the row and says so', () => {
+  const src = read('app/saved/Itinerary.js');
+  const remove = callbackOf(src, 'remove');
+  assert.match(remove.fn, /if \(!removeJob\(deviceStorage\(\), id\)\) \{\s*setSaid\("Couldn't remove it on this device\."\);\s*return;\s*\}/);
+  const refused = remove.fn.indexOf('if (!removeJob(');
+  assert.ok(refused > 0, 'the store\'s answer is checked');
+  assert.ok(refused < remove.fn.indexOf("new Map(m).set(id, 'cancelled')"), 'before the row flaps to CANCELLED');
+  assert.ok(refused < remove.fn.indexOf('removed from your itinerary.'), 'before the removal is announced');
+  assert.ok(refused < remove.fn.indexOf('drop();'), 'before the row is dropped (reduced motion)');
+});

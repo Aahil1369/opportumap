@@ -15,7 +15,8 @@
 // - Remove: the role leaves the device's list at once and a polite status line says so; on the
 //   board its status flaps to CANCELLED, the row fades out, then it is gone. Focus moves
 //   to the next row's Remove (or the previous one's, or the empty board's link) when it was on the
-//   removed one. Reduced motion: the row goes at once.
+//   removed one. Reduced motion: the row goes at once. If this device refuses the write (storage
+//   full or blocked), the row stays and the status line says "Couldn't remove it on this device."
 // - Empty: "No roles saved yet — pick one on the board." with the way to the board.
 // No totals anywhere: the board never says how many roles are on it.
 
@@ -157,11 +158,23 @@ export default function Itinerary() {
     else buttons.current.delete(id);
   }, []);
 
+  // The board as of the last render, for remove: it reads it here and stays one function, so a
+  // removal re-renders only its own row (ItineraryRow is memo'd), not every row on the board.
+  const onBoard = useRef({ list: null, stages: new Map(), rows: new Map() });
+  useEffect(() => {
+    onBoard.current = { list, stages, rows };
+  });
+
   const remove = useCallback(
     (id) => {
-      if (!list || stages.has(id) || !list.some((e) => e.id === id)) return;
-      removeJob(deviceStorage(), id); // off the device's list now, whatever happens to the page
-      const name = rows.get(id)?.role || 'The saved role';
+      const { list: entries, stages: leaving, rows: shownRows } = onBoard.current;
+      if (!entries || leaving.has(id) || !entries.some((e) => e.id === id)) return;
+      // Off the device's list first. If storage refuses the write (full, blocked), the row stays.
+      if (!removeJob(deviceStorage(), id)) {
+        setSaid("Couldn't remove it on this device.");
+        return;
+      }
+      const name = shownRows.get(id)?.role || 'The saved role';
       // The row goes. If focus was on its Remove, it moves to the next row still on the board,
       // else the one before, else the empty board's link (or "Show more").
       const drop = () => {
@@ -188,7 +201,7 @@ export default function Itinerary() {
       after(timers.current, () => setStages((m) => (m.has(id) ? new Map(m).set(id, 'gone') : m)), CANCELLED_MS);
       after(timers.current, drop, CANCELLED_MS + FADE_MS);
     },
-    [list, stages, rows],
+    [],
   );
 
   const open = useCallback((id, el) => {
