@@ -120,7 +120,9 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.mt-me:hover { border-color: var(--sign); }
+@media (hover: hover) {
+  .mt-me:hover { border-color: var(--sign); }
+}
 /* Phones: the profile button reads PROFILE, so "United Kingdom" still fits next to Show. */
 .mt-me-v {
   position: absolute;
@@ -146,7 +148,9 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.mt-show:hover { background: var(--sign); color: var(--sign-ink); }
+@media (hover: hover) {
+  .mt-show:hover { background: var(--sign); color: var(--sign-ink); }
+}
 .mt-show:disabled { border-color: var(--rule); background: transparent; color: var(--ink-sub); cursor: default; }
 :is(.mt-input, .mt-select, .mt-go, .mt-me, .mt-show, .mt-btn, .mt-link, .arr-x):focus-visible {
   outline: 2px solid var(--sign);
@@ -307,7 +311,9 @@
   text-transform: uppercase;
   cursor: pointer;
 }
-.mt-btn:hover { background: var(--sign); color: var(--sign-ink); }
+@media (hover: hover) {
+  .mt-btn:hover { background: var(--sign); color: var(--sign-ink); }
+}
 .mt-link {
   display: inline-flex;
   align-items: center;
@@ -408,10 +414,14 @@
   font-size: 18px;
   cursor: pointer;
 }
-.arr-x:hover { border-color: var(--ink-sub); }
+@media (hover: hover) {
+  .arr-x:hover { border-color: var(--ink-sub); }
+}
 .arr-title { margin: 12px 0 0; font: 800 28px/1.1 var(--font-inter), ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; }
 .arr-sub { margin: 6px 0 14px; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
-.arr-board .fb-body .fb-row:hover { background: var(--hall-3); }
+@media (hover: hover) {
+  .arr-board .fb-body .fb-row:hover { background: var(--hall-3); }
+}
 .arr-none {
   margin: 0;
   padding: 16px;

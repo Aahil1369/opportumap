@@ -466,3 +466,31 @@ test('N4 + T8-5: /saved\'s Remove is a 44px target on phones and ends above the 
   // From 880px the row is one 40px line: Remove is 36px there, centred.
   assert.equal(px(rule('.it-x', AT880), 'height'), 36, '880px+: 36px fits the one-line row');
 });
+
+
+// ── T7-12: no sticky :hover on touch screens ────────────────────────────────────────────────────
+
+const HOVER_CSS = {
+  'app/components/jobs/jobs.css': 4,
+  'app/components/jobs/gate.css': 3,
+  'app/components/map/map.css': 5,
+  'app/saved/saved.css': 3,
+};
+
+test('T7-12: every :hover rule in the jobs, gate, map and saved CSS sits inside @media (hover: hover), and nothing else does', () => {
+  for (const [file, count] of Object.entries(HOVER_CSS)) {
+    const rules = cssRules(read(file));
+    const hover = rules.filter((r) => /:hover\b/.test(r.selector));
+    assert.equal(hover.length, count, `${file} keeps its ${count} :hover rules`);
+    for (const r of hover) {
+      assert.ok(r.within.includes('@media (hover: hover)'), `${file}: "${r.selector}" is outside @media (hover: hover)`);
+      for (const sel of r.selector.split(',')) assert.match(sel, /:hover\b/, `${file}: "${sel.trim()}" shares a rule with :hover`);
+    }
+    for (const r of rules.filter((x) => x.within.includes('@media (hover: hover)'))) {
+      assert.match(r.selector, /:hover\b/, `${file}: "${r.selector}" (no :hover) moved into @media (hover: hover)`);
+    }
+    for (const r of rules.filter((x) => /:focus-visible|:active/.test(x.selector))) {
+      assert.ok(!r.within.includes('@media (hover: hover)'), `${file}: "${r.selector}" must stay outside the hover block`);
+    }
+  }
+});

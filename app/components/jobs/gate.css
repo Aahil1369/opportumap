@@ -33,7 +33,9 @@
   font: 400 20px/1 var(--font-board);
   cursor: pointer;
 }
-.gate-x:hover { background: var(--hall-3); color: var(--ink); }
+@media (hover: hover) {
+  .gate-x:hover { background: var(--hall-3); color: var(--ink); }
+}
 .gate-id { display: flex; align-items: flex-start; gap: 12px; margin-top: 2px; padding-right: 10px; }
 .gate-who { flex: 1; min-width: 0; }
 .gate-title {
@@ -176,8 +178,10 @@
 }
 .gate-board { background: var(--sign); color: var(--sign-ink); }
 .gate-visa { border: 1px solid var(--rule); background: var(--hall-3); color: var(--ink); }
-.gate-board:hover,
-.gate-visa:hover { transform: translateY(-1px); }
+@media (hover: hover) {
+  .gate-board:hover,
+  .gate-visa:hover { transform: translateY(-1px); }
+}
 .gate-noapply { flex: 1 1 180px; align-self: center; }
 .gate-board:focus-visible,
 .gate-visa:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
@@ -194,6 +198,8 @@
   .rw-on { animation: none; }
   .gate-board,
   .gate-visa { transition: none; }
-  .gate-board:hover,
-  .gate-visa:hover { transform: none; }
+  @media (hover: hover) {
+    .gate-board:hover,
+    .gate-visa:hover { transform: none; }
+  }
 }

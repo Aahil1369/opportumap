@@ -98,7 +98,9 @@
   white-space: nowrap;
 }
 .gf-chip { cursor: pointer; }
-.gf-chip:hover { border-color: var(--ink-sub); color: var(--ink); }
+@media (hover: hover) {
+  .gf-chip:hover { border-color: var(--ink-sub); color: var(--ink); }
+}
 .gf-chip[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
 .gf-chip:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
 .gf-lamp { width: 7px; height: 7px; border-radius: 50%; background: var(--info); }
@@ -218,7 +220,9 @@
   padding: 10px 12px;
 }
 .jr-link { color: var(--ink); text-decoration: none; border-radius: 6px; }
-.jr-link:hover { background: var(--hall-3); }
+@media (hover: hover) {
+  .jr-link:hover { background: var(--hall-3); }
+}
 .jr-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
 .jr-code { grid-area: code; display: flex; font-size: 17px; color: var(--sign); }
 .jr-role {
@@ -282,7 +286,9 @@
   color: var(--ink-sub);
   cursor: pointer;
 }
-.jr-save:hover { color: var(--ink); background: var(--hall-3); }
+@media (hover: hover) {
+  .jr-save:hover { color: var(--ink); background: var(--hall-3); }
+}
 .jr-save[aria-pressed='true'] { color: var(--sign); }
 .jr-save:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
 
@@ -350,7 +356,9 @@
   text-transform: uppercase;
   cursor: pointer;
 }
-.jb-btn:hover { background: var(--sign); color: var(--sign-ink); }
+@media (hover: hover) {
+  .jb-btn:hover { background: var(--sign); color: var(--sign-ink); }
+}
 .jb-more { display: flex; justify-content: center; padding: 14px 12px 12px; border-top: 1px solid var(--rule); }
 .jb-foot { margin: 0; max-width: 62ch; font-size: 16px; line-height: 1.55; color: var(--ink-sub); }
 
