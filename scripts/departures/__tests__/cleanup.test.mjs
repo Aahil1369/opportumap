@@ -92,3 +92,20 @@ test('nothing imports, reads or names a deleted module or image', () => {
   }
   assert.deepEqual(found, []);
 });
+
+const stripCss = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+test('the paper/terminal registers and the Field Notes accents are gone: no token, class or var() left in app/', () => {
+  const css = stripCss(read('app/globals.css'));
+  const root = /:root\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  const theme = /@theme\s+inline\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+  assert.match(root, /--hall:\s*#0a0b0d;/, ':root is still there');
+  assert.match(theme, /--color-hall:\s*var\(--hall\);/, '@theme inline is still there');
+  for (const block of [root, theme]) {
+    assert.doesNotMatch(block, /--(?:color-)?(?:paper|term|accent|data)\b/);
+  }
+  const users = files('app')
+    .filter((f) => /\.(?:m?js|jsx|css)$/.test(f))
+    .filter((f) => /\b(?:paper|term)-(?:bg|ink|rule)\b|\b(?:bg|text|border)-(?:accent|data)\b|var\(--(?:paper|term|accent|data)\b/.test(read(f)));
+  assert.deepEqual(users, []);
+});
