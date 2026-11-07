@@ -7,6 +7,7 @@ import Navbar from '../components/Navbar';
 import GateSign from '../components/kit/GateSign';
 import ControlTower from '../components/map/ControlTower';
 import '../components/map/map.css';
+import { SOCIAL_IMAGE } from '../../lib/socialImage.js';
 
 const TITLE = 'Map — OpportuMap';
 const DESCRIPTION =
@@ -15,8 +16,8 @@ const DESCRIPTION =
 export const metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  openGraph: { title: TITLE, description: DESCRIPTION, url: 'https://opportumap.netlify.app/map', siteName: 'OpportuMap', type: 'website' },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: 'https://opportumap.netlify.app/map', siteName: 'OpportuMap', type: 'website', images: [SOCIAL_IMAGE] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [SOCIAL_IMAGE] },
 };
 
 export default function MapPage() {

@@ -15,6 +15,7 @@ const store = await import(new URL('../../../lib/departures/savedStore.js', impo
 const { SAVED_KEY, LEGACY_KEY, SNAPSHOT_FIELDS, snapshot, readSaved, saveJob, removeJob, migrateSaved } = store;
 const { trimJob, jobRow, BOARD_DESC_CHARS } = await import(new URL('../../../lib/departures/jobRows.js', import.meta.url));
 const { gatePay } = await import(new URL('../../../lib/departures/gateInfo.js', import.meta.url));
+const { boardDescription } = await import(new URL('../../../lib/departures/boardDescription.js', import.meta.url));
 
 /** An in-memory Storage (getItem / setItem / removeItem), with the raw values for the asserts. */
 function memory(seed = {}) {
@@ -64,6 +65,9 @@ const JOB = {
   expires_at: null,
 };
 
+// Compute the expected description using BOARD_DESC_CHARS (the gate's ADVICE_DESC_CHARS, 500).
+const expectedDescription = boardDescription('<p>Build things.</p>'.repeat(200));
+
 const SNAP = {
   id: 'adzuna_5927958773',
   title: 'Software Engineer',
@@ -78,8 +82,8 @@ const SNAP = {
   remote: false,
   source: 'adzuna',
   salary_predicted: false,
-  // '<p>Build things.</p>' x 200 as plain text, cut at a word to at most 300 characters.
-  description: `${'Build things. '.repeat(20)}Build things…`,
+  // '<p>Build things.</p>' x 200 as plain text, cut at a word to at most BOARD_DESC_CHARS characters.
+  description: expectedDescription,
 };
 
 test('the keys and the snapshot fields: the brief’s 12, then Adzuna’s estimate flag and a short description', () => {
