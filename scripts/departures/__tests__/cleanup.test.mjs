@@ -109,3 +109,16 @@ test('the paper/terminal registers and the Field Notes accents are gone: no toke
     .filter((f) => /\b(?:paper|term)-(?:bg|ink|rule)\b|\b(?:bg|text|border)-(?:accent|data)\b|var\(--(?:paper|term|accent|data)\b/.test(read(f)));
   assert.deepEqual(users, []);
 });
+
+test('Instrument Serif is gone: not loaded by the layout, no CSS variable, no font-display utility', () => {
+  const layout = read('app/layout.js');
+  assert.match(layout, /^import \{ Inter, JetBrains_Mono \} from 'next\/font\/google';$/m);
+  assert.doesNotMatch(layout, /Instrument_Serif|instrumentSerif|--font-instrument-serif/);
+  assert.match(layout, /className=\{`\$\{inter\.variable\} \$\{jbMono\.variable\} h-full antialiased`\}/);
+  assert.doesNotMatch(stripCss(read('app/globals.css')), /--font-display\b|--font-instrument-serif/);
+  // `font-display: swap` inside @font-face is a descriptor, not the utility: a colon follows it.
+  const users = files('app')
+    .filter((f) => /\.(?:m?js|jsx|css)$/.test(f))
+    .filter((f) => /\bfont-display\b(?!\s*:)|--font-instrument-serif|Instrument[ _]Serif/.test(read(f)));
+  assert.deepEqual(users, []);
+});
