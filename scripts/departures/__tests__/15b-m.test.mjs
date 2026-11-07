@@ -433,3 +433,36 @@ test('T7-3: the map\'s zoom buttons are 44px touch targets', () => {
   assert.equal(px(rule.body, 'width'), 44);
   assert.equal(px(rule.body, 'height'), 44);
 });
+
+// ── N4 + T8-5: /saved's Remove ──────────────────────────────────────────────────────────────────
+
+test('N4 + T8-5: /saved\'s Remove is a 44px target on phones and ends above the row\'s second line (phone, 560-879px)', () => {
+  const rules = cssRules(read('app/saved/saved.css'));
+  const rule = (selector, at = null) =>
+    rules.find((r) => r.selector === selector && (at ? r.within.length === 1 && r.within[0] === at : r.within.length === 0))?.body ?? '';
+  const AT560 = '@container (min-width: 560px)';
+  const AT880 = '@container (min-width: 880px)';
+  const x = rule('.it-x');
+  const grid = rule('.it-grid, .it-link');
+  assert.equal(px(x, 'min-width'), 44, 'phone: 44px wide at least');
+  assert.equal(px(x, 'height'), 44, 'phone: 44px tall');
+  assert.equal(px(grid, '--x-w'), 44, 'the role keeps room for the 44px Remove');
+  // The first line: the link's 10px top padding, then the code's tiles (17px, kit.css .flap-tiles height in em).
+  const kit = cssRules(read('app/components/kit/kit.css')).find((r) => r.selector === '.flap-tiles' && r.within.length === 0);
+  const tileEm = Number(/(?:^|;)\s*height:\s*([\d.]+)em/.exec(kit?.body ?? '')?.[1]);
+  assert.ok(tileEm > 1, `kit.css tile height ${tileEm}em`);
+  assert.match(grid, /(?:^|;)\s*padding:\s*10px 12px\s*(?:;|$)/, 'the row keeps its 10px top padding');
+  const line1End = 10 + tileEm * px(rule('.it-code'), 'font-size');
+  const top = px(x, 'top');
+  assert.equal(top, 0, 'phone: Remove sits at the top of its row');
+  const phoneLine2 = line1End + px(grid, 'row-gap');
+  assert.ok(top + 44 + 2 <= phoneLine2, `phone: Remove ends at ${top + 44}px, line 2 starts at ${phoneLine2.toFixed(2)}px`);
+  // 560-879px: the same 44px Remove (no smaller height there), and line 2 clear of it.
+  const x560 = rule('.it-x', AT560);
+  assert.equal(px(x560, 'height'), null, '560-879px keeps the 44px height');
+  assert.equal(px(x560, 'top'), null, '560-879px keeps the top: 0');
+  const tabletLine2 = line1End + px(rule('.it-grid, .it-link', AT560), 'row-gap');
+  assert.ok(top + 44 + 2 <= tabletLine2, `560-879px: Remove ends at ${top + 44}px, line 2 starts at ${tabletLine2.toFixed(2)}px`);
+  // From 880px the row is one 40px line: Remove is 36px there, centred.
+  assert.equal(px(rule('.it-x', AT880), 'height'), 36, '880px+: 36px fits the one-line row');
+});

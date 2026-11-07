@@ -65,7 +65,7 @@
   --tile-fs: 12px;
   --pay-w: calc(13 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
   --status-w: calc(9 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
-  --x-w: 40px;
+  --x-w: 44px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
@@ -74,7 +74,7 @@
     'meta meta';
   align-items: center;
   column-gap: 10px;
-  row-gap: 8px; /* line 2 starts below the 40px Remove */
+  row-gap: 12px; /* line 2 starts below the 44px Remove */
   padding: 10px 12px;
 }
 .it-link { color: var(--ink); text-decoration: none; border-radius: 6px; }
@@ -119,19 +119,19 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
 }
 .it-paynote { font: 400 14px/1.25 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink-sub); }
 
-/* Remove: beside the row's link (never inside it), always visible. A 40px ✕ on a phone, the
-   word too on a wider board. */
+/* Remove: beside the row's link (never inside it), always visible. A 44px ✕ on a phone (a thumb's
+   target, like Show and the gate's ✕), centred on line 1; the word too on a wider board. */
 .it-x {
   position: absolute;
   z-index: 1;
-  top: 2px;
+  top: 0;
   right: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-width: 40px;
-  height: 40px;
+  min-width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: 8px;
@@ -192,12 +192,12 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
       'code role role role'
       'where where pay status';
     column-gap: 12px;
-    row-gap: 6px;
+    row-gap: 12px; /* line 2 starts below the 44px Remove */
   }
   .it-meta { display: contents; }
   .it-pay { grid-area: pay; width: auto; }
   .it-status { grid-area: status; }
-  .it-x { top: 4px; height: 36px; padding: 0 12px; } /* clear of line 2's status tiles */
+  .it-x { padding: 0 12px; } /* still 44px tall, centred on line 1, clear of line 2's status tiles */
   .it-x-t { display: inline; }
 }
 
@@ -211,7 +211,7 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
     padding: 8px 16px;
   }
   .it-role { padding-right: 0; }
-  .it-x { top: 50%; right: 16px; transform: translateY(-50%); }
+  .it-x { top: 50%; right: 16px; height: 36px; transform: translateY(-50%); } /* one line: 36px fits the row */
   .it-head { display: grid; }
   .it-head .it-code { min-width: calc(3 * (0.6 * 17px + 3.5px) - 1px); }
   .it-ghost { grid-template-columns: 44px 3fr 2fr 1fr; }
