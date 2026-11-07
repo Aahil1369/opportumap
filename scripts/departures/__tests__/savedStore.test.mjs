@@ -474,8 +474,11 @@ test('ItineraryRow: no-details rows use honest copy "Couldn\'t find its details"
   assert.doesNotMatch(row, /No longer on the board/, 'old copy is gone');
 });
 
-test('ItineraryRow: no-details rows get distinct Remove button names with position', () => {
+test('ItineraryRow: each no-details row\'s Remove has a distinct, position-based name and no total; rows with details keep theirs', () => {
   const row = read('app/saved/ItineraryRow.js');
-  assert.match(row, /position/, 'position prop is accepted');
-  assert.match(row, /Remove the saved role in row.*position.*details unavailable.*from your itinerary/, 'aria-label includes position and details-unavailable note');
+  const island = read('app/saved/Itinerary.js');
+  assert.match(island, /\bposition=\{i \+ 1\}/, 'the board passes each row its 1-based position');
+  assert.match(row, /\? `Remove \$\{name\} from your itinerary`/, 'rows with details: unchanged');
+  assert.match(row, /: `Remove the saved role in row \$\{position\} \(details unavailable\) from your itinerary`;/, 'no-details rows: their position, no total');
+  assert.match(row, /aria-label=\{removeLabel\}/, 'the Remove button carries that name');
 });
