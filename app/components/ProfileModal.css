@@ -98,7 +98,9 @@
   text-align: left;
   cursor: pointer;
 }
-.pm-pill:hover { border-color: var(--ink-sub); }
+@media (hover: hover) {
+  .pm-pill:hover { border-color: var(--ink-sub); }
+}
 .pm-pill[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
 
 .pm-upload { position: relative; }
@@ -118,7 +120,9 @@
   text-align: center;
   cursor: pointer;
 }
-.pm-drop:hover { border-color: var(--sign); }
+@media (hover: hover) {
+  .pm-drop:hover { border-color: var(--sign); }
+}
 .pm-file:focus-visible + .pm-drop { outline: 2px solid var(--sign); outline-offset: 2px; border-color: var(--sign); }
 /* The scan's status: always in the page (a live region), with no height until it says something. */
 .pm-scan:not(:empty) { margin-top: 10px; }

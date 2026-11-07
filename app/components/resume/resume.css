@@ -31,11 +31,15 @@
   cursor: pointer;
   transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
 }
-.rs-btn:hover { transform: translateY(-1px); }
+@media (hover: hover) {
+  .rs-btn:hover { transform: translateY(-1px); }
+}
 .rs-btn:active { transform: scale(0.98); }
 .rs-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
 .rs-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
-.rs-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+@media (hover: hover) {
+  .rs-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+}
 
 /* ─── The belt, waiting: a drop zone around a real button ─── */
 .rs-drop {
@@ -449,7 +453,9 @@
   text-decoration: none;
   transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
 }
-.rs-role:hover { border-color: var(--ink-sub); transform: translateY(-2px); }
+@media (hover: hover) {
+  .rs-role:hover { border-color: var(--ink-sub); transform: translateY(-2px); }
+}
 .rs-role:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
 .rs-role-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .rs-role-t { font-size: 16px; font-weight: 700; line-height: 1.35; }
@@ -498,8 +504,10 @@
 @media (prefers-reduced-motion: reduce) {
   .rs-btn,
   .rs-role { transition: none; }
-  .rs-btn:hover,
-  .rs-btn:active,
-  .rs-role:hover { transform: none; }
+  .rs-btn:active { transform: none; }
+  @media (hover: hover) {
+    .rs-btn:hover,
+    .rs-role:hover { transform: none; }
+  }
   .rs-bars[data-armed] .rs-bar-fill { transform: scaleX(var(--v)); transition: none; }
 }

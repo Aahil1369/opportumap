@@ -556,3 +556,108 @@ test("A4 ProfileModal checks the file like /resume, then shows the scanner's own
   assert.equal(VERDICT.scanErrorFor(422, VERDICT.UNREADABLE_PDF, size), VERDICT.UNREADABLE_PDF);
   assert.match(VERDICT.scanErrorFor(413, VERDICT.OVER_LIMIT, size), /\(1\.2 MB\) was too large for the scanner to receive/);
 });
+
+// ── Part 3 ───────────────────────────────────────────────────────────────────────────────────
+// A6 (Ruling R15): CLEARED FOR TAKEOFF needs 3 scored answers, fewer is a neutral HOLDING plate ·
+// A7: the wave-3 accessibility polish (T10 heading and debrief names; T11 description, live
+// region, scroll margin) · T7-12: :hover looks only where a pointer can hover.
+
+test('A6 (Ruling R15) CLEARED FOR TAKEOFF needs at least 3 scored answers; fewer is HOLDING, a neutral plate', () => {
+  assert.equal(SIM.MIN_SCORED, 3);
+  assert.equal(SIM.HOLDING, 'HOLDING');
+  assert.equal(SIM.takeoffVerdict([9]), SIM.HOLDING);
+  assert.equal(SIM.takeoffVerdict([9, 10]), SIM.HOLDING);
+  assert.equal(SIM.takeoffVerdict([2, 3]), SIM.HOLDING, 'not GO-AROUND: two low scores are not a verdict yet');
+  assert.equal(SIM.takeoffVerdict([]), SIM.HOLDING);
+  assert.equal(SIM.takeoffVerdict([9, 8, 7]), SIM.CLEARED);
+  assert.equal(SIM.takeoffVerdict([5, 6, 7]), SIM.GO_AROUND);
+  assert.deepEqual(['CLEARED FOR TAKEOFF', 'GO-AROUND', 'HOLDING', 'anything'].map((v) => SIM.verdictTone(v)), ['ok', 'amber', 'info', 'info']);
+});
+
+test("A6 the plate's note says why, and asks for more answers while holding", () => {
+  const note = (verdict, answered, total) => SIM.verdictNote(verdict, { answered, total });
+  assert.match(note(SIM.CLEARED, 5, 15), /An average of 7 or better/);
+  assert.match(note(SIM.GO_AROUND, 5, 15), /Below an average of 7/);
+  const two = note(SIM.HOLDING, 2, 15);
+  assert.match(two, /at least 3 scored answers/);
+  assert.match(two, /you have 2 so far/);
+  assert.match(two, /Open a skipped question below/);
+  assert.match(note(SIM.HOLDING, 0, 15), /every question was skipped/);
+  assert.match(note(SIM.HOLDING, 2, 2), /Build a new checklist/, 'a checklist too short for a verdict says so');
+  for (const n of [two, note(SIM.HOLDING, 0, 15), note(SIM.HOLDING, 1, 2)]) {
+    assert.doesNotMatch(n, /go around|below an average/i, 'holding never reads as a bad score');
+  }
+});
+
+test('A6 the simulator draws the plate from verdictTone and verdictNote; the copy says at least 3', () => {
+  const src = read('app/components/interview/Simulator.js');
+  assert.match(src, /const tone = verdictTone\(verdict\);/);
+  assert.match(src, /const note = verdictNote\(verdict, counts\);/);
+  assert.doesNotMatch(src, /verdict === CLEARED \? 'ok' : 'amber'/);
+  assert.match(src, /score at least 3 with an average of 7 or better/);
+  assert.match(read('app/interview/page.js'), /score at least 3 with an average of 7 or better/);
+  assert.match(read('app/components/interview/interview.css'), /\.iv-plate\[data-tone='info'\] \{ --tone: var\(--info\); \}/);
+});
+
+test("A7 T10: the question is the panel's h2, and a debrief row is named by the whole question", () => {
+  const src = read('app/components/interview/Simulator.js');
+  assert.match(src, /<h2 className="iv-q" id="iv-q" tabIndex=\{-1\} ref=\{refs\.question\}>/);
+  assert.doesNotMatch(src, /<h3 className="iv-q"/);
+  assert.match(src, /<span aria-hidden="true">\{previewText\(q\.question, 90\)\}<\/span>\s*<span className="sr-only">\{q\.question\}<\/span>/);
+});
+
+test('A7 T11: the attach button is described by the resume rule; the writing lines speak through the one live region; the letter alert clears the navbar', () => {
+  const src = read('app/components/coverLetter/AirmailDesk.js');
+  assert.match(src, /<label htmlFor="cl-resume" id="cl-resume-l" className="cl-label">/);
+  assert.match(src, /aria-describedby="cl-resume-l cl-resume-hint"/);
+  assert.doesNotMatch(src, /className="cl-status" role="status"/, 'the WRITING / REWRITING lines are not live regions mounted with their text');
+  assert.equal((src.match(/<p className="sr-only" role="status">/g) || []).length, 1, 'one persistent live region');
+  assert.match(src, /`Writing your letter, \$\{toneOf\(forTone\)\.label\.toLowerCase\(\)\} — about 15 seconds\.`/);
+  assert.match(src, /`Rewriting a new version, \$\{toneOf\(forTone\)\.label\.toLowerCase\(\)\}\. This one stays here until it lands\.`/);
+  assert.match(src, /<div ref=\{letterAlertRef\} className="cl-letter-alert">/);
+  assert.match(read('app/components/coverLetter/coverLetter.css'), /\.cl-letter-alert \{ scroll-margin-top: 72px; \}/);
+});
+
+/** Every style rule in a CSS text, with the at-rule preludes around it (comments dropped). */
+function cssRules(css) {
+  const out = [];
+  const stack = [];
+  let buf = '';
+  for (const ch of css.replace(/\/\*[\s\S]*?\*\//g, '')) {
+    if (ch === '{') {
+      stack.push(buf.trim());
+      buf = '';
+    } else if (ch === '}') {
+      const head = stack.pop();
+      if (head !== undefined && !head.startsWith('@')) {
+        out.push({ selectors: head.split(',').map((s) => s.trim()), within: stack.filter((h) => h.startsWith('@')) });
+      }
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  return out;
+}
+
+const HOVER_CSS = {
+  'app/components/interview/interview.css': ['.iv-btn:hover', '.iv-btn-2:hover', '.iv-tab:hover', '.iv-item-head:hover .iv-item-q', '.iv-db-row:hover .iv-db-q', '.iv-btn:hover'],
+  'app/components/resume/resume.css': ['.rs-btn:hover', '.rs-btn-2:hover', '.rs-role:hover', '.rs-btn:hover', '.rs-role:hover'],
+  'app/components/coverLetter/coverLetter.css': ['.cl-btn-2:hover', '.cl-tag:hover .cl-tag-shape', '.cl-btn:hover'],
+  'app/components/ProfileModal.css': ['.pm-pill:hover', '.pm-drop:hover'],
+};
+
+test('T7-12: every :hover rule of this group sits in @media (hover: hover); press and focus styles stay outside', () => {
+  for (const [file, expected] of Object.entries(HOVER_CSS)) {
+    const rules = cssRules(read(file));
+    const hovers = rules.filter((r) => r.selectors.some((s) => s.includes(':hover')));
+    assert.deepEqual(hovers.flatMap((r) => r.selectors).sort(), [...expected].sort(), `${file}: the same hover selectors as before, none lost`);
+    for (const r of hovers) {
+      assert.ok(r.within.some((w) => /^@media\s*\(hover:\s*hover\)$/.test(w)), `${file}: ${r.selectors.join(', ')} is inside @media (hover: hover)`);
+      assert.ok(r.selectors.every((s) => s.includes(':hover')), `${file}: ${r.selectors.join(', ')} was split so only :hover moved`);
+    }
+    for (const r of rules.filter((x) => x.selectors.some((s) => /:active|:focus-visible/.test(s)))) {
+      assert.ok(!r.within.some((w) => /\(hover:\s*hover\)/.test(w)), `${file}: ${r.selectors.join(', ')} stays outside the hover block`);
+    }
+  }
+});
