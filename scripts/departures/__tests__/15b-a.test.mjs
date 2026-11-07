@@ -70,6 +70,7 @@ test("A1: no route of this group, and no AI module, puts an error's own text in 
     const src = read(f);
     assert.doesNotMatch(src, /error:\s*(?:err|e|error)\??\.message/, `${f} answers with err.message`);
     assert.doesNotMatch(src, /error:\s*String\(\s*(?:err|e|error)\s*\)/, `${f} answers with String(err)`);
+    assert.doesNotMatch(src, /n\\'t\b/, `${f}: a visitor line with a straight apostrophe (write ')`);
   }
   for (const f of A_ROUTES) {
     assert.doesNotMatch(read(f), /^(?:const|let|var)\s+\w+\s*=\s*new Groq\(/m, `${f}: a Groq client made at load, so a key-less server cannot load the route`);
@@ -150,7 +151,7 @@ test('A1 /api/jobs: a failure is logged on the server and answered with a friend
   assert.doesNotMatch(src, /err\.message/);
   assert.match(src, /console\.error\(`\[jobs\] search failed/);
   assert.match(src, /console\.error\(`\[jobs\] lookup failed/);
-  assert.match(src, /const SEARCH_FAILED = '(?:[^'\\]|\\.)*';/);
+  assert.match(src, /const SEARCH_FAILED = '[^']+';/);
 });
 
 // ── A8: /api/resume-grade, status by status (no Groq, no real model) ───────────────────────────

@@ -4,8 +4,8 @@ import { findJob, isJobId, trimJob } from '../../../lib/departures/jobRows.js';
 
 const LOOKUP_TIMEOUT_MS = 6000;
 // What a visitor reads when something failed; the reason goes to the server log, never the answer.
-const SEARCH_FAILED = 'The job board couldn\'t load roles just now. Try again in a minute.';
-const LOOKUP_UNSURE = 'We couldn\'t check that role just now. Try again in a minute.';
+const SEARCH_FAILED = 'The job board couldn’t load roles just now. Try again in a minute.';
+const LOOKUP_UNSURE = 'We couldn’t check that role just now. Try again in a minute.';
 
 /**
  * One role by id, for a /jobs?job=<id> link whose role is on neither of the page's boards, and for
