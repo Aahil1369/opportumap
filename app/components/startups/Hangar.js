@@ -4,8 +4,9 @@
 // stands. One unfiltered GET /api/startups is the hangar (`all`): the sector counts always come
 // from it, so picking a chip never zeroes the others. While that list is complete (fewer than
 // the API's 50) the chips filter it here, instantly; past that the API filters instead.
-// Signed-out visitors get "Sign in to post a startup" in place of the post button. Loading has a
-// skeleton, failures a retry, and an empty hangar is the main screen, not a blank grid.
+// Signed-out visitors get "Sign in to post a startup" in place of the post button; a failed
+// sign-in check (useSession) says so, with a retry. Loading has a skeleton, failures a retry,
+// and an empty hangar is the main screen, not a blank grid.
 // Signature moment: the first time the stands fill, their tail fins roll up onto the floor once
 // (transform/opacity, the first 12 only); reduced motion shows them in place.
 
@@ -26,7 +27,7 @@ import {
   withPosted,
 } from '../../../lib/departures/hangar.js';
 import { usePrefersReducedMotion } from '../kit/useReducedMotion';
-import { useViewer } from './useViewer';
+import { useSession } from '../community/useSession';
 import { SignInButton } from './SignIn';
 import StandCard from './StandCard';
 import TailFin from './TailFin';
@@ -49,7 +50,7 @@ function Chip({ pressed, onClick, children, label }) {
 }
 
 export default function Hangar() {
-  const viewer = useViewer();
+  const session = useSession();
   const reduced = usePrefersReducedMotion();
   const [all, setAll] = useState(null); // null while loading
   const [loadError, setLoadError] = useState(false);
@@ -122,12 +123,12 @@ export default function Hangar() {
       });
   }, [all, local, key, remoteKey, latestRemote]);
 
-  const signedIn = viewer.ready && !!viewer.user;
+  const signedIn = session.status === 'in';
   // A tap before the session is known opens the form as soon as it is (and the visitor is in).
   const showPost = signedIn && (postOpen || postWanted);
   const openPost = () => {
     setNotice('');
-    if (!viewer.ready) {
+    if (session.status === 'loading') {
       setPostWanted(true);
       return;
     }
@@ -155,12 +156,19 @@ export default function Hangar() {
   const toggle = (k, v) => setFilters((f) => ({ ...f, [k]: f[k] === v ? '' : v }));
   const clear = () => setFilters(DEFAULT_FILTERS);
 
+  // Signed in: post. Signed out: sign in first. The check failed (offline, the auth server down):
+  // say so, with a retry; a "sign in" would not help. Still checking: the post button, which
+  // waits for the answer.
   const postAction = signedIn ? (
     <button ref={postButton} type="button" className="hg-btn hg-btn-sign" onClick={openPost} data-after-signin="">
       + Post a startup
     </button>
-  ) : viewer.ready ? (
+  ) : session.status === 'out' ? (
     <SignInButton>Sign in to post a startup</SignInButton>
+  ) : session.status === 'error' ? (
+    <button type="button" className="hg-btn hg-btn-ghost" onClick={session.retry}>
+      Couldn&apos;t check your sign-in. Try again
+    </button>
   ) : (
     <button ref={postButton} type="button" className="hg-btn hg-btn-sign" onClick={openPost} aria-busy={postWanted || undefined}>
       + Post a startup

@@ -2,7 +2,7 @@
 
 // "Sign in to board": what signed-out visitors get in place of the hangar's actions (never a
 // disabled button or a 401). The button opens the shared sign-in dialog (useSignIn → AuthModal,
-// a kit Dialog: focus trap, Esc, focus back to this button). After signing in, useViewer sees
+// a kit Dialog: focus trap, Esc, focus back to this button). After signing in, useSession sees
 // the new session and the page swaps the prompt for the real actions; focus lands on the one
 // marked data-after-signin. onSignedIn also runs then (a stand reloads its state: after an
 // expired session the user id does not change).
