@@ -160,3 +160,51 @@ test('T8-3: when this device refuses the removal, /saved keeps the row and says 
   assert.ok(refused < remove.fn.indexOf('removed from your itinerary.'), 'before the removal is announced');
   assert.ok(refused < remove.fn.indexOf('drop();'), 'before the row is dropped (reduced motion)');
 });
+
+// ── N3: the /saved status line ──────────────────────────────────────────────────────────────────
+
+/**
+ * Every style rule of a stylesheet (comments out), with the at-rules around it, outermost first:
+ * [{ selector (spaces collapsed), body, within: ['@container (min-width: 560px)', …] }].
+ */
+function cssRules(css) {
+  const out = [];
+  const stack = [];
+  let buf = '';
+  for (const ch of css.replace(/\/\*[\s\S]*?\*\//g, '')) {
+    if (ch === '{') {
+      stack.push(buf.slice(buf.lastIndexOf(';') + 1).trim());
+      buf = '';
+    } else if (ch === '}') {
+      const head = stack.pop();
+      if (head !== undefined && !head.startsWith('@')) {
+        out.push({ selector: head.replace(/\s+/g, ' '), body: buf.trim(), within: stack.filter((h) => h.startsWith('@')) });
+      }
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  return out;
+}
+
+/** A declaration's plain number (px, or a bare 0) in a rule body, or null when it is not set that way. */
+function px(body, prop) {
+  const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*(-?\\d+(?:\\.\\d+)?)(?:px)?\\s*(?:;|$)`).exec(body);
+  return m ? Number(m[1]) : null;
+}
+
+test('N3: /saved\'s status line holds sentences at 16px (body text) on every board width', () => {
+  const rules = cssRules(read('app/saved/saved.css')).filter((r) => r.selector.split(',').some((s) => s.trim() === '.it-live'));
+  const size = (body) => {
+    const shorthand = /(?:^|;)\s*font\s*:\s*(?:\d{3}\s+)?(\d+(?:\.\d+)?)px/.exec(body);
+    return shorthand ? Number(shorthand[1]) : px(body, 'font-size');
+  };
+  const base = rules.find((r) => r.within.length === 0);
+  assert.ok(base, 'saved.css has a top-level .it-live rule');
+  assert.ok(size(base.body) >= 16, `.it-live is ${size(base.body)}px`);
+  for (const r of rules) {
+    const s = size(r.body);
+    if (s !== null) assert.ok(s >= 16, `.it-live is ${s}px in ${r.within.join(' ') || 'the base rule'}`);
+  }
+});
