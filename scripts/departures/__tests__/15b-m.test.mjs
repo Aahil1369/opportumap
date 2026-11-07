@@ -424,3 +424,12 @@ test('N1: /map\'s ?job= link opens a role on the radar and is a miss for one tha
   assert.equal(deepLink('adzuna_9', { lists: [undefined], settled: false, looked: true }), 'wait', 'its search is still on its way');
   assert.equal(deepLink(null, { lists: [radar], settled: true, looked: true }), 'none');
 });
+
+// ── T7-3: the map's zoom buttons ────────────────────────────────────────────────────────────────
+
+test('T7-3: the map\'s zoom buttons are 44px touch targets', () => {
+  const rule = cssRules(read('app/components/map/map.css')).find((r) => r.selector === '.mt .mapboxgl-ctrl-group button');
+  assert.ok(rule, 'map.css sizes the Mapbox control buttons');
+  assert.equal(px(rule.body, 'width'), 44);
+  assert.equal(px(rule.body, 'height'), 44);
+});

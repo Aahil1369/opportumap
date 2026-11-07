@@ -361,7 +361,7 @@
   border: 1px solid var(--rule);
   box-shadow: none;
 }
-.mt .mapboxgl-ctrl-group button { width: 40px; height: 40px; }
+.mt .mapboxgl-ctrl-group button { width: 44px; height: 44px; }
 .mt .mapboxgl-ctrl-group button + button { border-top-color: var(--rule); }
 .mt .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon { filter: invert(1); }
 .mt .mapboxgl-ctrl-group button:focus-visible { box-shadow: 0 0 0 2px var(--sign); }
