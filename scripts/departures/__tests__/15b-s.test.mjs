@@ -275,3 +275,55 @@ test('M1 the hangar\'s chips carry no counts: no count helper, no count in the v
   assert.match(page, /onClick=\{\(\) => toggle\('sector', s\)\} label=\{s\}>/, 'the sector chips still filter');
   assert.ok(!/\.hg-chip-n\b/.test(read('app/components/startups/startups.css')), 'no count style left');
 });
+
+// ── M2: the post form accepts any raise and a website without https:// ────────────────────
+
+test('M2 websiteUrl: a website typed without a scheme gets https:// (the database wants ^https?://)', () => {
+  assert.equal(hangar.websiteUrl('yourstartup.com'), 'https://yourstartup.com');
+  assert.equal(hangar.websiteUrl('  www.yourstartup.com/about  '), 'https://www.yourstartup.com/about');
+  assert.equal(hangar.websiteUrl('https://yourstartup.com'), 'https://yourstartup.com');
+  assert.equal(hangar.websiteUrl('HTTP://yourstartup.com'), 'HTTP://yourstartup.com', 'a scheme in any case is kept');
+  assert.equal(hangar.websiteUrl('ftp://yourstartup.com'), 'ftp://yourstartup.com', 'another scheme is left for the API to refuse');
+  assert.equal(hangar.websiteUrl(''), '');
+  assert.equal(hangar.websiteUrl('   '), '');
+  assert.equal(hangar.websiteUrl(undefined), '');
+});
+
+test('M2 postPayload: 33,500 and a bare domain go through, and the API accepts them', () => {
+  const draft = {
+    ...hangar.EMPTY_DRAFT,
+    name: 'NeuralHire', tagline: 'AI recruiting', description: 'We hire.', stage: 'seed', sector: 'AI',
+    raise_amount: '33500', website: 'neuralhire.example',
+  };
+  const p = hangar.postPayload(draft);
+  assert.equal(p.website, 'https://neuralhire.example');
+  assert.equal(p.raise_amount, 33500);
+  const { row, error } = buildStartupInsert(p, 'uid');
+  assert.equal(error, undefined, 'the API accepts it');
+  assert.equal(row.website, 'https://neuralhire.example/');
+  assert.equal(hangar.postPayload({ ...draft, raise_amount: '750' }).raise_amount, 750);
+  assert.equal(hangar.postPayload({ ...draft, website: '' }).website, '', 'no website: nothing sent');
+  assert.equal(buildStartupInsert({ ...p, website: hangar.websiteUrl('ftp://x.example') }, 'uid').error, 'Website must be an http(s) link');
+});
+
+test('M2 the raise field takes any amount; the website field is text with the url keyboard', () => {
+  const form = read('app/components/startups/PostStartup.js');
+  const raise = /<input id="hg-raise"[^>]*>/.exec(form)?.[0] ?? '';
+  assert.match(raise, /step="any"/, 'no browser bubble for 33,500 or 750');
+  const web = /<input id="hg-website"[^>]*>/.exec(form)?.[0] ?? '';
+  assert.match(web, /type="text"/);
+  assert.match(web, /inputMode="url"/);
+  assert.match(web, /autoComplete="url"/);
+  assert.match(web, /autoCapitalize="none"/, 'iOS does not capitalise the link');
+  assert.ok(!/type="url"/.test(web), 'no browser bubble for a link without https://');
+});
+
+// ── S3: no raw error text on the post form ─────────────────────────────────────────────────
+
+test('S3 the post form shows friendly lines, never storage or network error text', () => {
+  const form = code('app/components/startups/PostStartup.js');
+  assert.ok(!/err\.message\}/.test(form), 'the deck message does not quote the storage error');
+  assert.ok(!/err\?\.message \|\|/.test(form), 'no fallback to whatever the error says');
+  assert.match(form, /err\?\.status === 400\s*\?\s*err\.message/, 'only the API\'s 400 answers (the field to fix) are shown');
+  assert.match(form, /'Could not post your startup\. Check your connection and try again\.'/);
+});
