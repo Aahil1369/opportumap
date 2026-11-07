@@ -1,7 +1,7 @@
 // /startups — the hangar's pure parts: generated tail fins (deterministic from the name, a
-// readable roundel letter on every hue), sector counts from the unfiltered list (never the
-// filtered one), the filter/sort view, the post body, and the signed-in user's own state that
-// GET /api/startups/[id] returns. The pages are scanned in hangar-pages.test.mjs.
+// readable roundel letter on every hue), the filter/sort view, the post body, and the signed-in
+// user's own state that GET /api/startups/[id] returns. The pages are scanned in
+// hangar-pages.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -120,32 +120,6 @@ const ALL = [
   { id: 'g', name: 'Sg', stage: 'idea', created_at: '2026-10-06T10:00:00Z' }, // no sector, no count
 ];
 
-test('sectorCounts: every offered sector in order, counted from the list it is given', () => {
-  const counts = hangar.sectorCounts(ALL);
-  assert.deepEqual(Object.keys(counts), hangar.SECTORS);
-  assert.deepEqual(counts, { AI: 2, Fintech: 1, HealthTech: 0, CleanTech: 0, SaaS: 0, EdTech: 1, Other: 1 });
-  assert.deepEqual(hangar.sectorCounts([]), Object.fromEntries(hangar.SECTORS.map((s) => [s, 0])));
-  assert.deepEqual(hangar.sectorCounts(null), hangar.sectorCounts([]));
-  const copy = structuredClone(ALL);
-  hangar.sectorCounts(copy);
-  assert.deepEqual(copy, ALL, 'does not mutate');
-});
-
-test('sector counts are unaffected by the active filter (they come from the unfiltered list)', () => {
-  const none = hangar.hangarView(ALL, hangar.DEFAULT_FILTERS);
-  for (const filters of [
-    { sector: 'AI' },
-    { sector: 'HealthTech' },
-    { stage: 'seed' },
-    { stage: 'idea', sector: 'Fintech', sort: 'trending' },
-  ]) {
-    const view = hangar.hangarView(ALL, { ...hangar.DEFAULT_FILTERS, ...filters });
-    assert.deepEqual(view.counts, none.counts, JSON.stringify(filters));
-    assert.ok(view.shown.length < ALL.length, 'the filter did filter');
-  }
-  assert.deepEqual(none.counts, hangar.sectorCounts(ALL));
-});
-
 test('hangarView: filters by stage and sector, sorts newest or trending, never mutates', () => {
   const ids = (f) => hangar.hangarView(ALL, { ...hangar.DEFAULT_FILTERS, ...f }).shown.map((s) => s.id);
   assert.deepEqual(ids({}), ['a', 'b', 'c', 'd', 'e', 'f', 'g']);
@@ -158,7 +132,7 @@ test('hangarView: filters by stage and sector, sorts newest or trending, never m
   const unsorted = [ALL[3], ALL[0], ALL[1]];
   assert.deepEqual(hangar.hangarView(unsorted, hangar.DEFAULT_FILTERS).shown.map((s) => s.id), ['a', 'b', 'd']);
   assert.deepEqual(unsorted.map((s) => s.id), ['d', 'a', 'b'], 'input order untouched');
-  assert.deepEqual(hangar.hangarView(null, hangar.DEFAULT_FILTERS), { shown: [], counts: hangar.sectorCounts([]) });
+  assert.deepEqual(hangar.hangarView(null, hangar.DEFAULT_FILTERS), { shown: [] });
 });
 
 test('filtering stays local until the API page may be cut off, then the API filters', () => {

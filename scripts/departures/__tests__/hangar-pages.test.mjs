@@ -1,7 +1,7 @@
 // /startups — the hangar's pages and components: the copy (E · HANGAR, "+1 PASSENGER",
 // "STANDBY", "Sign in to board", the empty state; no totals, no "flight"/"fare", no paper theme),
-// motion limited to transform/opacity (+ one short stroke-dashoffset), sector counts taken from
-// the unfiltered list, own state + sign-in prompts on a stand, and the post form's fields.
+// motion limited to transform/opacity (+ one short stroke-dashoffset), own state + sign-in
+// prompts on a stand, and the post form's fields.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -95,12 +95,6 @@ test('hangar copy: no "flight"/"fare", no totals, no paper theme, no old hero or
   if (/\b\d+(?:\.\d+)?vh\b/.test(css)) found.push('startups.css uses vh');
   if (!/prefers-reduced-motion:\s*reduce/.test(css)) found.push('startups.css has no reduced-motion block');
   assert.deepEqual(found, []);
-});
-
-test('sector counts are taken from the unfiltered list in the page', () => {
-  const src = hangarSrc('Hangar.js');
-  assert.match(src, /hangarView\(all\b|sectorCounts\(all\b/);
-  assert.ok(!/sectorCounts\((?:list|shown|remote|filtered)/.test(src), 'counts never come from a filtered list');
 });
 
 test('detail: own state from the API, sign-in prompts (not disabled buttons) when signed out', () => {

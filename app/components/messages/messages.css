@@ -138,7 +138,9 @@
   color: var(--ink);
   text-decoration: none;
 }
-.gc-row:hover { background: var(--hall-3); }
+@media (hover: hover) {
+  .gc-row:hover { background: var(--hall-3); }
+}
 .gc-row[aria-current='true'] { background: var(--hall-3); box-shadow: inset 3px 0 0 var(--sign); }
 .gc-row:focus-visible { outline-offset: -2px; }
 .gc-row-main { display: grid; flex: 1; min-width: 0; gap: 3px; }
@@ -253,7 +255,9 @@
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
-.gc-th-link:hover { color: var(--ink); }
+@media (hover: hover) {
+  .gc-th-link:hover { color: var(--ink); }
+}
 
 /* The gate board: GATE CHAT · STAND E07, then the startup's name on tiles. */
 .gc-board {

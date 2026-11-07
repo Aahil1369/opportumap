@@ -2,8 +2,9 @@
 
 // "Post a startup": one form in a kit Dialog (focus trap, Esc, focus back to the opener). The
 // draft lives in the hangar (draft / setDraft), so closing the dialog by accident — Esc, a tap
-// on the backdrop — keeps what was typed. Inputs are 16px with real labels. Stage and sector
-// are radio chips. The pitch deck (optional PDF, under 10 MB) uploads when picked and never
+// on the backdrop — keeps what was typed. Inputs are 16px with real labels. The raise takes any
+// amount (step="any") and the website a link with or without https:// (a text field; postPayload
+// adds the scheme), so no browser bubble refuses them. Stage and sector are radio chips. The pitch deck (optional PDF, under 10 MB) uploads when picked and never
 // overwrites (upsert: false). The body is postPayload(draft): the server takes the owner from
 // the session, the database sets the founder's name and the counters.
 // The deck note promises no restriction: the pitch-decks bucket is public and the startups API
@@ -55,12 +56,10 @@ export default function PostStartup({ open, onClose, onPosted, draft, setDraft, 
       } = supabase.storage.from('pitch-decks').getPublicUrl(data.path);
       setDraft((d) => ({ ...d, pitch_deck_url: publicUrl, deck_name: file.name }));
       setDeck({ state: 'done', message: '' });
-    } catch (err) {
+    } catch {
+      // Storage's own error text (a policy name, "Payload too large") is not for visitors.
       setDraft((d) => ({ ...d, pitch_deck_url: '', deck_name: '' }));
-      setDeck({
-        state: 'error',
-        message: `The pitch deck didn't upload${err?.message ? ` (${err.message})` : ''}. You can post without it or try again.`,
-      });
+      setDeck({ state: 'error', message: "The pitch deck didn't upload. You can post without it or try again." });
     }
   };
 
@@ -79,10 +78,14 @@ export default function PostStartup({ open, onClose, onPosted, draft, setDraft, 
       setDeck({ state: 'idle', message: '' });
       onPosted(data.startup);
     } catch (err) {
+      // Only the API's own 400 answers are shown (they name the field to fix). A network failure
+      // or a non-JSON reply would otherwise read "Failed to fetch" or "Request failed (502)".
       setError(
         err?.status === 401
           ? 'Your session ended. Sign in again to post your startup.'
-          : err?.message || 'Could not post your startup. Please try again.',
+          : err?.status === 400
+            ? err.message
+            : 'Could not post your startup. Check your connection and try again.',
       );
     } finally {
       setBusy(false);
@@ -144,7 +147,7 @@ export default function PostStartup({ open, onClose, onPosted, draft, setDraft, 
           <div className="hg-grid2">
             <div className="hg-field">
               <label htmlFor="hg-raise" className="hg-label">Raising (USD)</label>
-              <input id="hg-raise" className="hg-input" type="number" inputMode="numeric" min="0" step="1000" placeholder="500000" {...field('raise_amount')} />
+              <input id="hg-raise" className="hg-input" type="number" inputMode="numeric" min="0" step="any" placeholder="500000" {...field('raise_amount')} />
             </div>
             <div className="hg-field">
               <label htmlFor="hg-equity" className="hg-label">Equity offered (%)</label>
@@ -161,7 +164,7 @@ export default function PostStartup({ open, onClose, onPosted, draft, setDraft, 
           </div>
           <div className="hg-field">
             <label htmlFor="hg-website" className="hg-label">Website</label>
-            <input id="hg-website" className="hg-input" type="url" inputMode="url" placeholder="https://yourstartup.com" {...field('website')} />
+            <input id="hg-website" className="hg-input" type="text" inputMode="url" autoComplete="url" autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="yourstartup.com" {...field('website')} />
           </div>
           <div className="hg-field">
             <label htmlFor="hg-deck" className="hg-label">Pitch deck (PDF, optional)</label>
