@@ -352,3 +352,78 @@ test('T12-M8 the stand cards\' h3 headings have an h2 above them', () => {
   assert.match(page, /<h2 id="hg-grid-h" className="sr-only">\s*Startups in the hangar\s*<\/h2>\s*<ul className="hg-grid" aria-labelledby="hg-grid-h">/);
   assert.match(code('app/components/startups/StandCard.js'), /<h3 className="hg-name">/);
 });
+
+// ── M3: the hangar's borders come from palette tokens (3:1 or better) ──────────────────────
+
+test('M3 startups.css: no off-palette greys; field and hover borders are the 3:1 token mix', () => {
+  const css = read('app/components/startups/startups.css');
+  assert.deepEqual(css.replace(/\/\*[\s\S]*?\*\//g, '').match(/#[0-9a-f]{3,8}\b/gi) ?? [], [], 'no hex colours (#2f343c, #3a3f47 are gone)');
+  const rules = cssRules(css);
+  const token = rules.find((r) => /--hg-field:/.test(r.body));
+  assert.ok(token, '--hg-field is defined');
+  assert.match(token.body, /--hg-field:\s*color-mix\(in srgb, var\(--ink-sub\) 60%, var\(--hall-2\)\)/, 'the mix /community and /messages use');
+  for (const root of ['.hg', '.hg-standpage', '.dlg.hg-post']) {
+    assert.ok(token.selectors.includes(root), `${root} gets the token (the post dialog renders outside .hg)`);
+  }
+  assert.match(rules.find((r) => r.selectors.includes('.hg-input')).body, /border:\s*1px solid var\(--hg-field\)/);
+  for (const sel of ['.hg-btn-ghost:hover', '.hg-chip:hover', 'a.hg-card:hover', '.hg-toggle:hover']) {
+    const r = rules.find((x) => x.selectors.includes(sel) && /border-color/.test(x.body));
+    assert.match(r?.body ?? '', /border-color:\s*var\(--hg-field\)/, `${sel} uses the token`);
+  }
+  // The mix is #636870: 3:1 or better on the input fill and on the panels.
+  const field = mix('#9aa0a8', '#111316', 0.6);
+  for (const bg of ['#16181c', '#111316', '#0a0b0d']) {
+    assert.ok(contrast(field, bg) >= 3, `${field} on ${bg}: ${contrast(field, bg).toFixed(2)}:1`);
+  }
+});
+
+// ── M5: the lounge's sentences are 16px Inter ──────────────────────────────────────────────
+
+test('M5 .lg-foot, .lg-hint and .lg-as are 16px sentences (Inter), like .hg-foot and .gc-foot', () => {
+  const rules = cssRules(read('app/components/community/community.css'));
+  for (const sel of ['.lg-foot', '.lg-hint', '.lg-as']) {
+    const r = rules.find((x) => x.selectors.includes(sel));
+    assert.ok(r, `${sel} exists`);
+    assert.match(r.body, /font-size:\s*16px/, `${sel} is 16px`);
+    assert.ok(!/font-board|font:\s/.test(r.body), `${sel} is not mono (it keeps the page's Inter)`);
+    assert.ok(!/text-transform:\s*uppercase|letter-spacing/.test(r.body), `${sel} reads as a sentence, not a label`);
+  }
+});
+
+// ── T7-12: hover styles only where hover exists (no sticky :hover after a tap) ─────────────
+
+const HOVERS = {
+  'app/components/startups/startups.css': ['.hg-btn-ghost:hover', '.hg-chip:hover', 'a.hg-card:hover', '.hg-back:hover', '.hg-toggle:hover', 'a.hg-card:hover'],
+  'app/components/community/community.css': ['.lg-compose-open:hover', '.lg-act:hover'],
+  'app/components/messages/messages.css': ['.gc-row:hover', '.gc-th-link:hover'],
+};
+const inHoverMedia = (r) => r.at.some((p) => /^@media\s*\(hover:\s*hover\)$/.test(p));
+
+test('T7-12 every :hover rule sits in @media (hover: hover), and only :hover rules do', () => {
+  for (const [file, expected] of Object.entries(HOVERS)) {
+    const rules = cssRules(read(file));
+    const hovers = rules.filter((r) => r.selectors.some((s) => s.includes(':hover')));
+    assert.deepEqual(hovers.flatMap((r) => r.selectors), expected, `${file}: the same hover rules, in the same order`);
+    for (const r of hovers) assert.ok(inHoverMedia(r), `${file}: ${r.selectors.join(', ')} is outside @media (hover: hover)`);
+    for (const r of rules.filter(inHoverMedia)) {
+      assert.ok(r.selectors.every((s) => s.includes(':hover')), `${file}: ${r.selectors.join(', ')} moved into the hover block`);
+    }
+    for (const r of rules.filter((x) => x.selectors.some((s) => /:focus-visible|:active/.test(s)))) {
+      assert.ok(!inHoverMedia(r), `${file}: ${r.selectors.join(', ')} (focus/active) stays outside`);
+    }
+  }
+});
+
+test('T7-12 each hover block stays where its rule was, so pressed and current states still win', () => {
+  const order = (file, first, then) => {
+    const sels = cssRules(read(file)).flatMap((r) => r.selectors);
+    assert.ok(sels.indexOf(first) !== -1 && sels.indexOf(first) < sels.indexOf(then), `${file}: ${first} comes before ${then}`);
+  };
+  order('app/components/startups/startups.css', '.hg-chip:hover', ".hg-chip[aria-pressed='true']");
+  order('app/components/startups/startups.css', '.hg-toggle:hover', ".hg-toggle[aria-pressed='true']");
+  order('app/components/community/community.css', '.lg-act:hover', ".lg-act[aria-pressed='true']");
+  order('app/components/messages/messages.css', '.gc-row:hover', ".gc-row[aria-current='true']");
+  const reduced = cssRules(read('app/components/startups/startups.css')).filter((r) => r.at.includes('@media (prefers-reduced-motion: reduce)'));
+  assert.ok(reduced.some((r) => r.selectors.includes('a.hg-card:hover') && inHoverMedia(r) && /transform:\s*none/.test(r.body)), 'reduced motion still stops the card lift');
+  assert.ok(reduced.some((r) => r.selectors.join() === '.hg-btn:active' && /transform:\s*none/.test(r.body)));
+});

@@ -7,6 +7,12 @@
    stroke-dashoffset (an empty stand's outline drawing in); reduced motion turns all of it off. */
 
 .hg { --hg-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif; }
+/* Field and hover borders: the token mix /community and /messages use (3:1 or better against
+   the panels). Set on each root the hangar renders: the floor, a stand, and the post form's
+   dialog (the kit Dialog renders into document.body, outside .hg). */
+.hg,
+.hg-standpage,
+.dlg.hg-post { --hg-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); }
 .hg,
 .hg-standpage { color: var(--ink); }
 
@@ -58,7 +64,9 @@
 .hg-btn:active { transform: translateY(1px); }
 .hg-btn-sign { background: var(--sign); color: var(--sign-ink); }
 .hg-btn-ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
-.hg-btn-ghost:hover { border-color: #3a3f47; }
+@media (hover: hover) {
+  .hg-btn-ghost:hover { border-color: var(--hg-field); }
+}
 .hg-btn[aria-disabled='true'] { opacity: 0.6; cursor: progress; }
 .hg-btn:focus-visible,
 .hg-chip:focus-visible,
@@ -101,7 +109,9 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.hg-chip:hover { color: var(--ink); border-color: #3a3f47; }
+@media (hover: hover) {
+  .hg-chip:hover { color: var(--ink); border-color: var(--hg-field); }
+}
 .hg-chip[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
 .hg-chip-clear { color: var(--ink); }
 .hg-chip-sep { flex: none; width: 1px; height: 22px; background: var(--rule); }
@@ -129,7 +139,9 @@
   text-decoration: none;
   transition: transform 0.2s cubic-bezier(.22, 1, .36, 1);
 }
-a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
+@media (hover: hover) {
+  a.hg-card:hover { transform: translateY(-2px); border-color: var(--hg-field); }
+}
 
 /* A bay: the dark stand with its dashed yellow floor line; the fin stands on the line. */
 .hg-bay,
@@ -327,7 +339,7 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
   width: 100%;
   min-height: 48px;
   padding: 11px 12px;
-  border: 1px solid #2f343c;
+  border: 1px solid var(--hg-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);
@@ -396,7 +408,9 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
   text-decoration: none;
   color: var(--ink-sub);
 }
-.hg-back:hover { color: var(--ink); }
+@media (hover: hover) {
+  .hg-back:hover { color: var(--ink); }
+}
 .hg-stand-head { padding-top: 12px; }
 .hg-stand-sign { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 6px; }
 .hg-stand-no { font: 500 12px/1 var(--font-board); letter-spacing: 0.18em; color: var(--ink-sub); }
@@ -485,7 +499,9 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
   font: 600 14px/1.2 var(--font-board);
   letter-spacing: 0.14em;
 }
-.hg-toggle:hover { border-color: #3a3f47; }
+@media (hover: hover) {
+  .hg-toggle:hover { border-color: var(--hg-field); }
+}
 .hg-toggle[aria-pressed='true'] { background: var(--ok); border-color: var(--ok); color: var(--hall); }
 .hg-toggle[data-kind='standby'][aria-pressed='true'] { background: var(--info); border-color: var(--info); }
 .hg-state-line { margin: 6px 0 14px; font-size: 16px; line-height: 1.4; color: var(--ink-sub); }
@@ -500,6 +516,8 @@ a.hg-card:hover { transform: translateY(-2px); border-color: #3a3f47; }
   .tf-draw .tf-outline { animation: none; stroke-dasharray: none; stroke-dashoffset: 0; }
   .hg-btn,
   .hg-card { transition: none; }
-  .hg-btn:active,
-  a.hg-card:hover { transform: none; }
+  .hg-btn:active { transform: none; }
+  @media (hover: hover) {
+    a.hg-card:hover { transform: none; }
+  }
 }
