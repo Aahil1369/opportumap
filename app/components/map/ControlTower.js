@@ -42,6 +42,7 @@ const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token/;
 const EMPTY = Object.freeze({ type: 'FeatureCollection', features: Object.freeze([]) });
 const NOTICE_MS = 5000;
 const LOAD_ERROR = "We couldn't load roles right now.";
+const MISSING = "That role isn't on the radar for this search.";
 
 const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
 
@@ -66,6 +67,7 @@ async function loadRadar(plan, preferred, filterJobs) {
 
 const searchHref = (text) => (text ? `/map?${new URLSearchParams({ q: text })}` : '/map');
 const boardHref = (text) => (text ? `/jobs?${new URLSearchParams({ q: text })}` : '/jobs');
+const gateHref = (text, id) => `/map?${new URLSearchParams(text ? { q: text, job: id } : { job: id })}`;
 
 export default function ControlTower() {
   const [profile, setProfile] = useState(undefined); // undefined: still loading
@@ -88,11 +90,15 @@ export default function ControlTower() {
   const gateOpener = useRef(null); // what opened the gate
   const meRef = useRef(null);
   const fitted = useRef(null);
+  const pushed = useRef(false); // opening the gate added a history entry (Back closes it)
+  const wanted = useRef(null); // ?job= from the URL: that gate opens once its search is on the radar
 
-  // The URL and the profile, once, after hydration.
+  // The URL and the profile, once, after hydration; Back / Forward close and open the gate.
   useEffect(() => {
     let live = true;
-    const q = clean(new URLSearchParams(window.location.search).get('q'));
+    const params = new URLSearchParams(window.location.search);
+    const q = clean(params.get('q'));
+    wanted.current = params.get('job');
     loadVisitorProfile({ account: loadHomeProfile }).then((p) => {
       if (!live) return;
       setProfile(p);
@@ -100,8 +106,15 @@ export default function ControlTower() {
       setInput((v) => inputOnArrival(v, q));
       setAsked((a) => searchOnArrival(a, q));
     });
+    // Back closes the gate (its Dialog hands focus back to the opener); Forward opens it again.
+    const onPop = () => {
+      pushed.current = false;
+      setOpenId(new URLSearchParams(window.location.search).get('job'));
+    };
+    window.addEventListener('popstate', onPop);
     return () => {
       live = false;
+      window.removeEventListener('popstate', onPop);
     };
   }, []);
 
@@ -196,6 +209,25 @@ export default function ControlTower() {
     return () => clearTimeout(t);
   }, [notice]);
 
+  // A link to /map?job=<id> (a reload, or Back into /map) opens that role's gate once its search
+  // is on the radar (deepLink; no lookup by id here, unlike /jobs). A role the radar does not have
+  // is a notice, and the link loses its ?job=.
+  const settled = !loading && radar?.state === 'ok';
+  useEffect(() => {
+    const id = wanted.current;
+    if (!id || !lib) return;
+    const what = lib.deepLink(id, { lists: [radar?.jobs], settled, looked: true });
+    if (what !== 'open' && what !== 'miss') return;
+    wanted.current = null;
+    Promise.resolve().then(() => {
+      if (what === 'open') setOpenId(id);
+      else {
+        setNotice(MISSING);
+        window.history.replaceState(null, '', searchHref(asked?.text));
+      }
+    });
+  }, [lib, radar, settled, asked?.text]);
+
   // ── Actions ──
   const submit = (e) => {
     e.preventDefault();
@@ -227,12 +259,27 @@ export default function ControlTower() {
     },
     [lib, countries, loading],
   );
-  const openGate = useCallback((id, el) => {
-    gateOpener.current = el || document.activeElement;
-    setNotice('');
-    setOpenId(id);
-  }, []);
-  const closeGate = useCallback(() => setOpenId(null), []);
+  // A gate is a history entry, as on /jobs and /saved: Back (an iPhone's swipe) closes it.
+  const openGate = useCallback(
+    (id, el) => {
+      gateOpener.current = el || document.activeElement;
+      setNotice('');
+      setOpenId(id);
+      window.history.pushState(null, '', gateHref(asked?.text, id));
+      pushed.current = true;
+    },
+    [asked?.text],
+  );
+  // Focus goes back to the opener from the gate's Dialog as it unmounts (returnFocusRef).
+  const closeGate = useCallback(() => {
+    setOpenId(null);
+    if (pushed.current) {
+      pushed.current = false;
+      window.history.back();
+    } else {
+      window.history.replaceState(null, '', searchHref(asked?.text));
+    }
+  }, [asked?.text]);
   const closeBoard = useCallback(() => setArrivals(null), []);
   const showOnMap = useCallback(() => {
     const iso = arrivals;

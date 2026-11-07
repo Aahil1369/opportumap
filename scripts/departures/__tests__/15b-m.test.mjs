@@ -389,3 +389,38 @@ test('T7-6 + N2: the HUD is the one live region (nothing inside it has a role or
   assert.match(src, /<span className="mt-chip-k">\{chip\.key\}<\/span>/);
   assert.match(src, /<span className="mt-chip-t">\{chip\.text\}<\/span>/);
 });
+
+// ── N1: Back closes a gate on /map ──────────────────────────────────────────────────────────────
+
+const { deepLink } = await import(new URL('../../../lib/departures/jobRows.js', import.meta.url));
+
+test('N1: on /map a gate is a history entry: Back closes it, Forward and a ?job= link open it', () => {
+  const src = read('app/components/map/ControlTower.js');
+  const open = callbackOf(src, 'openGate');
+  const close = callbackOf(src, 'closeGate');
+  assert.ok(open && close, 'openGate and closeGate are useCallback');
+  assert.match(open.fn, /window\.history\.pushState\(null, '', gateHref\(asked\?\.text, id\)\);\s*pushed\.current = true;/);
+  assert.match(
+    close.fn,
+    /if \(pushed\.current\) \{\s*pushed\.current = false;\s*window\.history\.back\(\);\s*\} else \{\s*window\.history\.replaceState\(null, '', searchHref\(asked\?\.text\)\);/,
+  );
+  assert.match(src, /const gateHref = \(text, id\) => `\/map\?\$\{new URLSearchParams\(text \? \{ q: text, job: id \} : \{ job: id \}\)\}`;/);
+  assert.match(src, /const onPop = \(\) => \{\s*pushed\.current = false;\s*setOpenId\(new URLSearchParams\(window\.location\.search\)\.get\('job'\)\);/);
+  assert.match(src, /window\.addEventListener\('popstate', onPop\);/);
+  assert.match(src, /window\.removeEventListener\('popstate', onPop\);/);
+  assert.match(src, /wanted\.current = params\.get\('job'\);/);
+  assert.match(src, /lib\.deepLink\(id, \{ lists: \[radar\?\.jobs\], settled, looked: true \}\)/);
+  assert.match(src, /const MISSING = "That role isn't on the radar for this search\.";/);
+  assert.match(
+    read('app/components/map/towerData.js'),
+    /export \{ deepLink, filterJobs, findJob, searchPlan \} from '\.\.\/\.\.\/\.\.\/lib\/departures\/jobRows';/,
+  );
+});
+
+test('N1: /map\'s ?job= link opens a role on the radar and is a miss for one that is not (deepLink, looked: true)', () => {
+  const radar = [{ id: 'adzuna_1' }, { id: 'remotive_2' }];
+  assert.equal(deepLink('adzuna_1', { lists: [radar], settled: true, looked: true }), 'open');
+  assert.equal(deepLink('adzuna_9', { lists: [radar], settled: true, looked: true }), 'miss', 'no lookup by id on /map');
+  assert.equal(deepLink('adzuna_9', { lists: [undefined], settled: false, looked: true }), 'wait', 'its search is still on its way');
+  assert.equal(deepLink(null, { lists: [radar], settled: true, looked: true }), 'none');
+});
