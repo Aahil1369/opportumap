@@ -4,12 +4,12 @@
    Motion: transform and opacity only; reduced motion shows every final state at once. */
 
 /* The X-ray art's own shades (aria-hidden drawings, never text you read): the belt's slats, the
-   paper tile's lines and its file name, the X-ray film, the scanner's window. Page-local, so the
+   document tile's lines and its file name, the X-ray film, the scanner's window. Page-local, so the
    palette stays the hall's. */
 .rs {
   --rs-slat: #2a2e35;
-  --rs-paper-line: #c9c5b8;
-  --rs-paper-ink: #5d6168;
+  --rs-doc-line: #c9c5b8;
+  --rs-doc-text: #5d6168;
   --rs-film: #08131d;
   --rs-window: #050608;
   display: grid;
@@ -98,7 +98,7 @@
   font: 700 8px/1.3 var(--font-board);
   letter-spacing: 0.08em;
 }
-.rs-doc-l { display: block; height: 4px; margin-top: 7px; border-radius: 2px; background: var(--rs-paper-line); }
+.rs-doc-l { display: block; height: 4px; margin-top: 7px; border-radius: 2px; background: var(--rs-doc-line); }
 .rs-doc-n {
   position: absolute;
   left: 8px;
@@ -106,7 +106,7 @@
   bottom: 7px;
   overflow: hidden;
   font: 500 8px/1.2 var(--font-board);
-  color: var(--rs-paper-ink);
+  color: var(--rs-doc-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -507,15 +507,15 @@ test("A10 resume.css: the X-ray art's own shades are page-local custom propertie
   const props = Object.fromEntries([...root[1].matchAll(/(--rs-[\w-]+)\s*:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) => [m[1], m[2].toLowerCase()]));
   assert.deepEqual(props, {
     '--rs-slat': '#2a2e35',
-    '--rs-paper-line': '#c9c5b8',
-    '--rs-paper-ink': '#5d6168',
+    '--rs-doc-line': '#c9c5b8',
+    '--rs-doc-text': '#5d6168',
     '--rs-film': '#08131d',
     '--rs-window': '#050608',
   });
   const rest = css.replace(root[0], '');
   assert.doesNotMatch(rest, /#[0-9a-f]{3,8}\b/i, "no hex literal outside .rs's declarations");
   assert.equal((rest.match(/var\(--rs-slat\)/g) || []).length, 2, 'both belt gradients');
-  for (const v of ['--rs-paper-line', '--rs-paper-ink', '--rs-film', '--rs-window']) assert.match(rest, new RegExp(`var\\(${v}\\)`), v);
+  for (const v of ['--rs-doc-line', '--rs-doc-text', '--rs-film', '--rs-window']) assert.match(rest, new RegExp(`var\\(${v}\\)`), v);
 });
 
 test("A5 a 413 from the simulator's routes gets its own line, not the generic one", async (t) => {

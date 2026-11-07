@@ -29,11 +29,13 @@ const DELETED = [
   ...['Btn', 'EditorialHero', 'Footnote', 'Glyph', 'Kicker', 'MonoRow', 'NoiseSurface', 'SectionHead', 'Tag', 'TerminalPanel'].map((n) => `app/components/ui/${n}.js`),
   ...GLYPHS.map((n) => `app/components/ui/glyphs/${n}.js`),
   ...['useItalicReveal', 'useMagnetic', 'useScrollReveal'].map((n) => `app/components/ui/hooks/${n}.js`),
+  ...['Parallax', 'Reveal', 'Stagger', 'StaggerItem', 'tokens'].map((n) => `app/components/motion/${n}.js`),
+  'app/lib/trackTool.js',
 ];
 const DELETED_IMAGES = ['file', 'globe', 'next', 'vercel', 'window'].map((n) => `public/${n}.svg`);
 
 test('the dead Field Notes modules, the old job card and panel and the template images are deleted', () => {
-  assert.equal(DELETED.length, 27);
+  assert.equal(DELETED.length, 33);
   for (const f of [...DELETED, ...DELETED_IMAGES]) assert.equal(existsSync(join(ROOT, f)), false, `${f} still exists`);
   // The one live module left in app/components/ui: the layout's page-transition bar.
   assert.deepEqual(readdirSync(join(ROOT, 'app/components/ui')), ['PageTransition.js']);
