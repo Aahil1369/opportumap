@@ -1,9 +1,9 @@
 'use client';
 
 // The hangar floor (/startups): the post button, the filter chips and the startups on their
-// stands. One unfiltered GET /api/startups is the hangar (`all`): the sector counts always come
-// from it, so picking a chip never zeroes the others. While that list is complete (fewer than
-// the API's 50) the chips filter it here, instantly; past that the API filters instead.
+// stands. One unfiltered GET /api/startups is the hangar (`all`). While that list is complete
+// (fewer than the API's 50) the chips filter it here, instantly; past that the API filters
+// instead. The chips are filters only, with no counts (the no-totals rule, Ruling R14).
 // Signed-out visitors get "Sign in to post a startup" in place of the post button; a failed
 // sign-in check (useSession) says so, with a retry. Loading has a skeleton, failures a retry,
 // and an empty hangar is the main screen, not a blank grid.
@@ -150,7 +150,7 @@ export default function Hangar() {
     startRise(next);
   };
 
-  const view = hangarView(all, filters); // counts: always from the unfiltered list
+  const view = hangarView(all, filters);
   const remoteView = !local && remote?.key === key ? remote : null;
   const shown = local ? view.shown : remoteView?.startups ?? null;
   const toggle = (k, v) => setFilters((f) => ({ ...f, [k]: f[k] === v ? '' : v }));
@@ -272,16 +272,8 @@ export default function Hangar() {
             <span className="hg-chip-sep" aria-hidden="true" />
             <div className="hg-chip-group" role="group" aria-label="Sector">
               {SECTORS.map((s) => (
-                <Chip
-                  key={s}
-                  pressed={filters.sector === s}
-                  onClick={() => toggle('sector', s)}
-                  label={`${s}, ${view.counts[s]} on the floor`}
-                >
+                <Chip key={s} pressed={filters.sector === s} onClick={() => toggle('sector', s)} label={s}>
                   {s.toUpperCase()}
-                  <span className="hg-chip-n" aria-hidden="true">
-                    {view.counts[s]}
-                  </span>
                 </Chip>
               ))}
             </div>

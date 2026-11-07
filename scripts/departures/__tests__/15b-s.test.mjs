@@ -263,3 +263,15 @@ test('S1 the inbox and the open thread are fetched again when the page is visibl
   assert.match(chat, /if \(statusRef\.current !== 'ready'\) return;/, 'only once the thread is on screen');
   assert.ok(!/addEventListener\('visibilitychange'/.test(chat), 'one visibility listener, through the tested helper');
 });
+
+// ── M1 / Ruling R14: the sector chips are filters, with no counts ──────────────────────────
+
+test('M1 the hangar\'s chips carry no counts: no count helper, no count in the view or the markup', () => {
+  assert.equal('sectorCounts' in hangar, false, 'the sector-count helper is gone');
+  const view = hangar.hangarView([{ id: 'a', sector: 'AI', stage: 'seed', created_at: '2026-10-01T10:00:00Z' }], hangar.DEFAULT_FILTERS);
+  assert.deepEqual(Object.keys(view), ['shown'], 'the view is the list to show, nothing counted');
+  const page = code('app/components/startups/Hangar.js');
+  assert.ok(!/\.counts\b|hg-chip-n|on the floor/.test(page), 'no count on or beside a chip');
+  assert.match(page, /onClick=\{\(\) => toggle\('sector', s\)\} label=\{s\}>/, 'the sector chips still filter');
+  assert.ok(!/\.hg-chip-n\b/.test(read('app/components/startups/startups.css')), 'no count style left');
+});

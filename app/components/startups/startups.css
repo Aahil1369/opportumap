@@ -103,8 +103,6 @@
 }
 .hg-chip:hover { color: var(--ink); border-color: #3a3f47; }
 .hg-chip[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
-.hg-chip-n { color: var(--ink-sub); font-size: 11px; letter-spacing: 0.04em; }
-.hg-chip[aria-pressed='true'] .hg-chip-n { color: var(--sign-ink); }
 .hg-chip-clear { color: var(--ink); }
 .hg-chip-sep { flex: none; width: 1px; height: 22px; background: var(--rule); }
 @media (min-width: 640px) {
