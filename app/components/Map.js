@@ -21,6 +21,9 @@
 //   window.devicePixelRatio), so while the map lives that reads Math.min(native, 2).
 // - The first beacons light up once (opacity, 0.9 s); reduced motion: lit at once, and camera
 //   moves are instant (respectPrefersReducedMotion).
+// - Up or down (lib/departures/radarLoad.js): a style or token failure, or no 'load' within 20 s,
+//   is the error state (ControlTower offers Try again); a 'load' that comes later still brings the
+//   map up. An unmount cancels the light-up frame and the timer.
 //
 // Props: beacons (FeatureCollection), onBeacon(id), onCountry(iso2), onState('ready' |
 // 'error'), onReady(api: { fitBounds(bounds) }).
@@ -30,6 +33,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { beaconLabel } from './map/beaconLabel';
 import { leadingCountry } from '../../lib/departures/mapData';
+import { radarLoad } from '../../lib/departures/radarLoad';
 
 const STYLE = 'mapbox://styles/mapbox/dark-v11';
 const LOW_ZOOM = 3.5; // below this a cluster stands for its country
@@ -227,6 +231,7 @@ function nearest(map, hits, point) {
 export default function Map({ beacons, onBeacon, onCountry, onState, onReady }) {
   const box$ = useRef(null);
   const map$ = useRef(null);
+  const watch$ = useRef(null); // radarLoad: up or down, and the light-up frame
   const loaded = useRef(false);
   const lit = useRef(false);
   const data = useRef(beacons);
@@ -270,17 +275,11 @@ export default function Map({ beacons, onBeacon, onCountry, onState, onReady }) 
     map.touchZoomRotate.disableRotation();
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right');
 
-    let failed = false;
-    const fail = () => {
-      if (failed || loaded.current) return;
-      failed = true;
-      on.current.onState?.('error');
-    };
-    const timer = setTimeout(fail, LOAD_TIMEOUT_MS);
-    // Before 'load', a style or token failure is fatal; a tile (sourceId) failing never is.
-    map.on('error', (e) => {
-      if (!loaded.current && !e?.sourceId) fail();
-    });
+    // Before 'load', a style or token failure (or 20 s without 'load') is the error state; a tile
+    // (sourceId) failing never is; a late 'load' still brings the map up (radarLoad).
+    const watch = radarLoad({ timeoutMs: LOAD_TIMEOUT_MS, onState: (s) => on.current.onState?.(s) });
+    watch$.current = watch;
+    map.on('error', (e) => watch.error(e));
 
     map.on('style.load', () => {
       map.setFog({
@@ -292,22 +291,22 @@ export default function Map({ beacons, onBeacon, onCountry, onState, onReady }) 
       });
     });
 
+    // The setup runs, then radarLoad says 'ready' (also when this 'load' comes after an error).
     map.on('load', () => {
-      if (failed) return;
-      clearTimeout(timer);
-      loaded.current = true;
-      nightStyle(map);
-      addLayers(map, data.current, reduce);
-      if (data.current.features.length) {
-        lit.current = true;
-        requestAnimationFrame(() => lightUp(map));
-      }
-      on.current.onState?.('ready');
-      on.current.onReady?.({
-        fitBounds(bounds) {
-          if (!bounds) return;
-          map.fitBounds(bounds, { padding: 64, maxZoom: 9, duration: reduce ? 0 : 900 });
-        },
+      watch.load(() => {
+        loaded.current = true;
+        nightStyle(map);
+        addLayers(map, data.current, reduce);
+        if (data.current.features.length) {
+          lit.current = true;
+          watch.nextFrame(() => lightUp(map));
+        }
+        on.current.onReady?.({
+          fitBounds(bounds) {
+            if (!bounds) return;
+            map.fitBounds(bounds, { padding: 64, maxZoom: 9, duration: reduce ? 0 : 900 });
+          },
+        });
       });
     });
 
@@ -411,7 +410,8 @@ export default function Map({ beacons, onBeacon, onCountry, onState, onReady }) 
     }
 
     return () => {
-      clearTimeout(timer);
+      watch.stop(); // the load timer, and a light-up frame still waiting
+      watch$.current = null;
       cancelAnimationFrame(raf);
       popup.remove();
       map.remove();
@@ -431,7 +431,7 @@ export default function Map({ beacons, onBeacon, onCountry, onState, onReady }) 
     map.getSource('roles')?.setData(beacons);
     if (!lit.current && beacons.features.length) {
       lit.current = true;
-      requestAnimationFrame(() => lightUp(map));
+      watch$.current?.nextFrame(() => lightUp(map));
     }
   }, [beacons]);
 

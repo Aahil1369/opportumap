@@ -208,3 +208,137 @@ test('N3: /saved\'s status line holds sentences at 16px (body text) on every boa
     if (s !== null) assert.ok(s >= 16, `.it-live is ${s}px in ${r.within.join(' ') || 'the base rule'}`);
   }
 });
+
+// ── T7-4 + T7-7: the radar's load state and its light-up frame (lib/departures/radarLoad.js) ────
+
+const { radarLoad } = await import(new URL('../../../lib/departures/radarLoad.js', import.meta.url));
+
+/** A clock the test drives: its timers and frames run only when the test says so. */
+function fakeClock() {
+  let seq = 0;
+  const clock = {
+    timers: new Map(),
+    frames: new Map(),
+    cleared: [],
+    cancelled: [],
+    setTimeout(fn, ms) {
+      seq += 1;
+      clock.timers.set(seq, { fn, ms });
+      return seq;
+    },
+    clearTimeout(id) {
+      clock.cleared.push(id);
+      clock.timers.delete(id);
+    },
+    requestAnimationFrame(fn) {
+      seq += 1;
+      clock.frames.set(seq, fn);
+      return seq;
+    },
+    cancelAnimationFrame(id) {
+      clock.cancelled.push(id);
+      clock.frames.delete(id);
+    },
+    /** Fires every timer still set. */
+    elapse() {
+      for (const [id, t] of [...clock.timers]) {
+        clock.timers.delete(id);
+        t.fn();
+      }
+    },
+    /** Runs every frame still waiting. */
+    frame() {
+      for (const [id, fn] of [...clock.frames]) {
+        clock.frames.delete(id);
+        fn();
+      }
+    },
+  };
+  return clock;
+}
+
+test('T7-4 radarLoad: no load within the timeout is the error state; a late load still brings the map up', () => {
+  const clock = fakeClock();
+  const log = [];
+  const watch = radarLoad({ timeoutMs: 20000, onState: (s) => log.push(s), clock });
+  assert.deepEqual([...clock.timers.values()].map((t) => t.ms), [20000], 'one timer, for timeoutMs');
+  clock.elapse();
+  assert.deepEqual(log, ['error'], '20 s without a load');
+  watch.load(() => log.push('setup'));
+  assert.deepEqual(log, ['error', 'setup', 'ready'], 'the late load runs the setup, then clears the error');
+  assert.equal(watch.loaded, true);
+});
+
+test('T7-4 radarLoad: a style or token error before load is the error state, once; a later load still says ready', () => {
+  const clock = fakeClock();
+  const log = [];
+  const watch = radarLoad({ timeoutMs: 20000, onState: (s) => log.push(s), clock });
+  watch.error({ error: new Error('401') });
+  watch.error({ error: new Error('again') });
+  assert.deepEqual(log, ['error'], 'said once');
+  clock.elapse();
+  assert.deepEqual(log, ['error'], 'the timeout adds nothing');
+  watch.load();
+  assert.deepEqual(log, ['error', 'ready']);
+});
+
+test('T7-4 radarLoad: a tile failing is never the error state, and after load nothing is', () => {
+  const clock = fakeClock();
+  const log = [];
+  const watch = radarLoad({ timeoutMs: 20000, onState: (s) => log.push(s), clock });
+  watch.error({ sourceId: 'roles', error: new Error('tile') });
+  assert.deepEqual(log, [], 'a tile (sourceId) failing is not the map failing');
+  watch.load(() => log.push('setup'));
+  assert.deepEqual(log, ['setup', 'ready']);
+  assert.equal(clock.timers.size, 0, 'the load clears the timer');
+  watch.error({ error: new Error('later') });
+  clock.elapse();
+  watch.load(() => log.push('setup again'));
+  assert.deepEqual(log, ['setup', 'ready'], 'a later error and a second load change nothing');
+});
+
+test('T7-7 radarLoad: nextFrame waits for the next frame; stop() cancels a frame still waiting and the timer', () => {
+  const clock = fakeClock();
+  const log = [];
+  const watch = radarLoad({ timeoutMs: 20000, onState: (s) => log.push(s), clock });
+  watch.load();
+  watch.nextFrame(() => log.push('lit'));
+  assert.deepEqual(log, ['ready'], 'not at once');
+  clock.frame();
+  assert.deepEqual(log, ['ready', 'lit']);
+
+  const early = fakeClock();
+  const seen = [];
+  const gone = radarLoad({ timeoutMs: 20000, onState: (s) => seen.push(s), clock: early });
+  gone.load();
+  gone.nextFrame(() => seen.push('lit'));
+  const waiting = [...early.frames.keys()];
+  assert.equal(waiting.length, 1);
+  gone.stop();
+  assert.deepEqual(early.cancelled, waiting, 'the unmount cancels the light-up frame');
+  early.frame();
+  gone.nextFrame(() => seen.push('late'));
+  early.frame();
+  assert.deepEqual(seen, ['ready'], 'nothing runs on a removed map');
+
+  const never = fakeClock();
+  const states = [];
+  const unmounted = radarLoad({ timeoutMs: 20000, onState: (s) => states.push(s), clock: never });
+  unmounted.stop();
+  assert.equal(never.timers.size, 0, 'stop clears the load timer');
+  unmounted.error({ error: new Error('x') });
+  unmounted.load();
+  assert.deepEqual(states, [], 'no state after stop');
+});
+
+test('T7-4 + T7-7: Map.js runs its load state and its light-up frames through radarLoad', () => {
+  const src = read('app/components/Map.js');
+  assert.match(src, /import \{ radarLoad \} from '\.\.\/\.\.\/lib\/departures\/radarLoad';/);
+  assert.match(src, /const watch = radarLoad\(\{ timeoutMs: LOAD_TIMEOUT_MS, onState: \(s\) => on\.current\.onState\?\.\(s\) \}\);/);
+  assert.match(src, /map\.on\('error', \(e\) => watch\.error\(e\)\);/);
+  assert.match(src, /map\.on\('load', \(\) => \{\s*watch\.load\(\(\) => \{/);
+  assert.doesNotMatch(src, /if \(failed\) return/, 'a late load is no longer ignored');
+  assert.doesNotMatch(src, /requestAnimationFrame\(\(\) => lightUp\(map\)\)/, 'no light-up frame outside radarLoad');
+  assert.equal((src.match(/\.nextFrame\(\(\) => lightUp\(map\)\)/g) || []).length, 2, 'the first beacons, and a first search that lands later');
+  assert.match(src, /return \(\) => \{\s*watch\.stop\(\);/, 'the unmount stops the watch first');
+});
