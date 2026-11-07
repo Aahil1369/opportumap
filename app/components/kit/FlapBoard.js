@@ -7,8 +7,10 @@
 // columns: [{ key, label, width, tone?: 'status' | 'sign' | 'dim', line?: 2 }]
 //   width: tiles in the column. tone 'status' colours by the status word (BOARDING, NEW, ...).
 //   line 2: on phones the column drops to a second line, under the last line-1 column.
-// rows:    [{ id, cells: { [key]: string }, href?, tone?, play? }]
+// rows:    [{ id, cells: { [key]: string }, href?, spoken?, tone?, play? }]
 //   tone: a data-tone on the row, for page styles; play: this row's own play (default the board's).
+//   spoken: { [key]: string }, words for a cell in the row link's name when its tiles say less
+//   ("Pay not listed" for a PAY cell that reads NOT LISTED).
 
 import Link from 'next/link';
 import { useId } from 'react';
@@ -121,7 +123,7 @@ export default function FlapBoard({ columns, rows, play = true, caption, id, cla
                       <Link
                         className="fb-link"
                         href={row.href}
-                        aria-label={columns.map((col) => row.cells?.[col.key]).filter(Boolean).join(' · ')}
+                        aria-label={columns.map((col) => row.spoken?.[col.key] ?? row.cells?.[col.key]).filter(Boolean).join(' · ')}
                       />
                     )}
                     <FlapText

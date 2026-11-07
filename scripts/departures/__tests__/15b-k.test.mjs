@@ -113,3 +113,81 @@ test('K4 FlapText: canvases sized by flapCanvas.js, freed on unmount, and a refu
   // T1-4: room for a frame's three tiles before fetching any (no eviction mid-draw).
   assert.match(src, /if \(a\.slots\.size > a\.cap - 3\) clearAtlas\(a\);\s*const atlas = a\.canvas;\s*const o = glyph\(a, st, oldCh, color\);/);
 });
+
+// ── Part 2 · K3, K1, K5, T4-5: the social image, the desk's sign, /contact, board row names ─────
+
+const SOCIAL = await mod('lib/socialImage.js');
+const HASHED = {
+  url: 'https://opportumap.netlify.app/opengraph-image?f84a9ec957474c29',
+  width: 1200,
+  height: 630,
+  type: 'image/png',
+  alt: SOCIAL.SOCIAL_IMAGE_ALT,
+};
+
+test("K3 socialImages: the parent segment's resolved image (hash included), else SOCIAL_IMAGE", () => {
+  const got = SOCIAL.socialImages({ openGraph: { images: [HASHED] } });
+  assert.deepEqual(got, [HASHED]);
+  assert.notEqual(got[0], HASHED, 'a copy (Next freezes the parent metadata in development)');
+  for (const parent of [undefined, null, {}, { openGraph: null }, { openGraph: { images: [] } }, { openGraph: { images: 'x' } }]) {
+    assert.deepEqual(SOCIAL.socialImages(parent), [SOCIAL.SOCIAL_IMAGE], JSON.stringify(parent));
+  }
+});
+
+test('K3 /jobs: generateMetadata names the root image Next resolved, hash included', async () => {
+  const jobs = await mod('app/jobs/layout.js');
+  assert.equal(jobs.metadata, undefined, 'no static metadata object: it could not carry the hash');
+  assert.equal(typeof jobs.generateMetadata, 'function');
+  const meta = await jobs.generateMetadata({ params: Promise.resolve({}) }, Promise.resolve({ openGraph: { images: [HASHED] } }));
+  assert.deepEqual(meta.openGraph.images, [HASHED]);
+  assert.deepEqual(meta.twitter.images, [HASHED]);
+  assert.equal(meta.title, 'Jobs: where to next? · OpportuMap');
+  assert.equal(meta.openGraph.url, 'https://opportumap.netlify.app/jobs');
+  assert.equal(meta.twitter.card, 'summary_large_image');
+  const bare = await jobs.generateMetadata({ params: Promise.resolve({}) }, Promise.resolve({}));
+  assert.deepEqual(bare.openGraph.images, [SOCIAL.SOCIAL_IMAGE], 'nothing resolved above it: the unhashed URL');
+});
+
+test('K1 GateSign: a letter that is not a gate is not read as "Gate i"; only /contact opts out', () => {
+  const src = read('app/components/kit/GateSign.js');
+  assert.match(src, /export default function GateSign\(\{ letter, label, href, gate = true, className, \.\.\.rest \}\)/);
+  assert.match(src, /<span className="gs-l" aria-hidden=\{gate \? undefined : 'true'\}>/);
+  assert.match(src, /\{gate && <span className="sr-only">Gate <\/span>\}/);
+  assert.equal(src.match(/<span className="sr-only">Gate <\/span>/g)?.length, 1, 'one prefix, and it is conditional');
+  assert.match(read('app/components/kit/PageShell.js'), /<GateSign letter=\{sign\.letter\} label=\{sign\.label\} gate=\{sign\.gate\} \/>/);
+  assert.match(read('app/contact/page.js'), /sign=\{\{ letter: 'i', label: 'INFORMATION', gate: false \}\}/);
+  // Every other sign keeps its "Gate " (A–F) or has no letter: only the desk opts out.
+  const optOut = walk('app')
+    .filter((f) => /\.js$/.test(f) && !show(f).startsWith('app/components/kit/'))
+    .filter((f) => /gate:\s*false|gate=\{false\}/.test(readFileSync(f, 'utf8')))
+    .map(show);
+  assert.deepEqual(optOut, ['app/contact/page.js']);
+});
+
+test('K5 (R17) /contact: no Twitter or LinkedIn handle the owner has not confirmed', () => {
+  const src = read('app/contact/page.js');
+  assert.doesNotMatch(src, /twitter|linkedin|@opportumap/i);
+  assert.doesNotMatch(src, /const DESK\b|DESK\.map|<dl\b/);
+  assert.match(src, /DESK OPEN · REPLIES BY EMAIL/, 'the desk still says how replies come back');
+});
+
+test('T4-5 a row without pay names it "Pay not listed" for its link; its tiles keep NOT LISTED', async () => {
+  const { boardRowsFrom } = await mod('lib/departures/board.js');
+  const now = new Date('2026-10-14T12:40:00Z');
+  const [none] = boardRowsFrom([{ id: 'x1', title: 'Support Engineer', location: 'Lisbon', country: 'pt', source: 'arbeitnow' }], {
+    now,
+    fill: [],
+  });
+  assert.equal(none.cells.pay, 'NOT LISTED');
+  assert.deepEqual(none.spoken, { pay: 'Pay not listed' });
+  const [paid] = boardRowsFrom(
+    [{ id: 'p1', title: 'Data Engineer', company: 'C', location: 'Toronto, Ontario', country: 'ca', currency: 'CAD', source: 'adzuna', salary_min: 90000, salary_max: 110000 }],
+    { now, fill: [] },
+  );
+  assert.notEqual(paid.cells.pay, 'NOT LISTED');
+  assert.equal('spoken' in paid, false, 'a row with pay is named by its tiles');
+  assert.match(
+    read('app/components/kit/FlapBoard.js'),
+    /aria-label=\{columns\.map\(\(col\) => row\.spoken\?\.\[col\.key\] \?\? row\.cells\?\.\[col\.key\]\)\.filter\(Boolean\)\.join\(' · '\)\}/,
+  );
+});
