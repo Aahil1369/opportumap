@@ -146,3 +146,18 @@ test('npm test silences MODULE_TYPELESS_PACKAGE_JSON with a node flag, never "ty
   assert.equal(quiet.status, 0, quiet.stderr);
   assert.doesNotMatch(quiet.stderr, /MODULE_TYPELESS_PACKAGE_JSON/);
 });
+
+test('the spec and the plans give the resume upload limit as 4 MB, with the reason (P7)', () => {
+  const SPEC = 'docs/superpowers/specs/2026-10-13-departures-redesign-design.md';
+  const PLAN = 'docs/superpowers/plans/2026-10-14-departures-waves2-5.md';
+  const WAVE1 = 'docs/superpowers/plans/2026-10-13-departures-wave1.md';
+  for (const f of [SPEC, PLAN, WAVE1]) assert.doesNotMatch(read(f), /\b1[01] ?MB\b/, `${f} still says 10 MB`);
+  assert.match(read(SPEC), /enforce a 4 MB limit \(4,000,000 bytes, `MAX_RESUME_BYTES` in `lib\/departures\/resumeVerdict\.js`: the route runs as a Netlify Function, which takes at most 6 MB of request body, and a PDF arrives Base64-encoded, about a third larger\);/);
+  const plan = read(PLAN);
+  assert.match(plan, /\(resume > 4 MB, image-only PDF, non-PDF\)/);
+  assert.match(plan, /The limit is 4 MB on purpose: the route runs as a Netlify Function/);
+  assert.match(plan, /\(PDF only, ≤ 4 MB = 4,000,000 bytes, `MAX_RESUME_BYTES`; why 4 MB: Review Focus 3\)/);
+  assert.match(plan, /Server: reject > 4 MB \(413\)/);
+  assert.match(plan, /a 5 MB file shows the error without uploading\./);
+  assert.match(plan, /^- Deviation \(wave 3 fix round\): the limit is 4 MB, down from the first plan's figure/m);
+});
