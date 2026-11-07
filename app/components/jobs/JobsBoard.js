@@ -19,7 +19,8 @@
 //   visitor's own board is on its way, and re-flap once, when it lands.
 // - Rows: JobRow. Rows keep their slot (key = position), so a new search or chip re-flaps the
 //   rows on screen in place; "Load more" adds rows that clack in. Only on-screen rows flap or ask
-//   the salary model (usePredictedPay).
+//   the salary model (usePredictedPay). A row's heart saves a snapshot of the role for /saved, the
+//   itinerary (lib/departures/savedStore.js).
 // - The gate: a row is a link to /jobs?job=<id>; a click opens the role here (pushState, Back
 //   closes it). A deep link opens from the server's board at once (the homepage links its rows
 //   here, from the same search) or from the visitor's own search once it lands (deepLink); if
@@ -49,6 +50,7 @@ import { profileQuery } from '../../../lib/departures/profileQuery';
 import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
 import { loadHomeProfile } from '../home/homeProfile';
 import { PROFILE_KEY, saveProfile as storeProfile } from '../../../lib/saveProfile';
+import { deviceStorage, readSaved, removeJob, saveJob } from '../../../lib/departures/savedStore';
 import './jobs.css';
 
 const JobGate = dynamic(() => import('./JobGate'), { ssr: false });
@@ -59,7 +61,6 @@ const RelocationModal = dynamic(() => import('../RelocationModal'), { ssr: false
 const PER_PAGE = 24;
 const NO_FILTERS = { type: 'all', remote: false, country: 'all', saved: false };
 const ISO2 = /^[a-z]{2}$/;
-const SAVED_KEY = 'opportumap_saved';
 const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token/;
 
 const LOAD_ERROR = "We couldn't load roles right now. Try again.";
@@ -139,7 +140,7 @@ export default function JobsBoard({ initial = null }) {
   const [filters, setFilters] = useState(NO_FILTERS);
   const [newest, setNewest] = useState(false);
   const [page, setPage] = useState(1);
-  const [saved, setSaved] = useState([]); // job ids, as kept in localStorage
+  const [saved, setSaved] = useState([]); // ids of the saved roles (lib/departures/savedStore.js)
   const [openId, setOpenId] = useState(null);
   const [notice, setNotice] = useState('');
   const [editing, setEditing] = useState(false);
@@ -165,8 +166,7 @@ export default function JobsBoard({ initial = null }) {
       setProfile(p);
       setInput(q);
       setAsked({ text: q, n: 0 });
-      const ids = readJson(SAVED_KEY, []);
-      setSaved(Array.isArray(ids) ? ids : []);
+      setSaved(readSaved(deviceStorage()).map((e) => e.id));
     });
     const onPop = () => {
       pushed.current = false;
@@ -317,18 +317,20 @@ export default function JobsBoard({ initial = null }) {
     }
   }, [asked?.text]);
 
+  // A save keeps a snapshot of the role (lib/departures/savedStore.js), so /saved still shows it
+  // once no search returns it. Both writes are idempotent: React running this updater twice
+  // (StrictMode) stores the same thing. Storage blocked or full: the toggle still holds for this page.
   const toggleSave = useCallback(
     (id) => {
       setSaved((ids) => {
         const has = ids.some((x) => String(x) === id);
-        const raw = (findJob(board?.jobs, id) || findJob(server?.jobs, id))?.id ?? id;
-        const next = has ? ids.filter((x) => String(x) !== id) : [...ids, raw];
-        try {
-          localStorage.setItem(SAVED_KEY, JSON.stringify(next));
-        } catch {
-          // storage full or blocked: the toggle still holds for this page
+        const store = deviceStorage();
+        if (has) removeJob(store, id);
+        else {
+          const job = findJob(board?.jobs, id) || findJob(server?.jobs, id);
+          if (job) saveJob(store, job);
         }
-        return next;
+        return has ? ids.filter((x) => String(x) !== id) : [id, ...ids];
       });
     },
     [board, server],

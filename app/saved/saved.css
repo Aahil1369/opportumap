@@ -1,0 +1,253 @@
+/* ─── /saved, the itinerary (spec §8) ────────────────────────────────────────────────────────
+   The board of saved roles (Itinerary.js, ItineraryRow.js), on the hall (PageShell). Rows are
+   built like the /jobs board's (jobs.css): the code, pay and status are split-flap tiles
+   (FlapText, kit.css), the role and the company plain text. The layout keys on the board's own
+   width (container queries), so it never overflows:
+     phone (< 560px board):  code + role, Remove (✕) / company · city / pay · status
+     560–879px:              code + role, Remove / company · city · pay · status
+     880px and up:           code · role · company · pay · status · Remove, on one line
+   Tiles: 0.6em + 2.5px wide, 1px apart (kit.css); PAY holds 13 (the widest pay localPay writes),
+   STATUS 9 (CANCELLED). Only opacity and transform move: the Remove stages (dim, then fade and
+   slide out), and nothing under reduced motion. */
+
+.iti { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+.it-notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--sign);
+  border-radius: 8px;
+  background: var(--hall-2);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+/* ── The board ── */
+.it-board {
+  container-type: inline-size;
+  min-width: 0;
+  background: var(--hall-2);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 12px 0 4px;
+}
+.it-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 0 12px 10px;
+}
+.it-cap {
+  margin: 0;
+  font: 600 12px/1.35 var(--font-board);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sign);
+}
+/* The polite status line (a removal, the lookups); kept in the layout while empty, so a screen
+   reader always has it. */
+.it-live { margin: 0; font: 500 12px/1.35 var(--font-board); letter-spacing: 0.12em; color: var(--ink-sub); }
+.it-list { margin: 0; padding: 0; list-style: none; overflow-x: clip; /* a row sliding out never widens the page */ }
+
+/* One row. */
+.it {
+  position: relative;
+  border-top: 1px solid var(--rule);
+  transition: opacity 0.24s ease, transform 0.24s cubic-bezier(.22, 1, .36, 1);
+}
+.it-grid,
+.it-link {
+  --tile-fs: 12px;
+  --pay-w: calc(13 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
+  --status-w: calc(9 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
+  --x-w: 40px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'code role'
+    'where where'
+    'meta meta';
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 8px; /* line 2 starts below the 40px Remove */
+  padding: 10px 12px;
+}
+.it-link { color: var(--ink); text-decoration: none; border-radius: 6px; }
+a.it-link:hover { background: var(--hall-3); }
+a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
+.it-code { grid-area: code; display: flex; font-size: 17px; color: var(--sign); }
+.it-role {
+  grid-area: role;
+  min-width: 0;
+  padding-right: calc(var(--x-w) + 4px); /* Remove sits at the end of this line */
+  font: 600 16px/1.35 var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.it-where {
+  grid-area: where;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.it-nolink .it-role { color: var(--ink-dim); }
+.it-nolink .it-where { color: var(--ink-sub); }
+.it-meta { grid-area: meta; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.it-pay,
+.it-status { display: flex; min-width: 0; font-size: var(--tile-fs); }
+.it-pay { position: relative; flex: none; width: var(--pay-w); }
+/* Our salary model's estimate: amber, and underlined with dots (not colour alone), as on /jobs. */
+.it-pay[data-est] { color: var(--amber); }
+.it-pay[data-est]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  border-bottom: 2px dotted var(--amber);
+  pointer-events: none;
+}
+.it-paynote { font: 400 14px/1.25 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink-sub); }
+
+/* Remove: beside the row's link (never inside it), always visible. A 40px ✕ on a phone, the
+   word too on a wider board. */
+.it-x {
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--hall-2);
+  color: var(--ink-dim);
+  font: 500 12px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.it-x:hover { color: var(--warn); border-color: var(--warn); }
+.it-x:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+.it-x[aria-disabled='true'] { color: var(--ink-sub); border-color: var(--rule); cursor: default; }
+.it-x-t { display: none; }
+
+/* Remove, stage 1 (CANCELLED flaps in): the row dims, the role is struck through. Stage 2: the
+   row fades and slides out, then the board drops it. */
+.it-code,
+.it-role,
+.it-where,
+.it-pay { transition: opacity 0.24s ease; }
+.it[data-stage] .it-link { pointer-events: none; }
+.it[data-stage] :is(.it-code, .it-role, .it-where, .it-pay) { opacity: 0.65; }
+.it[data-stage] .it-role { text-decoration: line-through; text-decoration-color: var(--warn); }
+.it[data-stage='gone'] { opacity: 0; transform: translateX(12px); }
+
+/* The column labels: only on the one-line board. */
+.it-head { display: none; padding-top: 0; padding-bottom: 8px; }
+.it-head > span {
+  padding-right: 0;
+  font: 500 10.5px/1.2 var(--font-board);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-sub);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.it-ghost { display: grid; grid-template-columns: 44px 1fr; gap: 8px 12px; padding: 14px 12px; }
+.it-ghost span { height: 14px; border-radius: 4px; background: var(--hall-3); }
+.it-ghost span:first-child { grid-row: span 2; height: 24px; }
+.it-ghost span:last-child { width: 60%; }
+
+@container (max-width: 339px) {
+  /* 320px phones: smaller pay/status tiles so the third line still fits. */
+  .it-grid,
+  .it-link { --tile-fs: 11px; column-gap: 8px; padding-inline: 8px; }
+  .it-x { right: 4px; }
+}
+
+@container (min-width: 560px) {
+  .it-grid,
+  .it-link {
+    --tile-fs: 14px;
+    --x-w: 104px;
+    grid-template-columns: auto minmax(0, 1fr) var(--pay-w) var(--status-w);
+    grid-template-areas:
+      'code role role role'
+      'where where pay status';
+    column-gap: 12px;
+    row-gap: 6px;
+  }
+  .it-meta { display: contents; }
+  .it-pay { grid-area: pay; width: auto; }
+  .it-status { grid-area: status; }
+  .it-x { top: 4px; height: 36px; padding: 0 12px; } /* clear of line 2's status tiles */
+  .it-x-t { display: inline; }
+}
+
+@container (min-width: 880px) {
+  .it-grid,
+  .it-link {
+    --tile-fs: 15px;
+    grid-template-columns: auto minmax(0, 3fr) minmax(0, 2fr) var(--pay-w) var(--status-w) var(--x-w);
+    grid-template-areas: 'code role where pay status x';
+    column-gap: 16px;
+    padding: 8px 16px;
+  }
+  .it-role { padding-right: 0; }
+  .it-x { top: 50%; right: 16px; transform: translateY(-50%); }
+  .it-head { display: grid; }
+  .it-head .it-code { min-width: calc(3 * (0.6 * 17px + 3.5px) - 1px); }
+  .it-ghost { grid-template-columns: 44px 3fr 2fr 1fr; }
+  .it-ghost span:first-child { grid-row: auto; height: 22px; }
+}
+
+/* ── Empty, more, footnote ── */
+.it-empty { padding: 28px 16px 32px; border-top: 1px solid var(--rule); text-align: center; }
+.it-empty-t { margin: 0; font: 600 18px/1.4 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink); }
+.it-empty-s { margin: 6px auto 0; max-width: 46ch; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
+.it-empty .it-btn { margin-top: 16px; }
+.it-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--sign);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sign);
+  font: 600 14px/1 var(--font-board);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+}
+.it-btn:hover { background: var(--sign); color: var(--sign-ink); }
+.it-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
+.it-more { display: flex; justify-content: center; padding: 14px 12px 12px; border-top: 1px solid var(--rule); }
+.it-foot { margin: 0; max-width: 64ch; font-size: 16px; line-height: 1.55; color: var(--ink-sub); }
+
+@media (prefers-reduced-motion: reduce) {
+  .it,
+  .it-code,
+  .it-role,
+  .it-where,
+  .it-pay { transition: none; }
+}
