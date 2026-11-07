@@ -7,18 +7,23 @@ import Navbar from '../components/Navbar';
 import GateSign from '../components/kit/GateSign';
 import ControlTower from '../components/map/ControlTower';
 import '../components/map/map.css';
-import { SOCIAL_IMAGE } from '../../lib/socialImage.js';
+import { socialImages } from '../../lib/socialImage.js';
 
 const TITLE = 'Map — OpportuMap';
 const DESCRIPTION =
   'The control tower: real roles worldwide as beacons on a night map. Pick a country for its arrivals board, a beacon for the role’s gate.';
 
-export const metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  openGraph: { title: TITLE, description: DESCRIPTION, url: 'https://opportumap.netlify.app/map', siteName: 'OpportuMap', type: 'website', images: [SOCIAL_IMAGE] },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [SOCIAL_IMAGE] },
-};
+// Its own openGraph/twitter replace the root's, so it names the image Next resolved for the root
+// (from `parent`, with the cache-busting hash), as /jobs does (lib/socialImage.js).
+export async function generateMetadata(_props, parent) {
+  const images = socialImages(await parent);
+  return {
+    title: TITLE,
+    description: DESCRIPTION,
+    openGraph: { title: TITLE, description: DESCRIPTION, url: 'https://opportumap.netlify.app/map', siteName: 'OpportuMap', type: 'website', images },
+    twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images },
+  };
+}
 
 export default function MapPage() {
   return (

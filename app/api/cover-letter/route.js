@@ -1,4 +1,4 @@
-﻿// POST /api/cover-letter (multipart: jobDescription, tone?, profile? (JSON), resume? (PDF)) ->
+// POST /api/cover-letter (multipart: jobDescription, tone?, profile? (JSON), resume? (PDF)) ->
 // { coverLetter, subjectLine, keywordsUsed, tailoringNotes }: the airmail desk's letter. The work
 // is lib/coverLetterApi.js: the resume is checked like /resume's (PDF only, at most
 // MAX_RESUME_LABEL, a real text layer), the job description is read up to the length the page

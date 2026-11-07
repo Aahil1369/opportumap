@@ -128,6 +128,7 @@ export default function ChatWidget({ open, onClose, profile, returnFocusRef }) {
         </label>
         <input
           id="desk-q"
+          data-autofocus
           className="desk-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}

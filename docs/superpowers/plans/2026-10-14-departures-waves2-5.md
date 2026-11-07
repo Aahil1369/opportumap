@@ -42,7 +42,7 @@
 
 ### Task 10: /interview — flight simulator
 - Files: `app/interview/page.js`, `app/components/interview/Altimeter.js`, `app/components/interview/interview.css`, `lib/departures/interviewProgress.js`, test.
-- `interviewProgress(answered, total) → 0..100` (reaches 100 when all answered or skipped); `takeoffVerdict(scores) → 'CLEARED FOR TAKEOFF' (avg ≥ 7) | 'GO-AROUND'`; stable keys (`q.id ?? index`).
+- `interviewProgress(answered, total) → 0..100` (reaches 100 when all answered or skipped); `takeoffVerdict(scores) → 'HOLDING' (fewer than 3 scored answers, Ruling R15) | 'CLEARED FOR TAKEOFF' (avg ≥ 7) | 'GO-AROUND'`; stable keys (`q.id ?? index`).
 - UI: sign `D · SIMULATOR`; Question Bank as a pre-flight checklist; Mock mode with an altimeter progress (transform) that reaches 100%; Skip button; feedback errors shown in the mock area; final screen with the verdict plate; question preview without a stray "…" on short questions.
 - Tests: progress reaches 100; verdict threshold; keys stable with duplicate/missing ids.
 
@@ -56,8 +56,8 @@
 ### Task 12: /startups (+ [id]) — hangar
 - Files: `app/startups/page.js`, `app/startups/[id]/page.js`, `app/components/startups/TailFin.js`, `app/components/startups/startups.css`, `app/api/startups/[id]/route.js` (return `mine: { upvoted, interested }` for the signed-in user), `lib/departures/tailFin.js`, test.
 - `tailFin(name) → { hue, stripes, letter }` deterministic from the name.
-- UI: sign `E · HANGAR`; each startup card shows a generated tail fin; upvote label `+1 PASSENGER`, interest `STANDBY`; detail page loads the user's own state (no accidental un-vote); signed-out users see "Sign in to board" prompts instead of disabled buttons; filter chips scroll horizontally on phones; sector counts from the unfiltered list; "THIS WEEK" removed (no totals); error states; empty state "The hangar is empty — post the first startup."
-- Tests: tailFin determinism; sector counts unaffected by the active filter (pure helper `sectorCounts(all)`).
+- UI: sign `E · HANGAR`; each startup card shows a generated tail fin; upvote label `+1 PASSENGER`, interest `STANDBY`; detail page loads the user's own state (no accidental un-vote); signed-out users see "Sign in to board" prompts instead of disabled buttons; filter chips scroll horizontally on phones; sector chips filter without counts (Ruling R14); "THIS WEEK" removed (no totals); error states; empty state "The hangar is empty — post the first startup."
+- Tests: tailFin determinism; the sector chips carry no counts (Ruling R14).
 
 ### Task 13: /community — departure lounge, /profile — crew badge
 - Files: `app/community/page.js`, `app/components/community/community.css`, `app/profile/page.js`, `app/components/profile/CrewBadge.js`, `lib/departures/routeChip.js`, test.

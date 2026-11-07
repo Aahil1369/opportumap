@@ -160,6 +160,10 @@ test('footer.css: the footer is hidden on /map via :has(.mt-tower)', () => {
   assert.match(css, /body:has\(\.mt-tower\)\s*footer\.sf\s*{\s*display:\s*none;/, 'the rule exists and names the tower root class');
   const ctrl = read('app/components/map/ControlTower.js');
   assert.match(ctrl, /className="mt-tower"/, 'ControlTower exports its root with the class mt-tower');
+  const users = walk('app').filter((f) => /\.js$/.test(f) && /\bmt-tower\b(?!-)/.test(readFileSync(f, 'utf8'))).map(show);
+  assert.deepEqual(users, ['app/components/map/ControlTower.js'], 'only the tower carries the class that hides the footer');
+  const importers = walk('app').filter((f) => /\.js$/.test(f) && /from '[^']*map\/ControlTower'/.test(readFileSync(f, 'utf8'))).map(show);
+  assert.deepEqual(importers, ['app/map/page.js'], 'the tower (and so the hidden footer) is on /map only');
 });
 
 // ── Metadata ────────────────────────────────────────────────────────────────────────────────
@@ -178,16 +182,29 @@ test('every route has its own metadata (in the page, or in a layout beside a cli
 test('/map and /saved have metadata', () => {
   assert.ok(hasMeta('map'), '/map has metadata');
   assert.ok(hasMeta('saved'), '/saved has metadata');
-  // Both routes must export metadata with title and description, like other routes.
-  const mapSrc = read('app/map/page.js');
-  assert.match(mapSrc, /export\s+const\s+metadata\s*=\s*{[\s\S]*?title:/);
-  assert.match(mapSrc, /description:/);
-  assert.match(mapSrc, /— OpportuMap/);
-  const savedSrc = read('app/saved/page.js');
-  assert.match(savedSrc, /export\s+const\s+metadata\s*=\s*{[\s\S]*?title:/);
-  assert.match(savedSrc, /description:/);
-  assert.match(savedSrc, /— OpportuMap/);
-  assert.match(savedSrc, /robots:\s*{[\s\S]*?index:\s*false/, '/saved is noindex');
+  // The metadata object's own top-level keys (`export const metadata = {…}`, or the object
+  // `export async function generateMetadata` returns): an openGraph/twitter title or description
+  // does not count.
+  const topKeys = (src) => {
+    const ast = espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } });
+    for (const node of ast.body) {
+      const decl = node.type === 'ExportNamedDeclaration' ? node.declaration : null;
+      let obj = null;
+      if (decl?.type === 'VariableDeclaration') obj = decl.declarations.find((x) => x.id?.name === 'metadata')?.init;
+      if (decl?.type === 'FunctionDeclaration' && decl.id?.name === 'generateMetadata') {
+        obj = decl.body.body.find((s) => s.type === 'ReturnStatement')?.argument;
+      }
+      if (obj?.type === 'ObjectExpression') return obj.properties.map((p) => p.key?.name ?? p.key?.value);
+    }
+    return [];
+  };
+  for (const route of ['map', 'saved']) {
+    const src = read(`app/${route}/page.js`);
+    const keys = topKeys(src);
+    assert.ok(keys.includes('title') && keys.includes('description'), `/${route}: metadata has its own title and description (${keys})`);
+    assert.match(src, /const TITLE = '[^']+ — OpportuMap';/, `/${route}: the title ends with "— OpportuMap"`);
+  }
+  assert.match(read('app/saved/page.js'), /robots:\s*{[\s\S]*?index:\s*false/, '/saved is noindex');
 });
 
 test('/admin is noindex; /contact names the desk', async () => {

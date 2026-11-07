@@ -18,76 +18,82 @@ function cssFiles(rel) {
     .flatMap((name) => cssFiles(posix.join(rel, name)));
 }
 
+/**
+ * The :hover selectors in css that sit outside every @media (hover: hover) block, as
+ * { line, selector } (line in the original text). Comments are blanked first (same length, so
+ * line numbers hold); any :hover left after the hover blocks are cut is an offender, whatever
+ * follows it (` .child`, `::after`, `:not(…)`, `)`, `,` or `{`).
+ */
+export function unguardedHovers(source) {
+  const css = source.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '));
+  let kept = '';
+  let i = 0;
+  while (i < css.length) {
+    const at = css.indexOf('@media', i);
+    if (at === -1) {
+      kept += css.substring(i);
+      break;
+    }
+    const open = css.indexOf('{', at);
+    if (open === -1) {
+      kept += css.substring(i);
+      break;
+    }
+    if (/\(\s*hover\s*:\s*hover\s*\)/.test(css.substring(at, open))) {
+      kept += css.substring(i, at);
+      let depth = 1;
+      let j = open + 1;
+      while (j < css.length && depth > 0) {
+        if (css[j] === '{') depth++;
+        if (css[j] === '}') depth--;
+        j++;
+      }
+      // Keep the cut block's line breaks so later line numbers stay right.
+      kept += css.substring(at, j).replace(/[^\n]/g, ' ');
+      i = j;
+    } else {
+      kept += css.substring(i, open + 1);
+      i = open + 1;
+    }
+  }
+  const found = [];
+  for (const m of kept.matchAll(/:hover\b/g)) {
+    const line = kept.slice(0, m.index).split('\n').length;
+    const start = Math.max(kept.lastIndexOf('{', m.index), kept.lastIndexOf('}', m.index), kept.lastIndexOf(';', m.index)) + 1;
+    const end = kept.indexOf('{', m.index);
+    found.push({ line, selector: kept.slice(start, end === -1 ? undefined : end).replace(/\s+/g, ' ').trim() });
+  }
+  return found;
+}
+
+test('the hover guard itself: every unguarded :hover form is caught, guarded ones are not', () => {
+  for (const css of [
+    '.a:hover { color: red; }',
+    '.a:hover .b { color: red; }',
+    '.a:hover > .b { color: red; }',
+    '.a:hover::after { opacity: 1; }',
+    'button:hover:not(:disabled) { color: red; }',
+    '.a:is(:focus-visible, :hover) { color: red; }',
+    '.x, .a:hover { color: red; }',
+    '@media (prefers-reduced-motion: reduce) { .a:hover .b { transform: none; } }',
+  ]) {
+    assert.equal(unguardedHovers(css).length, 1, css);
+  }
+  for (const css of [
+    '@media (hover: hover) { .a:hover .b { color: red; } }',
+    '@media (hover: hover) and (pointer: fine) { .a:hover::after { opacity: 1; } }',
+    '@media (prefers-reduced-motion: reduce) { @media (hover: hover) { .a:hover { transform: none; } } }',
+    '/* .a:hover { color: red; } */ .a { color: red; }',
+  ]) {
+    assert.deepEqual(unguardedHovers(css), [], css);
+  }
+});
+
 test('every :hover rule is wrapped in @media (hover: hover)', () => {
   const files = cssFiles('app');
   assert.ok(files.length > 0, 'CSS files found');
-
-  const offenders = [];
-
-  for (const file of files) {
-    const path = join(ROOT, file);
-    let css = readFileSync(path, 'utf8');
-
-    // Remove all @media (hover: hover) blocks - find them properly with brace matching
-    let cleaned = '';
-    let i = 0;
-    while (i < css.length) {
-      const hoverMediaIdx = css.indexOf('@media', i);
-      if (hoverMediaIdx === -1) {
-        cleaned += css.substring(i);
-        break;
-      }
-
-      const openBraceIdx = css.indexOf('{', hoverMediaIdx);
-      if (openBraceIdx === -1) {
-        cleaned += css.substring(i, hoverMediaIdx);
-        break;
-      }
-
-      const mediaQuery = css.substring(hoverMediaIdx, openBraceIdx);
-
-      if (mediaQuery.includes('(hover: hover)')) {
-        // This is a hover media block, skip it entirely with brace matching
-        cleaned += css.substring(i, hoverMediaIdx); // Add everything before
-
-        let depth = 1;
-        let j = openBraceIdx + 1;
-        while (j < css.length && depth > 0) {
-          if (css[j] === '{') depth++;
-          if (css[j] === '}') depth--;
-          j++;
-        }
-        i = j; // Skip past this media block
-      } else {
-        // Not a hover media, include it
-        cleaned += css.substring(i, openBraceIdx + 1);
-        i = openBraceIdx + 1;
-      }
-    }
-
-    // Now check for any remaining :hover in the cleaned CSS
-    // Look for :hover that's part of a selector (followed by space or comma or brace)
-    const pattern = /:hover\s*[,{]/g;
-    let match;
-    while ((match = pattern.exec(cleaned))) {
-      let lineNum = 1;
-      for (let j = 0; j < match.index; j++) {
-        if (cleaned[j] === '\n') lineNum++;
-      }
-
-      // Get the selector context
-      let start = match.index;
-      while (start > 0 && cleaned[start] !== '{' && cleaned[start] !== ';') {
-        start--;
-      }
-      while (start < match.index && cleaned[start] === ' ') start++;
-
-      const selector = cleaned.substring(start, match.index + 6).trim();
-      offenders.push(`${file}:${lineNum}: ${selector.substring(0, 70)}`);
-    }
-  }
-
-  if (offenders.length > 0) {
-    assert.fail(`${offenders.length} :hover rules not in @media (hover: hover):\n  ${offenders.join('\n  ')}`);
-  }
+  const offenders = files.flatMap((file) =>
+    unguardedHovers(readFileSync(join(ROOT, file), 'utf8')).map((o) => `${file}:${o.line}: ${o.selector.slice(0, 70)}`),
+  );
+  assert.deepEqual(offenders, [], `${offenders.length} :hover rules not in @media (hover: hover)`);
 });

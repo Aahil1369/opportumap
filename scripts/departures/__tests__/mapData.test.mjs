@@ -276,7 +276,7 @@ test('mapbox-gl loads lazily: only Map.js imports it, and the tower loads Map.js
   const tower = read('app/components/map/ControlTower.js');
   assert.match(tower, /dynamic\(\s*\(\)\s*=>\s*import\(['"]\.\.\/Map['"]\),\s*\{[^}]*ssr:\s*false/);
   assert.ok(!/^['"]use client['"]/.test(read('app/map/page.js').trim()), 'the page itself renders on the server');
-  assert.match(read('app/map/page.js'), /export const metadata/);
+  assert.match(read('app/map/page.js'), /export async function generateMetadata\(_props, parent\)/);
 });
 
 test('no storage read while rendering (no hydration mismatch); Lenis is off on /map', () => {
