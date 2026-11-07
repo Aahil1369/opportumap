@@ -342,3 +342,50 @@ test('T7-4 + T7-7: Map.js runs its load state and its light-up frames through ra
   assert.equal((src.match(/\.nextFrame\(\(\) => lightUp\(map\)\)/g) || []).length, 2, 'the first beacons, and a first search that lands later');
   assert.match(src, /return \(\) => \{\s*watch\.stop\(\);/, 'the unmount stops the watch first');
 });
+
+// ── N2 + T7-6: the HUD (lib/departures/radarChip.js) ────────────────────────────────────────────
+
+const { radarChip } = await import(new URL('../../../lib/departures/radarChip.js', import.meta.url));
+
+test('N2 radarChip: the HUD says a search is scanning, landed, or came up empty', () => {
+  assert.deepEqual(radarChip({ busy: true, label: 'nurse' }), { key: 'RADAR', text: 'Scanning for nurse…' });
+  assert.deepEqual(radarChip({ busy: true }), { key: 'RADAR', text: 'Scanning…' });
+  assert.deepEqual(radarChip({ ok: true, label: 'nurse' }), { key: 'ON RADAR', text: 'nurse' });
+  assert.deepEqual(
+    radarChip({ ok: true, empty: true, label: 'zzzz' }),
+    { key: 'RADAR', text: 'Nothing on the radar for "zzzz"' },
+    'an empty search is not ON RADAR',
+  );
+  assert.deepEqual(radarChip({ empty: true }), { key: 'RADAR', text: 'Nothing on the radar' });
+  assert.equal(radarChip({ busy: true, empty: true, label: 'x' }).text, 'Scanning for x…', 'a new search on its way wins');
+  assert.equal(radarChip({ ok: false, label: 'x' }), null, 'a failed search has no chip (the error message says it)');
+  assert.equal(radarChip({ ok: true, label: '' }), null);
+  assert.equal(radarChip(), null);
+});
+
+/** Every JSX element under a node (the node itself first, when it is one). */
+function jsxElements(node, out = []) {
+  if (!node || typeof node.type !== 'string') return out;
+  if (node.type === 'JSXElement') out.push(node);
+  for (const key of Object.keys(node)) {
+    if (key === 'range') continue;
+    const v = node[key];
+    if (Array.isArray(v)) v.forEach((c) => jsxElements(c, out));
+    else if (v && typeof v === 'object') jsxElements(v, out);
+  }
+  return out;
+}
+const jsxAttr = (el, name) => el.openingElement.attributes.find((a) => a.type === 'JSXAttribute' && a.name.name === name);
+
+test('T7-6 + N2: the HUD is the one live region (nothing inside it has a role or aria-live), and its chip is radarChip\'s', () => {
+  const src = read('app/components/map/ControlTower.js');
+  const all = jsxElements(espree.parse(src, { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true }, range: true }));
+  const huds = all.filter((el) => jsxAttr(el, 'className')?.value?.value === 'mt-hud');
+  assert.equal(huds.length, 1, 'one HUD');
+  assert.equal(jsxAttr(huds[0], 'aria-live')?.value?.value, 'polite');
+  const inner = jsxElements(huds[0]).slice(1).filter((el) => jsxAttr(el, 'role') || jsxAttr(el, 'aria-live'));
+  assert.deepEqual(inner.map((el) => src.slice(...el.openingElement.range)), [], 'no live region nested in the HUD');
+  assert.match(src, /const chip = radarChip\(\{ busy, empty, ok: radar\?\.state === 'ok', label \}\);/);
+  assert.match(src, /<span className="mt-chip-k">\{chip\.key\}<\/span>/);
+  assert.match(src, /<span className="mt-chip-t">\{chip\.text\}<\/span>/);
+});

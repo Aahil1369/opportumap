@@ -26,6 +26,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLatest } from '../../../lib/departures/createLatest';
 import { profileQuery } from '../../../lib/departures/profileQuery';
+import { radarChip } from '../../../lib/departures/radarChip';
 import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
 import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { loadHomeProfile } from '../home/homeProfile';
@@ -304,10 +305,8 @@ export default function ControlTower() {
 
   // Busy until a search is on the map: the profile, the data layer and the roles are all in.
   const busy = !libFailed && (!plan || loading);
-  let status;
-  if (busy) status = label ? `Scanning for ${label}…` : 'Scanning…';
-  else if (radar?.state === 'ok') status = label;
-  else status = '';
+  // The HUD chip; an empty search says so there too (the HUD is the page's one live region).
+  const chip = radarChip({ busy, empty, ok: radar?.state === 'ok', label });
 
   return (
     <div className="mt-tower">
@@ -370,18 +369,15 @@ export default function ControlTower() {
           <Radar beacons={beacons} onBeacon={openGate} onCountry={showCountry} onState={onMapState} onReady={onReady} />
         </div>
 
+        {/* The one live region: the chip and the notices, with no role="status" inside it. */}
         <div className="mt-hud" aria-live="polite">
-          {status && (
+          {chip && (
             <p className="mt-chip" data-busy={busy ? '' : undefined}>
-              <span className="mt-chip-k">{busy ? 'RADAR' : 'ON RADAR'}</span>
-              <span className="mt-chip-t">{status}</span>
+              <span className="mt-chip-k">{chip.key}</span>
+              <span className="mt-chip-t">{chip.text}</span>
             </p>
           )}
-          {notice && (
-            <p className="mt-notice" role="status">
-              {notice}
-            </p>
-          )}
+          {notice && <p className="mt-notice">{notice}</p>}
         </div>
 
         {mapState === 'loading' && !message && (
