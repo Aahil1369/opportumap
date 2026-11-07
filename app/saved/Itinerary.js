@@ -26,8 +26,8 @@ import { flushSync } from 'react-dom';
 import ItineraryRow from './ItineraryRow';
 import { deviceStorage, migrateSaved, readSaved, removeJob } from '../../lib/departures/savedStore';
 import { isJobId, jobRow } from '../../lib/departures/jobRows';
+import { loadVisitorProfile } from '../../lib/departures/visitorProfile';
 import { loadHomeProfile } from '../components/home/homeProfile';
-import { PROFILE_KEY } from '../../lib/saveProfile';
 
 const JobGate = dynamic(() => import('../components/jobs/JobGate'), { ssr: false });
 
@@ -39,18 +39,6 @@ const MISSING = 'That role is not on your itinerary any more.';
 
 const hrefFor = (id) => `/saved?${new URLSearchParams({ job: id })}`;
 const available = (e) => !!e && !e.pending && !e.unavailable;
-
-/** The visitor's profile: their account's (signed in), else one kept on this device, else null. */
-async function loadProfile() {
-  const remote = await loadHomeProfile().catch(() => null);
-  if (remote) return remote;
-  try {
-    const local = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
-    return local && typeof local === 'object' && !Array.isArray(local) ? local : null;
-  } catch {
-    return null;
-  }
-}
 
 /** A role saved id-only, looked up once: the job, null when it is not found; throws when the lookup failed. */
 async function lookupJob(id) {
@@ -126,7 +114,7 @@ export default function Itinerary() {
         setLooking(false);
       });
     });
-    loadProfile().then((p) => live && setProfile(p));
+    loadVisitorProfile({ account: loadHomeProfile }).then((p) => live && setProfile(p));
     const onPop = () => {
       pushed.current = false;
       setOpenId(new URLSearchParams(window.location.search).get('job'));

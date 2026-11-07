@@ -26,7 +26,8 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLatest } from '../../../lib/departures/createLatest';
 import { profileQuery } from '../../../lib/departures/profileQuery';
-import { PROFILE_KEY, saveProfile as storeProfile } from '../../../lib/saveProfile';
+import { loadVisitorProfile } from '../../../lib/departures/visitorProfile';
+import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { loadHomeProfile } from '../home/homeProfile';
 import './map.css';
 
@@ -42,22 +43,6 @@ const NOTICE_MS = 5000;
 const LOAD_ERROR = "We couldn't load roles right now.";
 
 const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
-
-function readProfile() {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    const p = raw ? JSON.parse(raw) : null;
-    return p && typeof p === 'object' && !Array.isArray(p) ? p : null;
-  } catch {
-    return null;
-  }
-}
-
-/** The visitor's profile: their account's (signed in), else one kept on this device, else null. */
-async function loadProfile() {
-  const remote = await loadHomeProfile().catch(() => null);
-  return remote || readProfile();
-}
 
 async function fetchJobs(query, countries) {
   const qs = new URLSearchParams({ q: query });
@@ -107,7 +92,7 @@ export default function ControlTower() {
   useEffect(() => {
     let live = true;
     const q = clean(new URLSearchParams(window.location.search).get('q'));
-    loadProfile().then((p) => {
+    loadVisitorProfile({ account: loadHomeProfile }).then((p) => {
       if (!live) return;
       setProfile(p);
       setInput(q);
