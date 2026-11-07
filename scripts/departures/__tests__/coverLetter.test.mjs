@@ -206,7 +206,8 @@ test('resumeAttachError: a PDF up to 4 MB, worded for the letter (not the scanne
 });
 
 test('three tones, each one the route knows', () => {
-  const route = readFileSync(new URL('../../../app/api/cover-letter/route.js', import.meta.url), 'utf8');
+  // The tone instructions live in the letter route's handler (lib/coverLetterApi.js).
+  const route = readFileSync(new URL('../../../lib/coverLetterApi.js', import.meta.url), 'utf8');
   assert.equal(TONES.length, 3);
   assert.equal(DEFAULT_TONE, 'professional');
   for (const t of TONES) {

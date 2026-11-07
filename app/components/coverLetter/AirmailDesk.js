@@ -14,6 +14,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEFAULT_TONE,
+  JOB_DESCRIPTION_CHARS,
   TONES,
   fitToText,
   isEdited,
@@ -33,7 +34,6 @@ import Envelope from './Envelope';
 import './coverLetter.css';
 
 const TIMEOUT_MS = 60_000;
-const MAX_JOB_DESCRIPTION = 6000;
 const FILE_NAME = 'cover-letter.txt';
 const SEAL_MS = 2400; // the fold's length, plus room: the actions wake even if animationend never comes
 const COPY_FALLBACK =
@@ -305,7 +305,7 @@ export default function AirmailDesk() {
     let problem = '';
     try {
       const form = new FormData();
-      form.append('jobDescription', description.slice(0, MAX_JOB_DESCRIPTION));
+      form.append('jobDescription', description.slice(0, JOB_DESCRIPTION_CHARS));
       form.append('tone', forTone);
       if (resume) form.append('resume', resume);
       if (sender.profile) form.append('profile', JSON.stringify(sender.profile));
