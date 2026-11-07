@@ -94,6 +94,18 @@ test('K4 FlapText: canvases sized by flapCanvas.js, freed on unmount, and a refu
     src,
     /function dropLayer\(layer\) \{[\s\S]*?layer\.ro\?\.disconnect\(\);[\s\S]*?freeCanvas\(layer\.canvas\);[\s\S]*?if \(!live\.size\) resetAtlases\(\);/,
   );
+  // W1-m4 wiring: a FlapText that flips joins its layer, the layer is live from birth, and only the
+  // last FlapText to unmount (or a canvas that left the page) drops it.
+  assert.match(src, /layers\.set\(host, layer\);\s*live\.add\(layer\);/);
+  assert.match(
+    src,
+    /if \(strip\.__flapLayer !== layer\) \{\s*strip\.__flapLayer\?\.strips\.delete\(strip\);\s*layer\.strips\.add\(strip\);\s*strip\.__flapLayer = layer;\s*\}/,
+  );
+  assert.match(src, /layer\.strips\.delete\(strip\);\s*if \(!layer\.strips\.size\) dropLayer\(layer\);/);
+  assert.match(src, /function dropLayer\(layer\) \{\s*if \(!live\.delete\(layer\)\) return;\s*landLayer\(layer\);/);
+  assert.match(src, /layer\.canvas\.remove\(\);\s*freeCanvas\(layer\.canvas\);/);
+  assert.match(src, /if \(layer\) dropLayer\(layer\); \/\/ its canvas left the page under it/);
+  assert.match(src, /if \(atlases\.size >= MAX_ATLASES\) resetAtlases\(\);/);
   // A 2D context the browser refuses (out of canvas memory) means no flip, not a TypeError.
   assert.equal(src.match(/if \(!ctx\)/g)?.length, 2, 'atlasFor and layerFor');
   assert.match(src, /if \(!a\) return;/);
