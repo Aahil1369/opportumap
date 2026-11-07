@@ -1,49 +1,19 @@
-import Groq from 'groq-sdk';
+// POST /api/chat { messages, profile? } -> { reply }: the AI desk on /jobs (ChatWidget). The work
+// is lib/chatApi.js: a rate limit answers 429 "busy", any other failure a plain 502, never the
+// error's own text.
 import { GROQ_OPTIONS } from '../../../lib/ai.js';
+import { chatter } from '../../../lib/aiRoute.js';
+import { handleChat } from '../../../lib/chatApi.js';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const chat = chatter(GROQ_OPTIONS);
 
 export async function POST(request) {
+  let input = null;
   try {
-    const { messages, profile } = await request.json();
-
-    const systemPrompt = `You are OpportuMap AI — a career and global relocation assistant built into OpportuMap, a platform that helps people find jobs worldwide and navigate moving to a new country.
-
-${profile ? `
-USER PROFILE:
-- Name: ${profile.name || 'Unknown'}
-- Nationality: ${profile.nationality || 'Unknown'}
-- Currently lives in: ${profile.currentCountry || 'Unknown'}
-- Experience level: ${profile.experience || 'Unknown'}
-- Interested in: ${profile.jobTypes?.join(', ') || 'Not specified'}
-- Skills: ${profile.skills || 'Not specified'}
-${profile.resumeSummary ? `- Resume summary: ${profile.resumeSummary}` : ''}
-` : 'No profile set up yet.'}
-
-You have knowledge of:
-- Visa requirements for all major nationalities to US, UK, Canada, Australia, Germany, India, Singapore
-- Work visa types, how to apply, processing times
-- Cost of living, neighborhoods, safety in each country
-- Legal first steps when relocating (registering, bank accounts, healthcare)
-- Salary ranges by role and country
-- Job search strategies for international applicants
-
-Be friendly, concise, and practical. Give actionable advice. Keep responses under 200 words unless asked for detail. Use bullet points where helpful.`;
-
-    const groqMessages = [
-      { role: 'system', content: systemPrompt },
-      ...messages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
-    ];
-
-    const completion = await groq.chat.completions.create({
-      ...GROQ_OPTIONS,
-      messages: groqMessages,
-      max_tokens: 1200, // gpt-oss replies run ~700-850 tokens; 512 cut them off
-    });
-
-    return Response.json({ reply: completion.choices[0].message.content });
-  } catch (err) {
-    console.error('Chat error:', err?.message);
-    return Response.json({ error: err.message }, { status: 500 });
+    input = await request.json();
+  } catch {
+    input = null;
   }
+  const { status, body } = await handleChat(input, chat);
+  return Response.json(body, { status });
 }
