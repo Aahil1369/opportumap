@@ -126,3 +126,23 @@ test('pageCopy.js keeps only the footnotes something reads, and no HERO_COPY (P3
   assert.doesNotMatch(others, /\bHERO_COPY\b/);
   assert.equal(copy.FOOTNOTES.admin, 'You’re looking at a live snapshot. Metrics reset every midnight UTC.');
 });
+
+test('npm test silences MODULE_TYPELESS_PACKAGE_JSON with a node flag, never "type": "module" (P6, Ruling R18)', () => {
+  const pkg = JSON.parse(read('package.json'));
+  assert.equal(pkg.type, undefined, 'package.json has no "type" (Next would treat the app .js files as strict ESM)');
+  assert.equal(pkg.scripts.test, 'node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test "scripts/**/__tests__/*.test.mjs"');
+  // Behaviour: the script's flag silences the warning a typeless ESM file (lib/uuid.js) raises.
+  const flags = pkg.scripts.test.split(' ').filter((a) => a.startsWith('--disable-warning='));
+  const load = (args) =>
+    spawnSync(process.execPath, [...args, '--input-type=module', '-e', `await import(${JSON.stringify(pathToFileURL(join(ROOT, 'lib/uuid.js')).href)});`], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: { ...process.env, NODE_OPTIONS: undefined, NODE_TEST_CONTEXT: undefined },
+    });
+  const plain = load([]);
+  assert.equal(plain.status, 0, plain.stderr);
+  assert.match(plain.stderr, /MODULE_TYPELESS_PACKAGE_JSON/, 'control: without the flag the import warns');
+  const quiet = load(flags);
+  assert.equal(quiet.status, 0, quiet.stderr);
+  assert.doesNotMatch(quiet.stderr, /MODULE_TYPELESS_PACKAGE_JSON/);
+});
