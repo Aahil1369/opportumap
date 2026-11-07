@@ -19,11 +19,6 @@ const label = 'block mb-2 font-mono text-[12px] font-medium tracking-[0.14em] up
 // The border is --ink-sub at 60% so the field's edge reads (≥ 3:1) on the card.
 const field =
   'w-full min-h-[48px] px-3 py-3 rounded-[10px] bg-hall-3 border border-ink-sub/60 text-[16px] leading-[1.4] text-ink placeholder:text-ink-sub focus:outline-2 focus:outline-offset-1 focus:outline-sign';
-const DESK = [
-  { label: 'Replies', value: 'By email' },
-  { label: 'Twitter', value: '@opportumap' },
-  { label: 'LinkedIn', value: 'OpportuMap' },
-];
 
 export default function ContactPage() {
   const [form, setForm] = useState(EMPTY);
@@ -63,7 +58,7 @@ export default function ContactPage() {
     <>
       <Navbar />
       <PageShell
-        sign={{ letter: 'i', label: 'INFORMATION' }}
+        sign={{ letter: 'i', label: 'INFORMATION', gate: false }}
         title="Ask the"
         accent="information desk."
         sub="A question, an idea, a partnership or a bug: your message goes straight to the founder, and you'll get a reply by email."
@@ -134,15 +129,6 @@ export default function ContactPage() {
             </form>
           </div>
         )}
-
-        <dl className="mt-8 grid sm:grid-cols-3 gap-px rounded-[12px] overflow-hidden border border-rule bg-rule">
-          {DESK.map((c) => (
-            <div key={c.label} className="bg-hall-2 px-4 py-4">
-              <dt className="font-mono text-[11px] font-medium tracking-[0.18em] uppercase text-ink-sub mb-1">{c.label}</dt>
-              <dd className="text-[16px] text-ink">{c.value}</dd>
-            </div>
-          ))}
-        </dl>
       </PageShell>
     </>
   );

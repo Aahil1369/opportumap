@@ -4,6 +4,7 @@
 //
 //   <PageShell sign={{ letter: 'A', label: 'Jobs' }} title="Where to" accent="next?"
 //              sub="Every row is a real role. Tap one to board.">…</PageShell>
+//   sign: { letter?, label, gate? }; gate false for a letter that is not a gate (GateSign.js).
 //
 // No hooks: server pages can render it.
 
@@ -14,7 +15,7 @@ export default function PageShell({ sign, title, accent, sub, children, wide = f
   return (
     <main id={id} className={className ? `ps ${className}` : 'ps'} data-wide={wide ? '' : undefined}>
       <header className="ps-head">
-        {sign && <GateSign letter={sign.letter} label={sign.label} />}
+        {sign && <GateSign letter={sign.letter} label={sign.label} gate={sign.gate} />}
         <h1 className="ps-title">
           {title}
           {title && accent ? ' ' : null}

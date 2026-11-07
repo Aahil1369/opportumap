@@ -288,11 +288,13 @@ test('/jobs (and its shared ?job= links) carries the root social image, with its
   const { SOCIAL_IMAGE, SOCIAL_IMAGE_ALT } = await mod('lib/socialImage.js');
   assert.deepEqual(SOCIAL_IMAGE, { url: '/opengraph-image', width: 1200, height: 630, type: 'image/png', alt: SOCIAL_IMAGE_ALT });
   const jobs = await mod('app/jobs/layout.js');
+  // generateMetadata (Task 15b K3): the parent's resolved image, or SOCIAL_IMAGE when it has none.
+  const meta = await jobs.generateMetadata({ params: Promise.resolve({}) }, Promise.resolve({}));
   for (const k of ['openGraph', 'twitter']) {
-    assert.deepEqual(jobs.metadata[k].images, [SOCIAL_IMAGE], `${k}.images`);
+    assert.deepEqual(meta[k].images, [SOCIAL_IMAGE], `${k}.images`);
   }
-  assert.equal(jobs.metadata.openGraph.url, 'https://opportumap.netlify.app/jobs', 'its own title/url stay');
-  assert.equal(jobs.metadata.twitter.card, 'summary_large_image');
+  assert.equal(meta.openGraph.url, 'https://opportumap.netlify.app/jobs', 'its own title/url stay');
+  assert.equal(meta.twitter.card, 'summary_large_image');
   // The URL is the root image route: the file itself sits at app/opengraph-image.js.
   assert.ok(has('app/opengraph-image.js'));
   assert.ok(!has('app/jobs/opengraph-image.js'), 'one image, generated once');
@@ -308,9 +310,12 @@ const builtFresh = () => {
 };
 test('built /jobs: og:image and twitter:image point at the social image', { skip: builtFresh() ? false : 'no build newer than the sources' }, () => {
   const html = read(BUILT_JOBS);
-  const tag = (attr, name) => new RegExp(`<meta ${attr}="${name}" content="([^"]*)"`).exec(html)?.[1];
+  const tag = (attr, name, src = html) => new RegExp(`<meta ${attr}="${name}" content="([^"]*)"`).exec(src)?.[1];
+  // The root's URL, Next's cache-busting hash included (Task 15b K3).
+  const home = tag('property', 'og:image', read('.next/server/app/index.html'));
+  assert.match(home ?? '', /^https:\/\/opportumap\.netlify\.app\/opengraph-image\?[0-9a-f]+$/);
   for (const [attr, name] of [['property', 'og:image'], ['name', 'twitter:image']]) {
-    assert.equal(tag(attr, name), 'https://opportumap.netlify.app/opengraph-image', name);
+    assert.equal(tag(attr, name), home, name);
   }
   assert.equal(tag('property', 'og:image:width'), '1200');
   assert.equal(tag('property', 'og:image:height'), '630');
@@ -323,7 +328,7 @@ test('built /jobs: og:image and twitter:image point at the social image', { skip
 test('/contact: the INFORMATION desk on PageShell, 16px labelled fields, inbox flow unchanged', () => {
   const src = read('app/contact/page.js');
   assert.match(src, /import PageShell from '\.\.\/components\/kit\/PageShell'/);
-  assert.match(src, /sign=\{\{\s*letter:\s*'i',\s*label:\s*'INFORMATION'\s*\}\}/);
+  assert.match(src, /sign=\{\{\s*letter:\s*'i',\s*label:\s*'INFORMATION',\s*gate:\s*false\s*\}\}/);
   assert.match(src, /title="Ask the"/);
   assert.match(src, /accent="information desk\."/);
   // Every field: an id, a <label htmlFor> for it, 16px.

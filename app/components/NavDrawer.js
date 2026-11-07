@@ -20,7 +20,7 @@ const DRAWER_LINKS = [
   { href: '/messages', label: 'Messages' },
 ];
 
-const account = 'flex items-center min-h-[44px] px-3 rounded-[6px] ring-1 ring-inset ring-rule';
+const account = `flex items-center min-h-[44px] px-3 rounded-[6px] ring-1 ring-inset ring-rule ${FOCUS}`;
 
 export default function NavDrawer({ open, onClose, pathname, user, userName, isAdmin, onSignIn, onSignOut, returnFocusRef }) {
   return (
@@ -92,7 +92,7 @@ export default function NavDrawer({ open, onClose, pathname, user, userName, isA
             </div>
           </div>
         ) : (
-          <button type="button" onClick={onSignIn} className="w-full min-h-[48px] rounded-[8px] bg-sign text-sign-ink font-sans text-[16px] font-bold">
+          <button type="button" onClick={onSignIn} className={`w-full min-h-[48px] rounded-[8px] bg-sign text-sign-ink font-sans text-[16px] font-bold ${FOCUS}`}>
             Sign in
           </button>
         )}

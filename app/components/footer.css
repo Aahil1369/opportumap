@@ -44,8 +44,10 @@
 }
 /* Letterless signs (Lounge, Itinerary) as tall as the lettered ones, so the rows line up. */
 .sf-gate .gs { min-height: 32px; transition: transform 0.16s cubic-bezier(.22, 1, .36, 1); }
-.sf-gate:hover .gs { transform: translateY(-1px); }
-.sf-gate:hover .sf-sub { color: var(--ink); }
+@media (hover: hover) {
+  .sf-gate:hover .gs { transform: translateY(-1px); }
+  .sf-gate:hover .sf-sub { color: var(--ink); }
+}
 .sf-sub { font-size: 16px; line-height: 1.35; color: var(--ink-dim); }
 
 .sf-desks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
@@ -62,7 +64,9 @@
   font-size: 16px;
   text-decoration: none;
 }
-.sf-desk:hover { border-color: var(--ink-sub); }
+@media (hover: hover) {
+  .sf-desk:hover { border-color: var(--ink-sub); }
+}
 .sf-desk-t {
   display: inline-flex;
   align-items: center;
@@ -108,7 +112,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sf-gate .gs { transition: none; }
-  .sf-gate:hover .gs { transform: none; }
+  @media (hover: hover) {
+    .sf-gate:hover .gs { transform: none; }
+  }
 }
 
 /* Hide the footer on /map (the ControlTower fills 100svh and the footer would sit below it). */
