@@ -26,7 +26,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLatest } from '../../../lib/departures/createLatest';
 import { profileQuery } from '../../../lib/departures/profileQuery';
-import { loadVisitorProfile } from '../../../lib/departures/visitorProfile';
+import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
 import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { loadHomeProfile } from '../home/homeProfile';
 import './map.css';
@@ -95,8 +95,9 @@ export default function ControlTower() {
     loadVisitorProfile({ account: loadHomeProfile }).then((p) => {
       if (!live) return;
       setProfile(p);
-      setInput(q);
-      setAsked({ text: q, n: 0 });
+      // A signed-in visitor's profile can land after they typed or searched: theirs stays.
+      setInput((v) => inputOnArrival(v, q));
+      setAsked((a) => searchOnArrival(a, q));
     });
     return () => {
       live = false;

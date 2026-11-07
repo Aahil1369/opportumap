@@ -51,7 +51,7 @@ import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
 import { loadHomeProfile } from '../home/homeProfile';
 import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { deviceStorage, readSaved, removeJob, saveJob } from '../../../lib/departures/savedStore';
-import { loadVisitorProfile } from '../../../lib/departures/visitorProfile';
+import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
 import './jobs.css';
 
 const JobGate = dynamic(() => import('./JobGate'), { ssr: false });
@@ -148,8 +148,9 @@ export default function JobsBoard({ initial = null }) {
       if (!live) return;
       const q = (params.get('q') || '').replace(/\s+/g, ' ').trim();
       setProfile(p);
-      setInput(q);
-      setAsked({ text: q, n: 0 });
+      // A signed-in visitor's profile can land after they typed or searched: theirs stays.
+      setInput((v) => inputOnArrival(v, q));
+      setAsked((a) => searchOnArrival(a, q));
       setSaved(readSaved(deviceStorage()).map((e) => e.id));
     });
     const onPop = () => {

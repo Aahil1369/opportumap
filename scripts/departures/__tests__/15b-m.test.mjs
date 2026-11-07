@@ -93,3 +93,15 @@ test('T7-5 inputOnArrival: what the visitor typed stays; else the URL\'s ?q=', (
   assert.equal(inputOnArrival('', 'tor'), 'tor');
   assert.equal(inputOnArrival('', ''), '');
 });
+
+// ── T7-5: a profile that lands late keeps the visitor's own search ──────────────────────────────
+
+test('T7-5: /jobs and /map no longer overwrite the search box or the search when the profile lands', () => {
+  for (const f of ['app/components/jobs/JobsBoard.js', 'app/components/map/ControlTower.js']) {
+    const src = read(f);
+    assert.match(src, /setInput\(\(v\) => inputOnArrival\(v, q\)\);/, `${f}: typed text stays`);
+    assert.match(src, /setAsked\(\(a\) => searchOnArrival\(a, q\)\);/, `${f}: a submitted search stays`);
+    assert.doesNotMatch(src, /setAsked\(\{ text: q, n: 0 \}\)/, `${f}: the profile no longer replaces the search`);
+    assert.doesNotMatch(src, /setInput\(q\)/, `${f}: the profile no longer replaces the typed text`);
+  }
+});
