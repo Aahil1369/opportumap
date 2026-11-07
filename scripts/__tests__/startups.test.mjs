@@ -145,7 +145,7 @@ test('upvote/interest routes: duplicate insert (23505) means "already done", ids
     assert.match(read(r), /toggleStartupReaction\(/, `${r} uses the shared toggle`);
   }
   const toggle = read('lib/startupToggle.js');
-  assert.match(toggle, /'23505'/, 'toggle treats 23505 as already done');
+  assert.match(toggle, /setReaction\(db, \{/, 'toggle goes through setReaction (setEdge: a 23505 duplicate is already done)');
   assert.match(toggle, /isUuid\(id\)/, 'toggle validates the startup id');
   assert.match(toggle, /\.\/supabase-server\.js/, 'toggle uses the cookie client');
   const thread = read('app/api/messages/[startupId]/route.js');

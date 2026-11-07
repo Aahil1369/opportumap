@@ -1,13 +1,14 @@
 'use client';
 
 // One startup's stand (/startups/[id]). GET /api/startups/[id] brings the startup and `mine`,
-// the signed-in user's own { upvoted, interested } (null when signed out), so +1 PASSENGER and
-// STANDBY start from the truth: a tap never un-votes by accident, and a second tap while one
-// is saving is ignored. Signed-out visitors get "Sign in to board" in place of the actions;
-// signing in reloads the stand with their state. Loading, not-found and load errors (with a
-// retry) each have their own screen. Signature moment: the tail fin rolls onto the stand once
-// and the passenger tiles flap in; boarding flaps the count to its new number. Reduced motion:
-// all of it is simply there.
+// the signed-in user's own { upvoted, interested, owner } (null when signed out), so +1
+// PASSENGER and STANDBY start from the truth and each tap asks for a state, never a toggle: a
+// tap never un-votes by accident, and a second tap while one is saving is ignored. A founder
+// (mine.owner) gets no STANDBY or "Message the founder" on their own stand. Signed-out
+// visitors get "Sign in to board" in place of the actions; signing in reloads the stand with
+// their state. Loading, not-found and load errors (with a retry) each have their own screen.
+// Signature moment: the tail fin rolls onto the stand once and the passenger tiles flap in;
+// boarding flaps the count to its new number. Reduced motion: all of it is simply there.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -18,7 +19,7 @@ import { fetchJson } from '../../../lib/fetchJson.js';
 import { createLatest } from '../../../lib/departures/createLatest.js';
 import { STAGES, formatRaise, passengerLabel, passengerTiles, standFor } from '../../../lib/departures/hangar.js';
 import { safeHttpUrl } from '../../../lib/safeUrl.js';
-import { useViewer } from './useViewer';
+import { useSession } from '../community/useSession';
 import { SignInPrompt } from './SignIn';
 import TailFin from './TailFin';
 
@@ -49,7 +50,7 @@ function BackLink() {
 }
 
 export default function Stand({ id }) {
-  const viewer = useViewer();
+  const session = useSession();
   const reduced = usePrefersReducedMotion();
   const [status, setStatus] = useState('loading'); // loading | ready | notfound | error
   const [startup, setStartup] = useState(null);
@@ -92,8 +93,9 @@ export default function Stand({ id }) {
     load();
   }, [load]);
 
-  // Signing in or out on this page: reload the stand, so the actions match the session.
-  const uid = viewer.ready ? viewer.user?.id ?? '' : undefined;
+  // Signing in or out on this page: reload the stand, so the actions match the session. While
+  // the session is being checked, or the check failed, nothing changes.
+  const uid = session.status === 'in' ? session.user.id : session.status === 'out' ? '' : undefined;
   useEffect(() => {
     if (uid === undefined) return;
     if (seenUser.current !== undefined && seenUser.current !== uid) {
@@ -112,7 +114,14 @@ export default function Stand({ id }) {
     setPending(kind);
     setActionError('');
     try {
-      const d = await fetchJson(`/api/startups/${encodeURIComponent(id)}/${kind}`, { method: 'POST' });
+      // Ask for a state (the opposite of what the button shows), never a blind toggle: a stale
+      // second tab or a double tap cannot step anyone off by accident.
+      const d = await fetchJson(`/api/startups/${encodeURIComponent(id)}/${kind}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [flag]: !mine[flag] }),
+        ...withTimeout(),
+      });
       if (typeof d?.[flag] !== 'boolean') throw new Error(failed);
       setMine((m) => (m ? { ...m, [flag]: d[flag] } : m));
       setStartup((s) => (s ? { ...s, [count]: Math.max(0, Number(d.count) || 0) } : s));
@@ -182,7 +191,7 @@ export default function Stand({ id }) {
   }
 
   const s = startup;
-  const isOwner = !!viewer.user && viewer.user.id === s.user_id;
+  const isOwner = mine?.owner === true; // the server's answer (GET /api/startups/[id] → mine.owner)
   const signedIn = mine !== null;
   const raise = formatRaise(s.raise_amount);
   const equity = Number(s.equity_offered) > 0 ? `${s.equity_offered}%` : null;

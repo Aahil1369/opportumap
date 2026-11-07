@@ -1,11 +1,12 @@
 import { createClient } from '../../../../lib/supabase-server.js';
 import { hasSupabase } from '../../../../lib/supabase.js';
 import { isUuid } from '../../../../lib/uuid.js';
-import { viewerState } from '../../../../lib/startupViewer.js';
+import { viewerState, withOwner } from '../../../../lib/startupViewer.js';
 
-// One startup, plus `mine`: the signed-in user's own { upvoted, interested } (null when signed
-// out), so the detail page's +1 PASSENGER / STANDBY toggles start from the truth and a tap
-// never un-votes by accident. Runs on the cookie client, so RLS sees the user.
+// One startup, plus `mine`: the signed-in user's own { upvoted, interested, owner } (null when
+// signed out), so the detail page's +1 PASSENGER / STANDBY toggles start from the truth, a tap
+// never un-votes by accident, and a founder never sees STANDBY on their own stand. Runs on the
+// cookie client, so RLS sees the user.
 export async function GET(request, { params }) {
   const { id } = await params;
   if (!isUuid(id)) return Response.json({ error: 'Not found' }, { status: 404 });
@@ -24,5 +25,5 @@ export async function GET(request, { params }) {
   const { mine, error: mineError } = await viewerState(db, id, user.id);
   // Without the user's own state a toggle could undo their vote: fail, and the page retries.
   if (mineError) return Response.json({ error: 'Could not load this startup' }, { status: 500 });
-  return Response.json({ startup: data, mine });
+  return Response.json({ startup: data, mine: withOwner(mine, data.user_id, user.id) });
 }

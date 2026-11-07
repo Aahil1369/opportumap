@@ -1,0 +1,265 @@
+// Task 15b, group S: the hangar (/startups), the departure lounge (/community), the crew badge
+// (/profile) and gate chat (/messages) after wave 4's review. Behaviour tests on the pure
+// modules (lib/startupViewer.js, lib/departures/{hangar,routeChip,gateChat}.js); source tests
+// only for markup and CSS.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
+/** Source without its comments (the headers describe what the code must not do). */
+const code = (rel) => read(rel).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+/**
+ * Every style rule of a stylesheet, comments removed, in source order:
+ * { selectors: ['.a', '.b:hover'], body: 'color: red;', at: ['@media (hover: hover)', …] },
+ * `at` being the @-rules it sits in, outermost first. Keyframe steps are not rules.
+ */
+function cssRules(css) {
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules = [];
+  const open = [];
+  let buf = '';
+  for (const ch of src) {
+    if (ch === '{') {
+      open.push(buf.trim());
+      buf = '';
+    } else if (ch === '}') {
+      const prelude = open.pop() ?? '';
+      if (!prelude.startsWith('@') && !open.some((p) => p.startsWith('@keyframes'))) {
+        rules.push({ selectors: prelude.split(',').map((s) => s.trim()), body: buf.trim(), at: [...open] });
+      }
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  return rules;
+}
+
+/** WCAG 2.x contrast of two #rrggbb colours. */
+function contrast(a, b) {
+  const lum = (hex) => {
+    const [r, g, b2] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const c = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b2);
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** color-mix(in srgb, a p, b): #rrggbb. */
+function mix(a, b, p) {
+  const ch = (hex, i) => parseInt(hex.slice(i, i + 2), 16);
+  return `#${[1, 3, 5].map((i) => Math.round(ch(a, i) * p + ch(b, i) * (1 - p)).toString(16).padStart(2, '0')).join('')}`;
+}
+
+const viewer = await import(new URL('../../../lib/startupViewer.js', import.meta.url));
+const routeChip = await import(new URL('../../../lib/departures/routeChip.js', import.meta.url));
+const gateChat = await import(new URL('../../../lib/departures/gateChat.js', import.meta.url));
+const hangar = await import(new URL('../../../lib/departures/hangar.js', import.meta.url));
+const { buildStartupInsert } = await import(new URL('../../../lib/startups.js', import.meta.url));
+
+const SID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+const ME = '3c60e96c-18e0-4990-91b4-834acd70579e';
+const YOU = '11111111-2222-4333-8444-555555555555';
+
+// ── M4: the stand's +1 PASSENGER / STANDBY ask for a state (setReaction → setEdge) ──────────
+
+/** A stand-in for the cookie client: one reaction table, the rows in it, and the writes made. */
+function fakeReactions({ rows = [], readError = null, insertError = null, deleteError = null } = {}) {
+  const writes = [];
+  const db = {
+    from(table) {
+      const filters = {};
+      const chain = {
+        select() {
+          return chain;
+        },
+        eq(col, v) {
+          filters[col] = v;
+          return chain;
+        },
+        async maybeSingle() {
+          if (readError) return { data: null, error: readError };
+          const hit = rows.find((r) => r.startup_id === filters.startup_id && r.user_id === filters.user_id);
+          return { data: hit ? { startup_id: hit.startup_id } : null, error: null };
+        },
+        insert(row) {
+          writes.push({ op: 'insert', table, row });
+          return Promise.resolve({ error: insertError });
+        },
+        delete() {
+          const del = { op: 'delete', table, filters: {} };
+          writes.push(del);
+          const q = {
+            eq(col, v) {
+              del.filters[col] = v;
+              return q;
+            },
+            then(resolve, reject) {
+              return Promise.resolve({ error: deleteError }).then(resolve, reject);
+            },
+          };
+          return q;
+        },
+      };
+      return chain;
+    },
+  };
+  return { db, writes };
+}
+
+const UP = 'startup_upvotes';
+const ask = (f, want) => viewer.setReaction(f.db, { table: UP, startupId: SID, userId: ME, want });
+
+test('M4 setReaction: the asked-for state wins; already there writes nothing (a stale tab never un-boards)', async () => {
+  let f = fakeReactions({ rows: [{ startup_id: SID, user_id: ME }] });
+  assert.deepEqual(await ask(f, true), { on: true });
+  assert.deepEqual(f.writes, [], 'already on board: nothing written');
+
+  f = fakeReactions();
+  assert.deepEqual(await ask(f, true), { on: true });
+  assert.deepEqual(f.writes, [{ op: 'insert', table: UP, row: { startup_id: SID, user_id: ME } }]);
+
+  f = fakeReactions({ rows: [{ startup_id: SID, user_id: ME }] });
+  assert.deepEqual(await ask(f, false), { on: false });
+  assert.deepEqual(f.writes, [{ op: 'delete', table: UP, filters: { startup_id: SID, user_id: ME } }], 'by startup AND user');
+
+  f = fakeReactions({ rows: [{ startup_id: SID, user_id: YOU }] }); // someone else's row is not mine
+  assert.deepEqual(await ask(f, false), { on: false });
+  assert.deepEqual(f.writes, [], 'not on board: stepping off writes nothing');
+});
+
+test('M4 setReaction: no asked-for state toggles (older clients); failures are errors; a duplicate insert is done', async () => {
+  let f = fakeReactions();
+  assert.deepEqual(await ask(f, undefined), { on: true });
+  f = fakeReactions({ rows: [{ startup_id: SID, user_id: ME }] });
+  assert.deepEqual(await ask(f, 'no'), { on: false }, 'a non-boolean is no answer');
+  const boom = { code: 'XX000' };
+  f = fakeReactions({ readError: boom });
+  assert.deepEqual(await ask(f, true), { error: boom });
+  assert.deepEqual(f.writes, [], 'a failed read writes nothing');
+  f = fakeReactions({ insertError: boom });
+  assert.deepEqual(await ask(f, true), { error: boom }, 'never reported as done');
+  f = fakeReactions({ rows: [{ startup_id: SID, user_id: ME }], deleteError: boom });
+  assert.deepEqual(await ask(f, false), { error: boom });
+  f = fakeReactions({ insertError: { code: '23505' } });
+  assert.deepEqual(await ask(f, true), { on: true }, 'a duplicate insert means it is already there');
+});
+
+test('M4 the stand sends the wanted state and both routes take it through setReaction', () => {
+  const stand = code('app/components/startups/Stand.js');
+  assert.match(stand, /body: JSON\.stringify\(\{ \[flag\]: !mine\[flag\] \}\)/, 'Stand.js asks for the opposite of what the button shows');
+  const toggle = code('lib/startupToggle.js');
+  assert.match(toggle, /wantFrom\(body, flag\)/, 'the route reads { upvoted } / { interested } from the body');
+  assert.match(toggle, /setReaction\(db, \{/);
+  assert.ok(!/\.insert\(|\.delete\(/.test(toggle), 'no blind toggle left in the route helper');
+  for (const r of ['upvote', 'interest']) {
+    assert.match(code(`app/api/startups/[id]/${r}/route.js`), /toggleStartupReaction\(request, params, \{/, `${r} passes the request (its body)`);
+  }
+});
+
+// ── M7: the owner flag comes from the server ───────────────────────────────────────────────
+
+test('M7 withOwner: the founder is told it is their own stand; nobody else is', () => {
+  const mine = { upvoted: false, interested: true };
+  assert.deepEqual(viewer.withOwner(mine, ME, ME), { upvoted: false, interested: true, owner: true });
+  assert.deepEqual(viewer.withOwner(mine, YOU, ME), { upvoted: false, interested: true, owner: false });
+  assert.equal(viewer.withOwner(mine, null, ME).owner, false, 'no founder id: not the owner');
+  assert.equal(viewer.withOwner(mine, undefined, undefined).owner, false, 'no user: never the owner');
+  assert.deepEqual(mine, { upvoted: false, interested: true }, 'does not mutate');
+});
+
+test('M7 GET /api/startups/[id] returns mine.owner and the stand uses it (not its own session check)', () => {
+  assert.match(code('app/api/startups/[id]/route.js'), /mine: withOwner\(mine, data\.user_id, user\.id\)/);
+  const stand = code('app/components/startups/Stand.js');
+  assert.match(stand, /const isOwner = mine\?\.owner === true;/);
+  assert.ok(!/user\.id === s\.user_id/.test(stand), 'no client-side owner guess');
+});
+
+// ── S2: the hangar and the stand share the lounge's session check ──────────────────────────
+
+test('S2 /startups uses useSession: a failed check reads "couldn\'t check" with a retry, not signed out', () => {
+  assert.equal(existsSync(join(ROOT, 'app/components/startups/useViewer.js')), false, 'useViewer.js is gone');
+  for (const f of ['app/components/startups/Hangar.js', 'app/components/startups/Stand.js']) {
+    const src = code(f);
+    assert.match(src, /import \{ useSession \} from '\.\.\/community\/useSession';/, `${f} imports useSession`);
+    assert.ok(!/useViewer|viewer\./.test(src), `${f} no longer uses useViewer`);
+  }
+  const hangarSrc = code('app/components/startups/Hangar.js');
+  assert.match(hangarSrc, /session\.status === 'error' \? \(/, 'the post action has a "couldn\'t check" state');
+  assert.match(hangarSrc, /onClick=\{session\.retry\}/, 'with a retry');
+  assert.match(hangarSrc, /Couldn&apos;t check your sign-in\. Try again/);
+  assert.match(code('app/components/startups/Stand.js'), /session\.status === 'in' \? session\.user\.id : session\.status === 'out' \? '' : undefined/);
+});
+
+// ── M6: the crew badge's route: a timeout, and a device copy tied to the account ───────────
+
+test('M6 ownRouteFrom / ownRouteRecord: the kept route belongs to one account; junk never shows', () => {
+  const rec = routeChip.ownRouteRecord(ME, { from: 'LHE', to: 'YYZ' });
+  assert.deepEqual(routeChip.ownRouteFrom(rec, ME), { from: 'LHE', to: 'YYZ' });
+  assert.equal(routeChip.ownRouteFrom(rec, YOU), null, 'another account on this device sees nothing');
+  assert.equal(routeChip.ownRouteFrom(rec, undefined), null, 'no user: nothing');
+  assert.equal(routeChip.ownRouteRecord(ME, null), null, 'no route: nothing to keep');
+  assert.equal(routeChip.ownRouteRecord(null, { from: 'LHE', to: 'YYZ' }), null);
+  assert.equal(routeChip.ownRouteRecord(ME, { from: 'LH', to: 'YYZ' }), null, 'only three-letter codes are kept');
+  for (const junk of [
+    null,
+    '',
+    'not json',
+    '{}',
+    '[]',
+    'null',
+    JSON.stringify({ userId: ME }),
+    JSON.stringify({ userId: ME, ends: { from: 'lhe', to: 'YYZ' } }),
+    JSON.stringify({ userId: ME, ends: { from: '<b>', to: 'YYZ' } }),
+  ]) {
+    assert.equal(routeChip.ownRouteFrom(junk, ME), null, String(junk));
+  }
+  assert.notEqual(routeChip.OWN_ROUTE_KEY, 'opportumap_profile', 'not the device-wide job profile');
+});
+
+test('M6 useOwnRoute: the profile request has a timeout; only this account\'s kept route is a fallback', () => {
+  const own = code('app/components/community/useOwnRoute.js');
+  assert.match(own, /fetchJson\('\/api\/user-profile', withTimeout\(\)\)/, 'a hung request ends (no endless "··· → ···")');
+  assert.match(own, /AbortSignal\.timeout\(TIMEOUT_MS\)/);
+  assert.ok(!/opportumap_profile/.test(own), 'the device-wide profile (no owner) is not read');
+  assert.match(own, /ownRouteFrom\(window\.localStorage\.getItem\(OWN_ROUTE_KEY\), userId\)/);
+  assert.match(own, /ownRouteRecord\(userId, ends\)/);
+});
+
+// ── S1: gate chat catches up after the phone sleeps ────────────────────────────────────────
+
+test('S1 onPageVisible: calls back only when the page comes back into view, until cleaned up', () => {
+  const doc = new EventTarget();
+  doc.visibilityState = 'hidden';
+  let calls = 0;
+  const stop = gateChat.onPageVisible(() => {
+    calls += 1;
+  }, doc);
+  doc.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(calls, 0, 'going into the background fetches nothing');
+  doc.visibilityState = 'visible';
+  doc.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(calls, 1);
+  stop();
+  doc.dispatchEvent(new Event('visibilitychange'));
+  assert.equal(calls, 1, 'nothing after cleanup');
+  const noop = gateChat.onPageVisible(() => {}, null);
+  assert.equal(typeof noop, 'function', 'no document (a server render): a no-op cleanup');
+  noop();
+});
+
+test('S1 the inbox and the open thread are fetched again when the page is visible again', () => {
+  const island = code('app/components/messages/GateChat.js');
+  assert.match(island, /return onPageVisible\(\(\) => \{[\s\S]{0,160}reloadQuietly\(\);/, 'GateChat reloads the inbox');
+  assert.match(island, /cur\.status !== 'loading'/, 'not while the first load is out');
+  const chat = code('app/components/StartupChat.js');
+  assert.match(chat, /onPageVisible\(\(\) => \{[\s\S]{0,160}refresh\(\);/, 'StartupChat re-fetches the thread');
+  assert.match(chat, /if \(statusRef\.current !== 'ready'\) return;/, 'only once the thread is on screen');
+  assert.ok(!/addEventListener\('visibilitychange'/.test(chat), 'one visibility listener, through the tested helper');
+});
