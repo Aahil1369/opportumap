@@ -23,7 +23,7 @@ const {
   jobsHref,
 } = await import(new URL('../../../lib/departures/resumeVerdict.js', import.meta.url));
 
-const MB = 1024 * 1024;
+const MB = 1_000_000; // decimal MB, as iPhone Files and macOS count sizes (Ruling R16)
 const pdf = (size, extra = {}) => ({ name: 'resume.pdf', type: 'application/pdf', size, ...extra });
 
 // ── Verdict ─────────────────────────────────────────────────────────────────────────────────
@@ -64,8 +64,8 @@ const NETLIFY_BUFFERED_BODY = 6_000_000;
 const FRAMING_BYTES = 64 * 1024; // the route's allowance for the multipart framing around the file
 const base64 = (bytes) => Math.ceil(bytes / 3) * 4;
 
-test('the limit is 4 MB (MiB), small enough for the deploy platform to deliver', () => {
-  assert.equal(MAX_RESUME_BYTES, 4 * MB);
+test('the limit is 4 MB (4,000,000 bytes, decimal), small enough for the deploy platform to deliver', () => {
+  assert.equal(MAX_RESUME_BYTES, 4_000_000);
   assert.equal(MAX_RESUME_LABEL, '4 MB');
   // The largest upload the page lets through still fits the platform's body ceiling once encoded.
   assert.ok(
@@ -118,10 +118,10 @@ test('a 413 says the file was too large to receive, never a limit the file is un
     assert.match(msg, /lighter copy/);
   }
   // The same size the scan's status line showed for the file (nearest tenth; KB under 1 MB).
-  assert.equal(sizeLabel(3_774_874), '3.6 MB');
-  assert.match(scanErrorFor(413, undefined, 3_774_874), /\(3\.6 MB\)/);
-  assert.equal(sizeLabel(300 * 1024), '300 KB');
-  assert.match(scanErrorFor(413, undefined, 300 * 1024), /\(300 KB\)/);
+  assert.equal(sizeLabel(3_640_000), '3.6 MB');
+  assert.match(scanErrorFor(413, undefined, 3_640_000), /\(3\.6 MB\)/);
+  assert.equal(sizeLabel(300_000), '300 KB');
+  assert.match(scanErrorFor(413, undefined, 300_000), /\(300 KB\)/);
   const unsized = scanErrorFor(413, undefined, undefined);
   assert.match(unsized, /too large for the scanner to receive/);
   assert.doesNotMatch(unsized, /\d/, 'no made-up size');

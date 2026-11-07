@@ -12,6 +12,7 @@ const {
   CLEARED,
   CLEARED_AVG,
   GO_AROUND,
+  HOLDING,
   MAX_QUESTIONS,
   averageScore,
   interviewProgress,
@@ -117,42 +118,42 @@ test('nextStop: an answer still being scored counts as open, so no verdict while
 
 // ── The verdict ─────────────────────────────────────────────────────────────────────────────
 
-test('CLEARED FOR TAKEOFF from an average of 7, GO-AROUND below', () => {
+test('CLEARED FOR TAKEOFF from an average of 7 over at least 3 scored answers, GO-AROUND below', () => {
   assert.equal(CLEARED_AVG, 7);
   assert.equal(CLEARED, 'CLEARED FOR TAKEOFF');
   assert.equal(GO_AROUND, 'GO-AROUND');
-  assert.equal(takeoffVerdict([7]), CLEARED);
   assert.equal(takeoffVerdict([7, 7, 7]), CLEARED);
-  assert.equal(takeoffVerdict([6, 8]), CLEARED); // exactly 7
+  assert.equal(takeoffVerdict([6, 8, 7]), CLEARED); // exactly 7
   assert.equal(takeoffVerdict([10, 9, 4]), CLEARED); // 7.67
-  assert.equal(takeoffVerdict([7, 6]), GO_AROUND); // 6.5
-  assert.equal(takeoffVerdict([6.9]), GO_AROUND);
+  assert.equal(takeoffVerdict([7, 6, 7]), GO_AROUND); // 6.67
+  assert.equal(takeoffVerdict([6.9, 6.9, 6.9]), GO_AROUND);
   assert.equal(takeoffVerdict([1, 2, 3]), GO_AROUND);
 });
 
 test('the verdict agrees with the average the plate shows (one decimal)', () => {
   assert.equal(averageScore([7, 6, 8]), 7);
   assert.equal(averageScore([8, 7, 7]), 7.3);
-  assert.equal(averageScore([6.95]), 7); // shown as 7.0, so it is cleared
-  assert.equal(takeoffVerdict([6.95]), CLEARED);
+  assert.equal(averageScore([6.95]), 7); // shown as 7.0
+  assert.equal(takeoffVerdict([6.95, 6.95, 6.95]), CLEARED); // shown as 7.0, so it is cleared
   assert.equal(averageScore([6.94]), 6.9);
-  assert.equal(takeoffVerdict([6.94]), GO_AROUND);
+  assert.equal(takeoffVerdict([6.94, 6.94, 6.94]), GO_AROUND);
 });
 
 test('nothing scored is never cleared; non-numbers are not scores', () => {
   assert.equal(averageScore([]), null);
   assert.equal(averageScore(undefined), null);
-  assert.equal(takeoffVerdict([]), GO_AROUND);
-  assert.equal(takeoffVerdict(undefined), GO_AROUND);
-  assert.equal(takeoffVerdict([null, undefined, NaN, 'abc']), GO_AROUND);
+  assert.equal(takeoffVerdict([]), HOLDING);
+  assert.equal(takeoffVerdict(undefined), HOLDING);
+  assert.equal(takeoffVerdict([null, undefined, NaN, 'abc']), HOLDING);
   assert.equal(averageScore([9, null, 'x', 7]), 8);
-  assert.equal(takeoffVerdict([9, null, NaN]), CLEARED);
+  assert.equal(takeoffVerdict([9, null, NaN]), HOLDING, 'one real score is not enough');
+  assert.equal(takeoffVerdict([9, null, 8, NaN, 7]), CLEARED, 'three real scores');
 });
 
 test('scoresOf reads the answered scores in checklist order; skips are not scores', () => {
   const keys = ['a', 'b', 'c', 'd'];
   assert.deepEqual(scoresOf(keys, { d: answered(9), a: answered(6), b: skipped }), [6, 9]);
-  assert.equal(takeoffVerdict(scoresOf(keys, { a: skipped, b: skipped })), GO_AROUND);
+  assert.equal(takeoffVerdict(scoresOf(keys, { a: skipped, b: skipped })), HOLDING);
 });
 
 test('an answer is lit ok from 7, amber below', () => {

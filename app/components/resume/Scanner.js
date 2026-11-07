@@ -6,7 +6,7 @@
 // once seen, alarms (red flags), prohibited items (clichés), inspection notes, rewrites, and
 // roles that search the board.
 //
-// Files are checked here before any upload (PDF only, at most 4 MB) and again by the API.
+// Files are checked here before any upload (validateResumeFile: a PDF up to MAX_RESUME_LABEL) and again by the API.
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -20,6 +20,7 @@ import {
   validateResumeFile,
 } from '../../../lib/departures/resumeVerdict';
 import { createLatest } from '../../../lib/departures/createLatest';
+import { errorText } from '../../../lib/fetchJson';
 import SignatureMoment from '../kit/SignatureMoment';
 import './resume.css';
 
@@ -48,13 +49,7 @@ function warmGlyphs() {
 
 /** What to say about a non-OK answer (scanErrorFor): its error text, or a plain one for its status. */
 async function errorFrom(response, size) {
-  let error;
-  try {
-    error = (await response.json())?.error;
-  } catch {
-    // not JSON (a platform error page): scanErrorFor words it from the status
-  }
-  return scanErrorFor(response.status, error, size);
+  return scanErrorFor(response.status, await errorText(response), size);
 }
 
 // ── The belt ────────────────────────────────────────────────────────────────────────────────
@@ -495,7 +490,7 @@ export default function Scanner() {
             Put your resume on the belt
           </label>
           <p className="rs-drop-s" id="rs-file-hint">
-            Drag a PDF here or choose one · PDF only, up to {MAX_RESUME_LABEL} · about 15 seconds
+            Drag a PDF here or choose one · PDF up to {MAX_RESUME_LABEL} · about 15 seconds
           </p>
           <button type="button" className="rs-btn" ref={pickRef} onClick={pick} aria-describedby="rs-file-hint">
             Choose a PDF

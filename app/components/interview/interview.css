@@ -54,11 +54,15 @@
   cursor: pointer;
   transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
 }
-.iv-btn:hover { transform: translateY(-1px); }
+@media (hover: hover) {
+  .iv-btn:hover { transform: translateY(-1px); }
+}
 .iv-btn:active { transform: scale(0.98); }
 .iv-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
 .iv-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
-.iv-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+@media (hover: hover) {
+  .iv-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+}
 .iv-btn-s { min-height: 44px; padding: 0 16px; }
 .iv-btn[aria-disabled='true'] { opacity: 0.55; cursor: not-allowed; transform: none; }
 
@@ -144,7 +148,9 @@
   text-align: left;
   cursor: pointer;
 }
-.iv-tab:hover { color: var(--ink); }
+@media (hover: hover) {
+  .iv-tab:hover { color: var(--ink); }
+}
 .iv-tab[aria-selected='true'] { background: var(--sign); color: var(--sign-ink); }
 .iv-tab:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
 .iv-tab-k { font: 600 13px/1.3 var(--font-board); letter-spacing: 0.16em; }
@@ -174,7 +180,9 @@
   text-align: left;
   cursor: pointer;
 }
-.iv-item-head:hover .iv-item-q { color: var(--sign); }
+@media (hover: hover) {
+  .iv-item-head:hover .iv-item-q { color: var(--sign); }
+}
 .iv-item-head:focus-visible { outline: 2px solid var(--sign); outline-offset: 0; }
 .iv-item-head .iv-box { grid-area: box; }
 .iv-item-head .iv-item-meta { grid-area: meta; }
@@ -298,6 +306,7 @@
   border-radius: 14px;
 }
 .iv-plate[data-tone='amber'] { --tone: var(--amber); }
+.iv-plate[data-tone='info'] { --tone: var(--info); }
 .iv-verdict {
   display: flex;
   flex-wrap: wrap;
@@ -347,7 +356,9 @@
   cursor: pointer;
 }
 .iv-debrief li:first-child .iv-db-row { border-top: 0; }
-.iv-db-row:hover .iv-db-q { color: var(--ink); }
+@media (hover: hover) {
+  .iv-db-row:hover .iv-db-q { color: var(--ink); }
+}
 .iv-db-row:focus-visible { outline: 2px solid var(--sign); outline-offset: 0; border-radius: 6px; }
 .iv-db-q { min-width: 0; overflow-wrap: anywhere; }
 
@@ -389,6 +400,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .iv-btn { transition: none; }
-  .iv-btn:hover,
   .iv-btn:active { transform: none; }
+  @media (hover: hover) {
+    .iv-btn:hover { transform: none; }
+  }
 }

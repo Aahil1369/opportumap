@@ -14,6 +14,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   DEFAULT_TONE,
+  JOB_DESCRIPTION_CHARS,
   TONES,
   fitToText,
   isEdited,
@@ -28,12 +29,12 @@ import {
 } from '../../../lib/departures/coverLetter';
 import { MAX_RESUME_LABEL, sizeLabel } from '../../../lib/departures/resumeVerdict';
 import { createLatest } from '../../../lib/departures/createLatest';
+import { errorText } from '../../../lib/fetchJson';
 import { usePrefersReducedMotion } from '../kit/useReducedMotion';
 import Envelope from './Envelope';
 import './coverLetter.css';
 
 const TIMEOUT_MS = 60_000;
-const MAX_JOB_DESCRIPTION = 6000;
 const FILE_NAME = 'cover-letter.txt';
 const SEAL_MS = 2400; // the fold's length, plus room: the actions wake even if animationend never comes
 const COPY_FALLBACK =
@@ -44,13 +45,7 @@ const useLayout = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 /** What to say about a non-OK answer: letterErrorFor words it from the status (and a 400's text). */
 async function errorFrom(response, opts) {
-  let error;
-  try {
-    error = (await response.json())?.error;
-  } catch {
-    // not JSON (a platform error page): worded from the status alone
-  }
-  return letterErrorFor(response.status, error, opts);
+  return letterErrorFor(response.status, await errorText(response), opts);
 }
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -297,7 +292,13 @@ export default function AirmailDesk() {
     const forTone = tone;
     setFormError('');
     setLetterError('');
-    setNews('');
+    // What is being written is announced through the page's one persistent live region: a status
+    // line mounted already holding its text is missed by some screen readers.
+    setNews(
+      again
+        ? `Rewriting a new version, ${toneOf(forTone).label.toLowerCase()}. This one stays here until it lands.`
+        : `Writing your letter, ${toneOf(forTone).label.toLowerCase()} — about 15 seconds.`,
+    );
     if (again) setSeal(null); // the letter comes back out, dimmed, while the new one is written
     setWriting({ tone: forTone, again });
 
@@ -305,7 +306,7 @@ export default function AirmailDesk() {
     let problem = '';
     try {
       const form = new FormData();
-      form.append('jobDescription', description.slice(0, MAX_JOB_DESCRIPTION));
+      form.append('jobDescription', description.slice(0, JOB_DESCRIPTION_CHARS));
       form.append('tone', forTone);
       if (resume) form.append('resume', resume);
       if (sender.profile) form.append('profile', JSON.stringify(sender.profile));
@@ -326,6 +327,7 @@ export default function AirmailDesk() {
     if (!latest.isCurrent(id)) return;
     setWriting(null);
     if (!next) {
+      setNews(''); // the alert says what went wrong; the next attempt is announced afresh
       if (again) setLetterError(problem);
       else setFormError(problem);
       return;
@@ -334,8 +336,12 @@ export default function AirmailDesk() {
     setResult({ ...next, tone: forTone, version: version.current });
     setEdited(null);
     setSeal(null);
-    if (again) setNews(`A new version is in the letter — ${toneOf(forTone).label.toLowerCase()}.`);
-    else focusNext.current = 'heading';
+    if (again) {
+      setNews(`A new version is in the letter — ${toneOf(forTone).label.toLowerCase()}.`);
+    } else {
+      setNews(''); // focus moves to the letter's heading, which is read out
+      focusNext.current = 'heading';
+    }
   };
 
   // ── The letter ──
@@ -467,7 +473,7 @@ export default function AirmailDesk() {
         </div>
 
         <div className="cl-f">
-          <label htmlFor="cl-resume" className="cl-label">
+          <label htmlFor="cl-resume" id="cl-resume-l" className="cl-label">
             Your resume <span className="cl-opt">optional · PDF up to {MAX_RESUME_LABEL}</span>
           </label>
           {resume ? (
@@ -489,7 +495,7 @@ export default function AirmailDesk() {
                 className="cl-btn cl-btn-2 cl-btn-s"
                 ref={refs.pick}
                 onClick={pickResume}
-                aria-describedby="cl-resume-hint"
+                aria-describedby="cl-resume-l cl-resume-hint"
               >
                 Attach a PDF
               </button>
@@ -546,7 +552,7 @@ export default function AirmailDesk() {
 
         {formError && <Alert message={formError} />}
         {writing && !writing.again && (
-          <p className="cl-status" role="status">
+          <p className="cl-status">
             <Lamp />
             <span className="cl-status-w">WRITING</span> your letter, {toneOf(writing.tone).label.toLowerCase()} — about 15
             seconds
@@ -584,14 +590,14 @@ export default function AirmailDesk() {
           )}
 
           {writing?.again && (
-            <p className="cl-status" role="status">
+            <p className="cl-status">
               <Lamp />
               <span className="cl-status-w">REWRITING</span> a new version, {toneOf(writing.tone).label.toLowerCase()}. This
               one stays here until it lands.
             </p>
           )}
           {letterError && (
-            <div ref={letterAlertRef}>
+            <div ref={letterAlertRef} className="cl-letter-alert">
               <Alert message={letterError} />
             </div>
           )}

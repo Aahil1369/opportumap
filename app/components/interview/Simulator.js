@@ -6,14 +6,13 @@
 //    is really assessing, how to answer and a strong example, and shows how the run went for it;
 //  - the simulator: the mock run, one question at a time. Answer it (scored out of 10) or skip
 //    it; the altimeter climbs to 100% as questions are done. Then the verdict plate,
-//    CLEARED FOR TAKEOFF (average 7 or more) or GO-AROUND, flapped in once, and the debrief.
+//    CLEARED FOR TAKEOFF (3 or more scored, average 7 or more), GO-AROUND, or HOLDING (fewer than 3 scored), flapped in once, and the debrief.
 //
 // Every answer from the API is checked (res.ok, then a shape check) before it is used; errors
 // show where they happened (the briefing, or the question being scored).
 
 import { Fragment, useEffect, useRef, useState } from 'react';
 import {
-  CLEARED,
   averageScore,
   interviewProgress,
   nextStop,
@@ -25,8 +24,11 @@ import {
   simErrorFor,
   takeoffVerdict,
   tally,
+  verdictNote,
+  verdictTone,
 } from '../../../lib/departures/interviewProgress';
 import { createLatest } from '../../../lib/departures/createLatest';
+import { errorText } from '../../../lib/fetchJson';
 import Altimeter from './Altimeter';
 import './interview.css';
 
@@ -52,13 +54,7 @@ const loadFlap = () =>
 
 /** What to say about a non-OK answer: simErrorFor words it from the status (and a 400's text). */
 async function errorFrom(response, stage) {
-  let error;
-  try {
-    error = (await response.json())?.error;
-  } catch {
-    // not JSON (a platform error page): worded from the status alone
-  }
-  return simErrorFor(response.status, error, stage);
+  return simErrorFor(response.status, await errorText(response), stage);
 }
 
 // ── Small parts ─────────────────────────────────────────────────────────────────────────────
@@ -120,8 +116,8 @@ function Procedure() {
       <li>
         <span className="iv-proc-k">03 · SIMULATOR</span>
         <span className="iv-proc-t">
-          Answer them one by one. Each answer is scored out of 10; average 7 or better and you’re cleared for
-          takeoff.
+          Answer them one by one. Each answer is scored out of 10; score at least 3 with an average of 7 or better
+          and you’re cleared for takeoff.
         </span>
       </li>
     </ol>
@@ -257,16 +253,9 @@ function PlateWord({ text, from, delayMs }) {
 }
 
 function VerdictPlate({ verdict, from, avg, counts, headingRef }) {
-  const tone = verdict === CLEARED ? 'ok' : 'amber';
+  const tone = verdictTone(verdict);
   const words = verdict.split(' ');
-  let note;
-  if (tone === 'ok') {
-    note = 'An average of 7 or better across your answers. Say them out loud once more before the real thing.';
-  } else if (avg === null) {
-    note = 'Nothing was scored — every question was skipped. Answer a few to get a verdict.';
-  } else {
-    note = 'Below an average of 7. Go around: rework the lowest answers, then run the simulator again.';
-  }
+  const note = verdictNote(verdict, counts);
   return (
     <div className="iv-plate" data-tone={tone}>
       <p className="iv-kicker">
@@ -322,7 +311,10 @@ function Debrief({ questions, results, onRehearse }) {
             <li key={q.key}>
               <button type="button" className="iv-db-row" onClick={() => onRehearse(i)}>
                 <span className="iv-num">{pad2(i + 1)}</span>
-                <span className="iv-db-q">{previewText(q.question, 90)}</span>
+                <span className="iv-db-q">
+                  <span aria-hidden="true">{previewText(q.question, 90)}</span>
+                  <span className="sr-only">{q.question}</span>
+                </span>
                 <span className="iv-st" data-tone={status.tone}>
                   {status.node}
                 </span>
@@ -848,9 +840,9 @@ export default function Simulator() {
                     QUESTION {pad2(current + 1)} / {pad2(questions.length)} <span aria-hidden="true">·</span>{' '}
                     {CATEGORY[q.category]}
                   </p>
-                  <h3 className="iv-q" id="iv-q" tabIndex={-1} ref={refs.question}>
+                  <h2 className="iv-q" id="iv-q" tabIndex={-1} ref={refs.question}>
                     {q.question}
-                  </h3>
+                  </h2>
 
                   {result?.status === 'answered' ? (
                     <>

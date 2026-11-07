@@ -19,7 +19,7 @@ export default function InterviewPage() {
         sign={{ letter: 'D', label: 'Simulator' }}
         title="Rehearse it in the"
         accent="simulator."
-        sub="Questions built for the role, read as a pre-takeoff checklist. Then the mock run: every answer scored out of 10 — average 7 or better and you’re cleared for takeoff."
+        sub="Questions built for the role, read as a pre-takeoff checklist. Then the mock run: every answer scored out of 10 — score at least 3 with an average of 7 or better and you’re cleared for takeoff."
       >
         <Simulator />
         <p className="iv-foot">Practice out loud. Reading your answer and saying it are different sports.</p>

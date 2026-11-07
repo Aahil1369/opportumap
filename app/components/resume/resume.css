@@ -3,7 +3,18 @@
    and the inspection report. Palette from app/globals.css; mono labels in --font-board.
    Motion: transform and opacity only; reduced motion shows every final state at once. */
 
-.rs { display: grid; gap: 14px; }
+/* The X-ray art's own shades (aria-hidden drawings, never text you read): the belt's slats, the
+   paper tile's lines and its file name, the X-ray film, the scanner's window. Page-local, so the
+   palette stays the hall's. */
+.rs {
+  --rs-slat: #2a2e35;
+  --rs-paper-line: #c9c5b8;
+  --rs-paper-ink: #5d6168;
+  --rs-film: #08131d;
+  --rs-window: #050608;
+  display: grid;
+  gap: 14px;
+}
 
 /* ─── Buttons ─── */
 .rs-btn {
@@ -20,11 +31,15 @@
   cursor: pointer;
   transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
 }
-.rs-btn:hover { transform: translateY(-1px); }
+@media (hover: hover) {
+  .rs-btn:hover { transform: translateY(-1px); }
+}
 .rs-btn:active { transform: scale(0.98); }
 .rs-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
 .rs-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
-.rs-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+@media (hover: hover) {
+  .rs-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
+}
 
 /* ─── The belt, waiting: a drop zone around a real button ─── */
 .rs-drop {
@@ -48,7 +63,7 @@
   bottom: 0;
   height: 8px;
   border-radius: 2px;
-  background: repeating-linear-gradient(90deg, var(--hall-3) 0 18px, #2a2e35 18px 24px);
+  background: repeating-linear-gradient(90deg, var(--hall-3) 0 18px, var(--rs-slat) 18px 24px);
   box-shadow: inset 0 1px 0 var(--rule);
 }
 .rs-drop-t {
@@ -83,7 +98,7 @@
   font: 700 8px/1.3 var(--font-board);
   letter-spacing: 0.08em;
 }
-.rs-doc-l { display: block; height: 4px; margin-top: 7px; border-radius: 2px; background: #c9c5b8; }
+.rs-doc-l { display: block; height: 4px; margin-top: 7px; border-radius: 2px; background: var(--rs-paper-line); }
 .rs-doc-n {
   position: absolute;
   left: 8px;
@@ -91,11 +106,11 @@
   bottom: 7px;
   overflow: hidden;
   font: 500 8px/1.2 var(--font-board);
-  color: #5d6168;
+  color: var(--rs-paper-ink);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rs-doc-x { background: #08131d; box-shadow: inset 0 0 0 1px var(--info); }
+.rs-doc-x { background: var(--rs-film); box-shadow: inset 0 0 0 1px var(--info); }
 .rs-doc-x .rs-doc-tag { background: transparent; color: var(--info); box-shadow: inset 0 0 0 1px var(--info); }
 .rs-doc-x .rs-doc-l { background: var(--info); opacity: 0.5; }
 .rs-doc-x .rs-doc-hit { background: var(--amber); opacity: 1; }
@@ -131,7 +146,7 @@
   bottom: 0;
   left: -24px;
   right: 0;
-  background: repeating-linear-gradient(90deg, transparent 0 18px, #2a2e35 18px 24px);
+  background: repeating-linear-gradient(90deg, transparent 0 18px, var(--rs-slat) 18px 24px);
 }
 .rs-track { position: absolute; top: 0; left: 0; bottom: 28px; width: 100%; transform: translateX(calc(50% + 54px)); }
 .rs-track > .rs-doc { position: absolute; bottom: 0; left: -96px; }
@@ -174,7 +189,7 @@
   inset: 7px 7px 0;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
-  background: #050608;
+  background: var(--rs-window);
 }
 .rs-window::after {
   content: '';
@@ -438,7 +453,9 @@
   text-decoration: none;
   transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
 }
-.rs-role:hover { border-color: var(--ink-sub); transform: translateY(-2px); }
+@media (hover: hover) {
+  .rs-role:hover { border-color: var(--ink-sub); transform: translateY(-2px); }
+}
 .rs-role:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
 .rs-role-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .rs-role-t { font-size: 16px; font-weight: 700; line-height: 1.35; }
@@ -487,8 +504,10 @@
 @media (prefers-reduced-motion: reduce) {
   .rs-btn,
   .rs-role { transition: none; }
-  .rs-btn:hover,
-  .rs-btn:active,
-  .rs-role:hover { transform: none; }
+  .rs-btn:active { transform: none; }
+  @media (hover: hover) {
+    .rs-btn:hover,
+    .rs-role:hover { transform: none; }
+  }
   .rs-bars[data-armed] .rs-bar-fill { transform: scaleX(var(--v)); transition: none; }
 }
