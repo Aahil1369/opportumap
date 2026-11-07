@@ -1,4 +1,4 @@
-// Task 15b, group M: the map control tower, the saved itinerary and the jobs board (the wave 2
+﻿// Task 15b, group M: the map control tower, the saved itinerary and the jobs board (the wave 2
 // review's carry-ins). Behaviour tests on the pure modules (visitorProfile, radarLoad, radarChip),
 // then source guards for the wiring, the markup and the CSS of /jobs, /map and /saved.
 import { test } from 'node:test';
