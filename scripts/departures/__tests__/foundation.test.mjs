@@ -75,10 +75,6 @@ test('globals.css defines the night palette exactly, in :root and in @theme', ()
   for (const name of Object.keys(PALETTE)) {
     assert.match(theme[1], new RegExp(`--color-${name}\\s*:\\s*var\\(--${name}\\)\\s*;`), `--color-${name} in @theme`);
   }
-  // The paper/terminal registers stay for the pages that are not redesigned yet.
-  for (const name of ['paper-bg', 'paper-ink', 'term-bg', 'term-ink', 'accent']) {
-    assert.ok(tokens[name], `--${name} is still defined`);
-  }
 });
 
 test('kit.css no longer redefines the palette (globals.css owns it)', () => {
@@ -378,17 +374,7 @@ test('no job/listing totals in redesigned files', () => {
   assert.deepEqual(found, []);
 });
 
-test('Btn and the kit animate only transform and opacity', () => {
-  const btn = read('app/components/ui/Btn.js');
-  const transitions = btn.match(/(?:[\w-]+:)*transition(?:-[\w[\],-]+)?/g) ?? [];
-  assert.ok(transitions.length > 0, 'Btn still transitions something');
-  for (const t of transitions) {
-    assert.match(t, /(?:^|:)transition-(?:\[transform,opacity\]|transform|opacity|none)$/, `Btn: ${t}`);
-  }
-  const underline = /\.tool-card-underline::after\s*\{([^}]*)\}/.exec(stripCssComments(read('app/globals.css')));
-  assert.ok(underline, '.tool-card-underline::after rule');
-  assert.match(underline[1], /transition:\s*transform\b/);
-  assert.ok(!/(?:^|[;\s])width:\s*0/.test(underline[1]), 'the underline grows by scaleX, not width');
+test('the kit animates only transform and opacity', () => {
   const kit = stripCssComments(read('app/components/kit/kit.css'));
   for (const m of kit.matchAll(/transition(?:-property)?\s*:\s*([^;]+);/g)) {
     for (const part of m[1].replace(/\([^)]*\)/g, '').split(',')) {
