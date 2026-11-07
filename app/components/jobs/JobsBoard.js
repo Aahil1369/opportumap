@@ -49,8 +49,9 @@ import {
 import { profileQuery } from '../../../lib/departures/profileQuery';
 import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
 import { loadHomeProfile } from '../home/homeProfile';
-import { PROFILE_KEY, saveProfile as storeProfile } from '../../../lib/saveProfile';
+import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { deviceStorage, readSaved, removeJob, saveJob } from '../../../lib/departures/savedStore';
+import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
 import './jobs.css';
 
 const JobGate = dynamic(() => import('./JobGate'), { ssr: false });
@@ -71,23 +72,6 @@ const HOME_PLAN = Object.freeze({ text: '', query: HOME_SEARCH.query, place: nul
 /** One search on the board: the nth time the visitor asked for it, and what was fetched. */
 const boardKey = (n, text, plan, preferred) => [n, text, plan.query, (plan.countries || preferred).join(',')].join('\u0000');
 const HOME_KEY = boardKey(0, '', HOME_PLAN, []);
-
-function readJson(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-/** The visitor's profile: their account's (signed in), else one kept on this device, else null. */
-async function loadProfile() {
-  const remote = await loadHomeProfile().catch(() => null);
-  if (remote) return remote;
-  const local = readJson(PROFILE_KEY, null);
-  return local && typeof local === 'object' && !Array.isArray(local) ? local : null;
-}
 
 /** One role by id (a deep link neither board has), or null. */
 async function lookupJob(id) {
@@ -160,12 +144,13 @@ export default function JobsBoard({ initial = null }) {
     let live = true;
     const params = new URLSearchParams(window.location.search);
     wanted.current = params.get('job');
-    loadProfile().then((p) => {
+    loadVisitorProfile({ account: loadHomeProfile }).then((p) => {
       if (!live) return;
       const q = (params.get('q') || '').replace(/\s+/g, ' ').trim();
       setProfile(p);
-      setInput(q);
-      setAsked({ text: q, n: 0 });
+      // A signed-in visitor's profile can land after they typed or searched: theirs stays.
+      setInput((v) => inputOnArrival(v, q));
+      setAsked((a) => searchOnArrival(a, q));
       setSaved(readSaved(deviceStorage()).map((e) => e.id));
     });
     const onPop = () => {

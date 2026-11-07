@@ -26,7 +26,9 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLatest } from '../../../lib/departures/createLatest';
 import { profileQuery } from '../../../lib/departures/profileQuery';
-import { PROFILE_KEY, saveProfile as storeProfile } from '../../../lib/saveProfile';
+import { radarChip } from '../../../lib/departures/radarChip';
+import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
+import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { loadHomeProfile } from '../home/homeProfile';
 import './map.css';
 
@@ -40,24 +42,9 @@ const SESSION_COOKIE = /(?:^|;\s*)sb-[^=;]+-auth-token/;
 const EMPTY = Object.freeze({ type: 'FeatureCollection', features: Object.freeze([]) });
 const NOTICE_MS = 5000;
 const LOAD_ERROR = "We couldn't load roles right now.";
+const MISSING = "That role isn't on the radar for this search.";
 
 const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
-
-function readProfile() {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    const p = raw ? JSON.parse(raw) : null;
-    return p && typeof p === 'object' && !Array.isArray(p) ? p : null;
-  } catch {
-    return null;
-  }
-}
-
-/** The visitor's profile: their account's (signed in), else one kept on this device, else null. */
-async function loadProfile() {
-  const remote = await loadHomeProfile().catch(() => null);
-  return remote || readProfile();
-}
 
 async function fetchJobs(query, countries) {
   const qs = new URLSearchParams({ q: query });
@@ -80,6 +67,7 @@ async function loadRadar(plan, preferred, filterJobs) {
 
 const searchHref = (text) => (text ? `/map?${new URLSearchParams({ q: text })}` : '/map');
 const boardHref = (text) => (text ? `/jobs?${new URLSearchParams({ q: text })}` : '/jobs');
+const gateHref = (text, id) => `/map?${new URLSearchParams(text ? { q: text, job: id } : { job: id })}`;
 
 export default function ControlTower() {
   const [profile, setProfile] = useState(undefined); // undefined: still loading
@@ -102,19 +90,31 @@ export default function ControlTower() {
   const gateOpener = useRef(null); // what opened the gate
   const meRef = useRef(null);
   const fitted = useRef(null);
+  const pushed = useRef(false); // opening the gate added a history entry (Back closes it)
+  const wanted = useRef(null); // ?job= from the URL: that gate opens once its search is on the radar
 
-  // The URL and the profile, once, after hydration.
+  // The URL and the profile, once, after hydration; Back / Forward close and open the gate.
   useEffect(() => {
     let live = true;
-    const q = clean(new URLSearchParams(window.location.search).get('q'));
-    loadProfile().then((p) => {
+    const params = new URLSearchParams(window.location.search);
+    const q = clean(params.get('q'));
+    wanted.current = params.get('job');
+    loadVisitorProfile({ account: loadHomeProfile }).then((p) => {
       if (!live) return;
       setProfile(p);
-      setInput(q);
-      setAsked({ text: q, n: 0 });
+      // A signed-in visitor's profile can land after they typed or searched: theirs stays.
+      setInput((v) => inputOnArrival(v, q));
+      setAsked((a) => searchOnArrival(a, q));
     });
+    // Back closes the gate (its Dialog hands focus back to the opener); Forward opens it again.
+    const onPop = () => {
+      pushed.current = false;
+      setOpenId(new URLSearchParams(window.location.search).get('job'));
+    };
+    window.addEventListener('popstate', onPop);
     return () => {
       live = false;
+      window.removeEventListener('popstate', onPop);
     };
   }, []);
 
@@ -209,6 +209,25 @@ export default function ControlTower() {
     return () => clearTimeout(t);
   }, [notice]);
 
+  // A link to /map?job=<id> (a reload, or Back into /map) opens that role's gate once its search
+  // is on the radar (deepLink; no lookup by id here, unlike /jobs). A role the radar does not have
+  // is a notice, and the link loses its ?job=.
+  const settled = !loading && radar?.state === 'ok';
+  useEffect(() => {
+    const id = wanted.current;
+    if (!id || !lib) return;
+    const what = lib.deepLink(id, { lists: [radar?.jobs], settled, looked: true });
+    if (what !== 'open' && what !== 'miss') return;
+    wanted.current = null;
+    Promise.resolve().then(() => {
+      if (what === 'open') setOpenId(id);
+      else {
+        setNotice(MISSING);
+        window.history.replaceState(null, '', searchHref(asked?.text));
+      }
+    });
+  }, [lib, radar, settled, asked?.text]);
+
   // ── Actions ──
   const submit = (e) => {
     e.preventDefault();
@@ -240,12 +259,27 @@ export default function ControlTower() {
     },
     [lib, countries, loading],
   );
-  const openGate = useCallback((id, el) => {
-    gateOpener.current = el || document.activeElement;
-    setNotice('');
-    setOpenId(id);
-  }, []);
-  const closeGate = useCallback(() => setOpenId(null), []);
+  // A gate is a history entry, as on /jobs and /saved: Back (an iPhone's swipe) closes it.
+  const openGate = useCallback(
+    (id, el) => {
+      gateOpener.current = el || document.activeElement;
+      setNotice('');
+      setOpenId(id);
+      window.history.pushState(null, '', gateHref(asked?.text, id));
+      pushed.current = true;
+    },
+    [asked?.text],
+  );
+  // Focus goes back to the opener from the gate's Dialog as it unmounts (returnFocusRef).
+  const closeGate = useCallback(() => {
+    setOpenId(null);
+    if (pushed.current) {
+      pushed.current = false;
+      window.history.back();
+    } else {
+      window.history.replaceState(null, '', searchHref(asked?.text));
+    }
+  }, [asked?.text]);
   const closeBoard = useCallback(() => setArrivals(null), []);
   const showOnMap = useCallback(() => {
     const iso = arrivals;
@@ -318,10 +352,8 @@ export default function ControlTower() {
 
   // Busy until a search is on the map: the profile, the data layer and the roles are all in.
   const busy = !libFailed && (!plan || loading);
-  let status;
-  if (busy) status = label ? `Scanning for ${label}…` : 'Scanning…';
-  else if (radar?.state === 'ok') status = label;
-  else status = '';
+  // The HUD chip; an empty search says so there too (the HUD is the page's one live region).
+  const chip = radarChip({ busy, empty, ok: radar?.state === 'ok', label });
 
   return (
     <div className="mt-tower">
@@ -384,18 +416,15 @@ export default function ControlTower() {
           <Radar beacons={beacons} onBeacon={openGate} onCountry={showCountry} onState={onMapState} onReady={onReady} />
         </div>
 
+        {/* The one live region: the chip and the notices, with no role="status" inside it. */}
         <div className="mt-hud" aria-live="polite">
-          {status && (
+          {chip && (
             <p className="mt-chip" data-busy={busy ? '' : undefined}>
-              <span className="mt-chip-k">{busy ? 'RADAR' : 'ON RADAR'}</span>
-              <span className="mt-chip-t">{status}</span>
+              <span className="mt-chip-k">{chip.key}</span>
+              <span className="mt-chip-t">{chip.text}</span>
             </p>
           )}
-          {notice && (
-            <p className="mt-notice" role="status">
-              {notice}
-            </p>
-          )}
+          {notice && <p className="mt-notice">{notice}</p>}
         </div>
 
         {mapState === 'loading' && !message && (

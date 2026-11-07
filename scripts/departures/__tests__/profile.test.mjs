@@ -127,7 +127,7 @@ test('the navbar\'s first-run profile and /jobs both save through lib/saveProfil
   assert.match(nav, /<ProfileModal\s+welcome\b/, 'the first-run profile is the welcome one (Skip, not "Edit your profile")');
 
   const jobs = read('app/components/jobs/JobsBoard.js');
-  assert.match(jobs, /import \{ PROFILE_KEY, saveProfile as storeProfile \} from '\.\.\/\.\.\/\.\.\/lib\/saveProfile'/);
+  assert.match(jobs, /import \{ saveProfile as storeProfile \} from '\.\.\/\.\.\/\.\.\/lib\/saveProfile'/);
   assert.match(jobs, /storeProfile\(p, \{ signedIn: SESSION_COOKIE\.test\(document\.cookie\) \}\)/);
   assert.doesNotMatch(jobs, /'opportumap_profile'/, 'one profile key');
   assert.doesNotMatch(jobs, /\/api\/user-profile', \{\s*method: 'POST'/, 'no second copy of the POST');

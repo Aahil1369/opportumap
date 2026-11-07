@@ -48,9 +48,10 @@
   text-transform: uppercase;
   color: var(--sign);
 }
-/* The polite status line (a removal, the lookups); kept in the layout while empty, so a screen
+/* The polite status line (a removal, a removal this device refused, the lookups): sentences, so
+   body text at 16px like the notice above the board; kept in the layout while empty, so a screen
    reader always has it. */
-.it-live { margin: 0; font: 500 12px/1.35 var(--font-board); letter-spacing: 0.12em; color: var(--ink-sub); }
+.it-live { margin: 0; font: 400 16px/1.45 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink-dim); }
 .it-list { margin: 0; padding: 0; list-style: none; overflow-x: clip; /* a row sliding out never widens the page */ }
 
 /* One row. */
@@ -64,7 +65,7 @@
   --tile-fs: 12px;
   --pay-w: calc(13 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
   --status-w: calc(9 * (0.6 * var(--tile-fs) + 3.5px) - 1px);
-  --x-w: 40px;
+  --x-w: 44px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
@@ -73,11 +74,13 @@
     'meta meta';
   align-items: center;
   column-gap: 10px;
-  row-gap: 8px; /* line 2 starts below the 40px Remove */
+  row-gap: 12px; /* line 2 starts below the 44px Remove */
   padding: 10px 12px;
 }
 .it-link { color: var(--ink); text-decoration: none; border-radius: 6px; }
-a.it-link:hover { background: var(--hall-3); }
+@media (hover: hover) {
+  a.it-link:hover { background: var(--hall-3); }
+}
 a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; }
 .it-code { grid-area: code; display: flex; font-size: 17px; color: var(--sign); }
 .it-role {
@@ -118,19 +121,19 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
 }
 .it-paynote { font: 400 14px/1.25 var(--font-inter), ui-sans-serif, system-ui, sans-serif; color: var(--ink-sub); }
 
-/* Remove: beside the row's link (never inside it), always visible. A 40px ✕ on a phone, the
-   word too on a wider board. */
+/* Remove: beside the row's link (never inside it), always visible. A 44px ✕ on a phone (a thumb's
+   target, like Show and the gate's ✕), centred on line 1; the word too on a wider board. */
 .it-x {
   position: absolute;
   z-index: 1;
-  top: 2px;
+  top: 0;
   right: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-width: 40px;
-  height: 40px;
+  min-width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: 8px;
@@ -141,7 +144,9 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
   text-transform: uppercase;
   cursor: pointer;
 }
-.it-x:hover { color: var(--warn); border-color: var(--warn); }
+@media (hover: hover) {
+  .it-x:hover { color: var(--warn); border-color: var(--warn); }
+}
 .it-x:focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
 .it-x[aria-disabled='true'] { color: var(--ink-sub); border-color: var(--rule); cursor: default; }
 .it-x-t { display: none; }
@@ -191,12 +196,12 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
       'code role role role'
       'where where pay status';
     column-gap: 12px;
-    row-gap: 6px;
+    row-gap: 12px; /* line 2 starts below the 44px Remove */
   }
   .it-meta { display: contents; }
   .it-pay { grid-area: pay; width: auto; }
   .it-status { grid-area: status; }
-  .it-x { top: 4px; height: 36px; padding: 0 12px; } /* clear of line 2's status tiles */
+  .it-x { padding: 0 12px; } /* still 44px tall, centred on line 1, clear of line 2's status tiles */
   .it-x-t { display: inline; }
 }
 
@@ -210,7 +215,7 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
     padding: 8px 16px;
   }
   .it-role { padding-right: 0; }
-  .it-x { top: 50%; right: 16px; transform: translateY(-50%); }
+  .it-x { top: 50%; right: 16px; height: 36px; transform: translateY(-50%); } /* one line: 36px fits the row */
   .it-head { display: grid; }
   .it-head .it-code { min-width: calc(3 * (0.6 * 17px + 3.5px) - 1px); }
   .it-ghost { grid-template-columns: 44px 3fr 2fr 1fr; }
@@ -239,7 +244,9 @@ a.it-link:focus-visible { outline: 2px solid var(--sign); outline-offset: -2px; 
   text-decoration: none;
   cursor: pointer;
 }
-.it-btn:hover { background: var(--sign); color: var(--sign-ink); }
+@media (hover: hover) {
+  .it-btn:hover { background: var(--sign); color: var(--sign-ink); }
+}
 .it-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
 .it-more { display: flex; justify-content: center; padding: 14px 12px 12px; border-top: 1px solid var(--rule); }
 .it-foot { margin: 0; max-width: 64ch; font-size: 16px; line-height: 1.55; color: var(--ink-sub); }
