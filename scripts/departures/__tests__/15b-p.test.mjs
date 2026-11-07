@@ -115,3 +115,14 @@ test('visaData.js exports only the two tables the relocation guide reads (P2)', 
     for (const k of ['avgRent', 'safety', 'healthcare', 'legal']) assert.ok(typeof s[k] === 'string' && s[k], `SETTLEMENT_INFO.${code}.${k}`);
   }
 });
+
+const copy = await import(new URL('../../../app/lib/pageCopy.js', import.meta.url));
+
+test('pageCopy.js keeps only the footnotes something reads, and no HERO_COPY (P3)', () => {
+  assert.deepEqual(Object.keys(copy), ['FOOTNOTES']);
+  assert.deepEqual(Object.keys(copy.FOOTNOTES), ['community', 'admin', 'contact']);
+  const others = sources('app/lib/pageCopy.js');
+  for (const key of Object.keys(copy.FOOTNOTES)) assert.match(others, new RegExp(String.raw`FOOTNOTES\.${key}\b`), `FOOTNOTES.${key} is read`);
+  assert.doesNotMatch(others, /\bHERO_COPY\b/);
+  assert.equal(copy.FOOTNOTES.admin, 'You’re looking at a live snapshot. Metrics reset every midnight UTC.');
+});

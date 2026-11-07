@@ -1,53 +1,5 @@
 export const FOOTNOTES = {
-  jobs:         'Jobs refresh every 6 hours from Adzuna + RemoteOK. Numbers will drift.',
-  map:          'Every pin is a real job we could verify. The blank ones mean we haven’t been yet.',
   community:    'Keep this place honest. No recruiters, no pitch threads, no crypto.',
-  resume:       'We grade hard on purpose. An inflated score doesn’t help you land a job.',
-  'cover-letter': 'A good cover letter is short. If ours writes long, trim it — it’s a draft, not a ruling.',
-  interview:    'Practice out loud. Reading your answer and saying it are different sports.',
-  startups:     'Early-stage means early-stage. Due diligence is your job.',
-  messages:     'Delivered via Supabase Realtime. If a message doesn’t appear, refresh.',
-  saved:        'Saved jobs expire 60 days after we last saw them live.',
   admin:        'You’re looking at a live snapshot. Metrics reset every midnight UTC.',
-  profile:      'Your profile stays on this device unless you check the Remember box.',
   contact:      'Messages go straight to the founder. You’ll get a reply by email.',
-  auth:         'Sign-in requires a verified email. We don’t sell data. We don’t spam.',
-};
-
-export const HERO_COPY = {
-  resume: {
-    kicker: '§ Tool 03 · Resume Grader',
-    title: 'Get the grade you',
-    italic: 'deserve',
-    tail: ', not the one you want.',
-    sub: 'Brutally honest, section-by-section. Average scores here land 35–55. That’s the point.',
-  },
-  'cover-letter': {
-    kicker: '§ Tool 05 · Cover Letter',
-    title: 'A letter that sounds like',
-    italic: 'you',
-    tail: '.',
-    sub: 'Paste the job, upload your resume, pick a tone. We draft — you edit.',
-  },
-  interview: {
-    kicker: '§ Tool 06 · Interview Prep',
-    title: 'Rehearse like it',
-    italic: 'matters',
-    tail: '.',
-    sub: '15 tailored questions, behavioral + technical + culture. Mock mode scores every answer.',
-  },
-  startups: {
-    kicker: '§ Discovery · Startups',
-    title: 'Early-stage companies,',
-    italic: 'up close',
-    tail: '.',
-    sub: 'Stage, sector, raise, team size — the honest view. Message founders directly.',
-  },
-  community: {
-    kicker: '§ The Wire · Community',
-    title: 'Real stories from people',
-    italic: 'already there',
-    tail: '.',
-    sub: 'No recruiters, no pitch threads. Just people who moved, and what they learned.',
-  },
 };
