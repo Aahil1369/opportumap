@@ -24,7 +24,7 @@ const {
   wordCount,
 } = await import(new URL('../../../lib/departures/coverLetter.js', import.meta.url));
 
-const MB = 1024 * 1024;
+const MB = 1_000_000; // decimal MB, as iPhone Files and macOS count sizes (Ruling R16)
 
 // ── The text Copy and Download use ──────────────────────────────────────────────────────────
 
