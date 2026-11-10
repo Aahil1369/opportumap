@@ -1,11 +1,12 @@
 // POST /api/predict-salary { title, company?, location?, country? } -> { min, max, low, high,
 // currency, display }: our salary model's estimate for one role (the boards' PAY · PREDICTED and
-// the job gate's runway). Kept per title|country while this server instance lives. A rate limit
+// the job gate's runway). Kept per exact question (title, company, location, country) while this
+// server instance lives, so no caller can plant the answer other visitors get. A rate limit
 // answers 429, so the page's pay queue cools down for a minute (usePredictedPay); any other
 // failure a 502. Neither ever carries the provider's error text.
 import { GROQ_FAST_OPTIONS } from '../../../lib/ai.js';
 import { aiFailure, completer, failureNote } from '../../../lib/aiRoute.js';
-import { MODEL_CURRENCIES } from '../../../lib/departures/pay.js';
+import { MODEL_CURRENCIES, modelPay } from '../../../lib/departures/pay.js';
 
 const complete = completer(GROQ_FAST_OPTIONS);
 const CACHE = new Map();
@@ -25,7 +26,7 @@ export async function POST(request) {
   const { title, company, location, country } = input && typeof input === 'object' ? input : {};
   if (!field(title, 200)) return Response.json({ error: 'A job title is required.' }, { status: 400 });
 
-  const key = `${title}|${country}`;
+  const key = JSON.stringify([field(title, 200), field(company, 120), field(location, 120), field(country, 8)]);
   if (CACHE.has(key)) return Response.json(CACHE.get(key));
 
   let text;
@@ -57,7 +58,8 @@ Base on real market data. Be realistic.`,
   } catch {
     data = null;
   }
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+  // Only an answer the board can show (modelPay) is sent and kept.
+  if (!data || typeof data !== 'object' || Array.isArray(data) || !modelPay(data)) {
     return Response.json({ error: UNAVAILABLE }, { status: 502 });
   }
   if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value);
