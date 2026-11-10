@@ -284,6 +284,7 @@ test('M2 websiteUrl: a website typed without a scheme gets https:// (the databas
   assert.equal(hangar.websiteUrl('https://yourstartup.com'), 'https://yourstartup.com');
   assert.equal(hangar.websiteUrl('HTTP://yourstartup.com'), 'HTTP://yourstartup.com', 'a scheme in any case is kept');
   assert.equal(hangar.websiteUrl('ftp://yourstartup.com'), 'ftp://yourstartup.com', 'another scheme is left for the API to refuse');
+  assert.equal(hangar.websiteUrl('http:/yourstartup.com'), 'http:/yourstartup.com');
   assert.equal(hangar.websiteUrl(''), '');
   assert.equal(hangar.websiteUrl('   '), '');
   assert.equal(hangar.websiteUrl(undefined), '');
