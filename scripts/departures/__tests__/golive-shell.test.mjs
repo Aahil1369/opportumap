@@ -4,6 +4,7 @@
 //     reduced motion (home-s2).
 //   - The 404, a page that throws and a root layout that throws all stay in the dark hall, and
 //     none of them shows the error itself (Ruling R28, platform-7).
+//   - /robots.txt and /sitemap.xml exist and name only the public pages.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -143,5 +144,41 @@ test('the crash pages never show the error itself, and keep the house copy rules
     assert.doesNotMatch(code, /\bflights?\b|\bfares?\b/i, `${f}: never "flight" or "fare"`);
     assert.doesNotMatch(code, /[a-z]'[a-z]/i, `${f}: typographic apostrophes in copy`);
     assert.doesNotMatch(code, /\bstyle=/, `${f}: no inline styles`);
+  }
+});
+
+// ── /robots.txt and /sitemap.xml ────────────────────────────────────────────────────────────
+
+const mod = (rel) => import(new URL(`../../../${rel}`, import.meta.url));
+const SITE = 'https://opportumap.netlify.app';
+
+test('robots: crawlers get the public site, not the API, the admin, the auth callback or the lab', async () => {
+  const robots = (await mod('app/robots.js')).default();
+  const rules = [robots.rules].flat();
+  assert.equal(rules.length, 1);
+  assert.equal(rules[0].userAgent, '*');
+  assert.equal(rules[0].allow, '/');
+  assert.deepEqual(rules[0].disallow, ['/api/', '/admin', '/auth/', '/lab/']);
+  assert.equal(robots.sitemap, `${SITE}/sitemap.xml`);
+  // The same origin the layout resolves its metadata against.
+  assert.ok(read('app/layout.js').includes(`metadataBase: new URL('${SITE}')`));
+});
+
+test('sitemap: exactly the nine public pages, each with a url and nothing invented', async () => {
+  const entries = (await mod('app/sitemap.js')).default();
+  assert.deepEqual(entries.map((e) => e.url), [
+    `${SITE}/`,
+    `${SITE}/jobs`,
+    `${SITE}/map`,
+    `${SITE}/resume`,
+    `${SITE}/interview`,
+    `${SITE}/cover-letter`,
+    `${SITE}/startups`,
+    `${SITE}/community`,
+    `${SITE}/contact`,
+  ]);
+  for (const e of entries) {
+    assert.deepEqual(Object.keys(e), ['url'], `${e.url}: no made-up dates or priorities`);
+    assert.doesNotMatch(new URL(e.url).pathname, /^\/(?:admin|profile|messages|saved|lab|auth|api)(?:\/|$)/);
   }
 });
