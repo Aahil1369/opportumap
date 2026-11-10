@@ -129,6 +129,8 @@ export default function ContactPage() {
             </form>
           </div>
         )}
+        {/* Plain text, not a link: the page exists, but no URL has been confirmed. */}
+        <p className="mt-6 text-[16px] leading-[1.5] text-ink-dim">LinkedIn · OpportuMap</p>
       </PageShell>
     </>
   );

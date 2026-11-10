@@ -164,9 +164,11 @@ test('K1 GateSign: a letter that is not a gate is not read as "Gate i"; only /co
   assert.deepEqual(optOut, ['app/contact/page.js']);
 });
 
-test('K5 (R17) /contact: no Twitter or LinkedIn handle the owner has not confirmed', () => {
+test('K5 (R17) /contact: LinkedIn as plain text (owner, 2026-11-07); no Twitter or X handle', () => {
   const src = read('app/contact/page.js');
-  assert.doesNotMatch(src, /twitter|linkedin|@opportumap/i);
+  assert.match(src, />LinkedIn · OpportuMap</);
+  assert.doesNotMatch(src, /twitter|@opportumap|x\.com/i);
+  assert.doesNotMatch(src, /\bX\b/);
   assert.doesNotMatch(src, /const DESK\b|DESK\.map|<dl\b/);
   assert.match(src, /DESK OPEN · REPLIES BY EMAIL/, 'the desk still says how replies come back');
 });
