@@ -419,6 +419,7 @@
 .hg-hero-bay .hg-fin { position: absolute; left: 0; bottom: -6px; width: 132px; height: 132px; }
 .hg-hero-text { min-width: 0; }
 .hg-hero-name { margin-top: 0; overflow-wrap: anywhere; }
+.hg-hero-text .ps-sub { overflow-wrap: anywhere; }
 .hg-hero.hg-skel .hg-hero-text { flex: 1; display: flex; flex-direction: column; gap: 12px; }
 @media (max-width: 639px) {
   .hg-hero { flex-direction: column; align-items: flex-start; gap: 16px; }
