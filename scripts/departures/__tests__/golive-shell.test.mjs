@@ -2,9 +2,11 @@
 //   - PingTracker never breaks a page when site data is blocked (home-s1).
 //   - A link from a scrolled page lands at the top of the next page; smooth scrolling respects
 //     reduced motion (home-s2).
+//   - The 404, a page that throws and a root layout that throws all stay in the dark hall, and
+//     none of them shows the error itself (Ruling R28, platform-7).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -89,4 +91,57 @@ test('globals.css: smooth scrolling only for visitors who have not asked for red
   assert.deepEqual(declarations(read('app/globals.css'), 'scroll-behavior'), [
     { value: 'smooth', inside: ['@media (prefers-reduced-motion: no-preference)', 'html'] },
   ]);
+});
+
+// ── The 404 and the error pages stay in the hall (Ruling R28, platform-7) ───────────────────
+
+const CRASH_PAGES = ['app/not-found.js', 'app/error.js', 'app/global-error.js'];
+const stripJsComments = (src) => src.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/^\s*\/\/.*$/gm, '');
+
+test('the 404, the page error and the global error each have their own file', () => {
+  for (const f of CRASH_PAGES) assert.ok(existsSync(join(ROOT, f)), `${f} exists`);
+});
+
+test('not-found: a server page in the hall, with the navbar and a way on', () => {
+  const src = read('app/not-found.js');
+  assert.doesNotMatch(src, /^'use client'/, 'it can export metadata');
+  assert.match(src, /export const metadata = \{[^}]*robots:\s*\{\s*index:\s*false\s*\}/, 'search engines skip it');
+  assert.match(src, /<Navbar \/>\s*<PageShell\b/, 'the navbar, then the hall header');
+  assert.match(src, /<Link href="\/jobs"/);
+});
+
+test('error.js and global-error.js are client components with a retry and a way home', () => {
+  const page = read('app/error.js');
+  assert.ok(page.startsWith("'use client'"), 'error.js starts with use client');
+  assert.match(page, /<PageShell\b/, 'the hall header');
+  assert.match(page, /<button type="button" onClick=\{\(\) => reset\(\)\}[^>]*>Try again<\/button>/);
+  assert.match(page, /<Link href="\/"/);
+
+  const root = read('app/global-error.js');
+  assert.ok(root.startsWith("'use client'"), 'global-error.js starts with use client');
+  // It replaces the root layout: its own document, and the global sheet for the palette classes.
+  assert.match(root, /<html lang="en"/);
+  assert.match(root, /<body\b[^>]*\bbg-hall\b[^>]*\btext-ink\b/, 'the hall, not a white page');
+  assert.match(root, /^import '\.\/globals\.css';$/m);
+  assert.match(root, /<button type="button" onClick=\{\(\) => reset\(\)\}[^>]*>\s*Try again\s*<\/button>/);
+  assert.match(root, /<a href="\/"/, 'a plain link: the router may be what broke');
+  assert.doesNotMatch(root, /from 'next\/link'|from '\.\/components\//, 'nothing that could throw again');
+  // Phones: 16px text, 44px tap targets.
+  assert.equal(root.match(/\bmin-h-\[44px\]/g)?.length, 2, 'the button and the link');
+  for (const size of root.match(/\btext-\[(\d+)px\]/g) ?? []) {
+    assert.ok(Number(size.match(/\d+/)[0]) >= 16, `${size} is at least 16px`);
+  }
+});
+
+test('the crash pages never show the error itself, and keep the house copy rules', () => {
+  for (const f of CRASH_PAGES) {
+    const src = read(f);
+    for (const leak of ['.message', '.stack', '.digest']) assert.ok(!src.includes(leak), `${f} reads ${leak}`);
+    const code = stripJsComments(src);
+    assert.doesNotMatch(code, /\{\s*error\b|\berror\s*[,}]/, `${f} does not take the error prop at all`);
+    assert.doesNotMatch(code, /#[0-9a-f]{3,8}\b/i, `${f}: palette classes, no hex colours`);
+    assert.doesNotMatch(code, /\bflights?\b|\bfares?\b/i, `${f}: never "flight" or "fare"`);
+    assert.doesNotMatch(code, /[a-z]'[a-z]/i, `${f}: typographic apostrophes in copy`);
+    assert.doesNotMatch(code, /\bstyle=/, `${f}: no inline styles`);
+  }
 });
