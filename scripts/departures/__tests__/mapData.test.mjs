@@ -168,16 +168,16 @@ test('countryArrivals: cities first, then more roles from the same city (one cit
   assert.ok(solo.every((r) => r.cells.code === 'YYZ'));
 });
 
-test('countryArrivals: limit, no sample rows, unknown or empty countries give nothing; no "flight" roles', () => {
+test('countryArrivals: limit, no sample rows, unknown or empty countries give nothing; real "Flight…" titles stay (R19)', () => {
   assert.equal(countryArrivals(mixedBoard(), 'ca', { now: NOW, limit: 3 }).length, 3);
   assert.deepEqual(countryArrivals(mixedBoard(), 'fr', { now: NOW }), []);
   assert.deepEqual(countryArrivals(mixedBoard(), '', { now: NOW }), []);
   assert.deepEqual(countryArrivals(mixedBoard(), 'canada', { now: NOW }), []);
   assert.deepEqual(countryArrivals(null, 'ca', { now: NOW }), []);
   const rows = countryArrivals(mixedBoard(), 'ca', { now: NOW, limit: 40 });
-  assert.equal(rows.length, 30, 'every Toronto-to-Ottawa role, but not the sample board');
+  assert.equal(rows.length, 31, 'every Toronto-to-Ottawa role (the Flight Attendant too), but not the sample board');
   assert.ok(rows.every((r) => !r.fallback));
-  assert.ok(rows.every((r) => !/flight/i.test(r.cells.role)));
+  assert.ok(rows.some((r) => r.cells.role === 'Flight Attendant'));
 });
 
 test('countryArrivals: a profile can light BOARDING on its rows', () => {
@@ -187,6 +187,13 @@ test('countryArrivals: a profile can light BOARDING on its rows', () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].cells.status, 'BOARDING');
   assert.equal(countryArrivals([strong], 'ca', { now: NOW })[0].cells.status, 'ON TIME');
+});
+
+test('countryArrivals: roles titled Flight…, …fare… or Welfare… stay on the arrivals board (Ruling R19)', () => {
+  const us = (title, location) => job({ title, location, country: 'us', currency: 'USD', lng: -96.8, lat: 32.78 });
+  const jobs = [us('Flight Attendant', 'Dallas, Texas'), us('Flight Dispatcher', 'Atlanta, Georgia'), us('Child Welfare Caseworker', 'Chicago, Illinois')];
+  assert.deepEqual(arrivalCountries(jobs), [{ iso2: 'us', name: 'United States' }]);
+  assert.deepEqual(countryArrivals(jobs, 'us', { now: NOW }).map((r) => r.cells.role).sort(), ['Child Welfare Caseworker', 'Flight Attendant', 'Flight Dispatcher']);
 });
 
 test('ARRIVALS_COLUMNS: LOCAL · CITY · ROLE · PAY · STATUS, PAY wide enough for any pay', () => {
