@@ -1,6 +1,6 @@
 // Go-live (Ruling R20): the two noindex QA pages, /lab/flap and /lab/kit, are deleted, together
 // with the browser check that could only drive /lab/flap. No page, no link, no import, no script
-// that needs them comes back.
+// that needs them comes back. (A robots "disallow /lab/" entry is harmless and may stay.)
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -25,6 +25,12 @@ const LAB_PATH = /\/lab(?![\w-])/;
 const LAB_NAME = /\b(?:Flap|Kit)Lab\b/;
 const mentionsLab = (line) => LAB_PATH.test(line) || LAB_NAME.test(line);
 
+// The one mention that may stay: app/robots.js telling crawlers to keep out of /lab/ (harmless
+// with the pages gone). Only that quoted entry on a `disallow` line is let through.
+const KEEP_OUT = /(['"`])\/lab\/\1/g;
+const pointsAtLab = (file, line) =>
+  mentionsLab(file === 'app/robots.js' && /\bdisallow\b/.test(line) ? line.replace(KEEP_OUT, '') : line);
+
 test('the matcher sees lab routes, folders and imports, and leaves other words alone (sanity)', () => {
   for (const line of [
     '<a href="/lab/flap?fps=1">',
@@ -38,6 +44,20 @@ test('the matcher sees lab routes, folders and imports, and leaves other words a
   }
   for (const line of ['<label htmlFor="x">', "fetch('/labels')", "href: '/laboratory'", "'r&d', 'lab', 'academic'", 'lab technician']) {
     assert.ok(!mentionsLab(line), `should not match: ${line}`);
+  }
+});
+
+test('a robots "keep out of /lab/" entry may stay; nothing else in or around it may (sanity)', () => {
+  const keepOut = "      disallow: ['/api/', '/admin', '/auth/', '/lab/'],";
+  assert.equal(pointsAtLab('app/robots.js', keepOut), false, 'the robots disallow entry is let through');
+  assert.equal(pointsAtLab('app/sitemap.js', keepOut), true, 'the same line in any other file is not');
+  for (const line of [
+    "      allow: ['/', '/lab/'],",
+    "      disallow: ['/api/', '/lab/kit'],",
+    "      disallow: ['/lab/'], // see /lab/flap",
+    "const QA = '/lab/flap';",
+  ]) {
+    assert.equal(pointsAtLab('app/robots.js', line), true, `should still be found in app/robots.js: ${line}`);
   }
 });
 
@@ -58,7 +78,7 @@ test('nothing under app/, lib/ or scripts/ (outside tests) links to or imports f
     readFileSync(join(ROOT, f), 'utf8')
       .split(/\r?\n/)
       .forEach((line, i) => {
-        if (mentionsLab(line)) found.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
+        if (pointsAtLab(f, line)) found.push(`${f}:${i + 1}: ${line.trim().slice(0, 100)}`);
       });
   }
   assert.deepEqual(found, []);
