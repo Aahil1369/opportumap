@@ -4,12 +4,16 @@ import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
 function getSessionId() {
-  let id = sessionStorage.getItem('om_session_id');
-  if (!id) {
-    id = crypto.randomUUID();
-    sessionStorage.setItem('om_session_id', id);
+  try {
+    let id = sessionStorage.getItem('om_session_id');
+    if (!id) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem('om_session_id', id);
+    }
+    return id;
+  } catch {
+    return null; // site data blocked (or no randomUUID): skip the visit ping, never break the page
   }
-  return id;
 }
 
 export default function PingTracker() {
@@ -17,6 +21,7 @@ export default function PingTracker() {
 
   useEffect(() => {
     const sessionId = getSessionId();
+    if (!sessionId) return;
     fetch('/api/ping', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
