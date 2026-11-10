@@ -4,6 +4,7 @@
 // 1.17-1.30:1. They now rest on the house mix, color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)),
 // through a page-local custom property set on a root that really contains the control (a kit Dialog
 // is a portal, so its panel is its own root). Dividers, panels and disabled controls stay on --rule.
+// Also here: the source pin for the stand page's real 404 (an unknown startup id).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -186,4 +187,16 @@ test('the relocation guide\'s fields rest on the mix (Tailwind arbitrary colour)
   assert.ok(classes.includes('border'), 'FIELD still draws a 1px border');
   assert.ok(classes.includes('border-[color-mix(in_srgb,var(--ink-sub)_60%,var(--hall-2))]'), 'FIELD rests on the 3:1 mix');
   assert.ok(classes.includes('focus:border-sign'), 'focus still turns the edge yellow');
+});
+
+test('/startups/[id]: an unknown stand answers a real 404 (notFound), a database error does not', () => {
+  const page = read('app/startups/[id]/page.js');
+  assert.match(page, /import \{ notFound \} from 'next\/navigation';/);
+  const body = page.slice(page.indexOf('export default async function StartupStandPage'));
+  assert.ok(body.length > 0 && body.length < page.length, 'StartupStandPage is the default export');
+  assert.match(body, /if \(!isUuid\(id\)\) notFound\(\);/, 'an id that is not a uuid is a 404');
+  assert.match(body, /supabase\.from\('startups'\)\.select\('id'\)\.eq\('id', id\)\.maybeSingle\(\)/, 'asks the public client for the row');
+  assert.match(body, /if \(!error && !data\) notFound\(\);/, 'no row and no error: a 404');
+  assert.ok(!/if \(!data\) notFound\(\)/.test(body), 'a database error alone never turns into a 404');
+  assert.match(body, /<Stand id=\{id\} \/>/, 'a stand that exists still renders the stand');
 });

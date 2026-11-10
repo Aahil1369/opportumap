@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import Stand from '../../components/startups/Stand';
 import { supabase } from '../../../lib/supabase.js';
@@ -21,8 +22,16 @@ export async function generateMetadata({ params }) {
   }
 }
 
+// A stand that does not exist answers a real 404 (not a 200 page that says "vacant"), so old
+// links to a deleted startup drop out of search results. A database error is not "missing": the
+// page still renders, and the stand shows its own "didn't load" state with a retry.
 export default async function StartupStandPage({ params }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
+  if (supabase) {
+    const { data, error } = await supabase.from('startups').select('id').eq('id', id).maybeSingle();
+    if (!error && !data) notFound();
+  }
   return (
     <>
       <Navbar />
