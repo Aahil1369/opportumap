@@ -5,6 +5,9 @@
    on) and transform (a 1px lift on the buttons) move, and neither under reduced motion. */
 
 .dlg.gate { width: min(100%, 520px); }
+/* The visa button's edge: the token mix the sign-in fields use (3:1 or better on the panel). Set
+   on the gate's own panel: the kit Dialog renders into document.body, outside the page. */
+.dlg.gate { --gate-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); }
 
 /* ── Header ── */
 .gate-head { padding: 6px 6px 18px 16px; border-bottom: 1px solid var(--rule); }
@@ -177,7 +180,7 @@
   transition: transform 0.16s cubic-bezier(.22, 1, .36, 1);
 }
 .gate-board { background: var(--sign); color: var(--sign-ink); }
-.gate-visa { border: 1px solid var(--rule); background: var(--hall-3); color: var(--ink); }
+.gate-visa { border: 1px solid var(--gate-field); background: var(--hall-3); color: var(--ink); }
 @media (hover: hover) {
   .gate-board:hover,
   .gate-visa:hover { transform: translateY(-1px); }

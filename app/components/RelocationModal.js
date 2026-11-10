@@ -16,7 +16,7 @@ import './desk.css';
 
 const LABEL = 'font-mono text-xs tracking-[0.14em] uppercase text-ink-sub';
 const FIELD =
-  'w-full px-3 py-2.5 border border-rule rounded-lg bg-hall-3 text-ink placeholder:text-ink-sub text-base outline-none focus:border-sign';
+  'w-full px-3 py-2.5 border border-[color-mix(in_srgb,var(--ink-sub)_60%,var(--hall-2))] rounded-lg bg-hall-3 text-ink placeholder:text-ink-sub text-base outline-none focus:border-sign';
 
 export default function RelocationModal({ onClose, returnFocusRef }) {
   const [jobInput, setJobInput] = useState({ title: '', company: '', city: '', country: '' });

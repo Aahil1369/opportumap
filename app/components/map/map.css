@@ -17,6 +17,12 @@
   display: flex;
   flex-direction: column;
 }
+/* Control edges (the search field, the select, the profile button, the zoom buttons, the arrivals
+   board's close): the token mix the sign-in fields use, 3:1 or better on the hall and the fills.
+   Set on the tower's root and on the arrivals panel (the kit Dialog renders into document.body,
+   outside .mt). */
+.mt,
+.dlg.arr { --mt-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); }
 
 /* ── The header: gate sign, the headline with its yellow word ── */
 .mt-head {
@@ -70,7 +76,7 @@
 .mt-select {
   flex: 1;
   min-width: 0;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--mt-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);
@@ -110,7 +116,7 @@
   flex: none;
   height: 44px;
   padding: 0 12px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--mt-field);
   border-radius: 10px;
   background: transparent;
   color: var(--sign);
@@ -364,7 +370,7 @@
 /* Mapbox's controls in the hall: dark buttons big enough for a thumb, a dark attribution. */
 .mt .mapboxgl-ctrl-group {
   background: var(--hall-2);
-  border: 1px solid var(--rule);
+  border: 1px solid var(--mt-field);
   box-shadow: none;
 }
 .mt .mapboxgl-ctrl-group button { width: 44px; height: 44px; }
@@ -407,7 +413,7 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--mt-field);
   border-radius: 8px;
   background: transparent;
   color: var(--ink);

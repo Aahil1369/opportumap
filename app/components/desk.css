@@ -10,6 +10,10 @@
   width: min(100%, 420px);
   overflow: hidden;
 }
+/* Control edges (the suggestions, the question box): the token mix the sign-in fields use, 3:1 or
+   better on the panel and the fills. Set on the desk's own panel: the kit Dialog renders into
+   document.body, outside the page. */
+.dlg.desk-chat { --desk-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); }
 .desk-head {
   display: flex;
   align-items: center;
@@ -105,7 +109,7 @@
 .desk-sugg button {
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--desk-field);
   border-radius: 8px;
   background: var(--hall-2);
   color: var(--ink-dim);
@@ -128,7 +132,7 @@
   min-width: 0;
   height: 48px;
   padding: 0 12px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--desk-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);

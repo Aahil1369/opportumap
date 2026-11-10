@@ -222,6 +222,9 @@
 }
 
 /* ── 6 · Where to? ── */
+/* The field's edge: the token mix the sign-in and profile fields use (3:1 or better on the hall
+   and on the field's own fill). Set on the beat's own section (WhereTo.js). */
+.wt { --wt-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); }
 .wt-form { display: grid; gap: 12px; max-width: 640px; }
 .wt-label { font: 500 13px/1.2 var(--font-board); letter-spacing: 0.2em; color: var(--ink-sub); }
 .wt-board {
@@ -239,7 +242,7 @@
 .wt-input {
   width: 100%;
   padding: 13px 14px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--wt-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);

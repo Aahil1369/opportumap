@@ -7,6 +7,11 @@
 
 /* The bottom padding keeps the page's last line clear of the Ask AI button. */
 .jb { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding-bottom: 72px; }
+/* Control edges (the search field, the chips, the country select): the token mix the sign-in and
+   profile fields use, 3:1 or better on the hall and on the fills. Set on the board's root and on
+   the chip rail's own root (GateFilters.js). */
+.jb,
+.gf { --jb-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); }
 
 /* ── Search ── */
 .jb-search { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
@@ -23,7 +28,7 @@
   min-width: 0;
   height: 52px;
   padding: 0 14px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--jb-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);
@@ -88,7 +93,7 @@
   gap: 7px;
   min-height: 40px;
   padding: 0 12px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--jb-field);
   border-radius: 8px;
   background: var(--hall-2);
   color: var(--ink-dim);
