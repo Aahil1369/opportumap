@@ -399,7 +399,22 @@ export default function Simulator() {
     const el = refs[target]?.current;
     if (!el) return;
     focusNext.current = null;
-    el.focus();
+    const card = target === 'question' || target === 'verdict' ? el.closest('.iv-cockpit, .iv-plate') : null;
+    if (!card) {
+      el.focus();
+      return;
+    }
+    // The new question or verdict replaces a taller card, and the page can shrink under it, so
+    // the browser's own focus scroll is unreliable and ignores the sticky navbar. Scroll at once:
+    // the altimeter and the card under the navbar, or (a short, landscape screen) the card alone.
+    const html = document.documentElement;
+    const was = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+    const dial = el.closest('.iv-panel')?.querySelector('.iv-instruments');
+    (dial ?? card).scrollIntoView({ block: 'start' });
+    if (el.getBoundingClientRect().bottom > window.innerHeight) card.scrollIntoView({ block: 'start' });
+    html.style.scrollBehavior = was;
+    el.focus({ preventScroll: true });
   });
 
   const setField = (name) => (e) => setForm((f) => ({ ...f, [name]: e.target.value }));
