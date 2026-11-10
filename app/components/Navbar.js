@@ -14,6 +14,7 @@ import dynamic from 'next/dynamic';
 import { displayName } from '../../lib/displayName.js';
 import { isAdminUser } from '../../lib/admin.js';
 import { saveProfile } from '../../lib/saveProfile.js';
+import { keepHomeProfile } from './home/homeProfile';
 import { Chip, FOCUS, isHere, Logo, MIGROVA, UserAvatar } from './navParts';
 
 // Keep Supabase and these interaction-gated modals out of the initial bundle.
@@ -81,6 +82,7 @@ export default function Navbar() {
         if (newUser && !prevUser) {
           try {
             const res = await fetch('/api/user-profile');
+            if (!res.ok) return;
             const { profile } = await res.json();
             if (!profile) {
               const name = newUser.user_metadata?.full_name || newUser.user_metadata?.name || '';
@@ -175,6 +177,7 @@ export default function Navbar() {
           onClose={() => setShowProfileSetup(false)}
           onSave={(profile) => {
             // The account copy ({ profile }) and, if they ticked it, this device's (inside profile).
+            keepHomeProfile(profile);
             saveProfile(profile, { signedIn: true });
             setShowProfileSetup(false);
           }}

@@ -79,6 +79,53 @@ test('T8-7: /jobs, /map and /saved load the profile through the one loader, not 
   }
 });
 
+// ── jobs-s1: a saved edit is the profile the next page loads (app/components/home/homeProfile.js) ──
+
+test('jobs-s1 keepHomeProfile: the next loadHomeProfile() answers with the profile just saved, no request', async (t) => {
+  const before = { document: globalThis.document, fetch: globalThis.fetch };
+  t.after(() => {
+    for (const [name, value] of Object.entries(before)) {
+      if (value === undefined) delete globalThis[name];
+      else globalThis[name] = value;
+    }
+  });
+  const A = { nationality: 'Canadian', jobTypes: ['Software Engineering'], skills: 'react' };
+  const B = { nationality: 'Canadian', jobTypes: ['Design'], preferredCountries: ['ca'], skills: 'figma' };
+  let gets = 0;
+  globalThis.fetch = async (url) => {
+    assert.equal(url, '/api/user-profile');
+    gets += 1;
+    return { ok: true, json: async () => ({ profile: A }) };
+  };
+  // Signed out first, so the module's kept promise starts empty.
+  globalThis.document = { cookie: '' };
+  const { keepHomeProfile, loadHomeProfile } = await import(
+    new URL('../../../app/components/home/homeProfile.js', import.meta.url)
+  );
+  assert.equal(await loadHomeProfile(), null, 'signed out: no profile');
+  assert.equal(gets, 0, 'signed out: never asked');
+
+  globalThis.document.cookie = 'sb-x-auth-token=1';
+  assert.deepEqual(await loadHomeProfile(), A);
+  assert.equal(gets, 1, 'the account profile is asked for once');
+
+  keepHomeProfile(B);
+  assert.equal(await loadHomeProfile(), B, 'the profile just saved, not the one fetched before the edit');
+  assert.equal(gets, 1, 'no second request');
+
+  keepHomeProfile({ name: 'x' });
+  assert.equal(await loadHomeProfile(), null, 'a profile that says nothing is no profile, as when it is fetched');
+  assert.equal(gets, 1);
+
+  globalThis.document.cookie = '';
+  keepHomeProfile(B);
+  assert.equal(await loadHomeProfile(), null, 'signed out: nothing is kept');
+  assert.equal(gets, 1, 'signed out: no request');
+  globalThis.document.cookie = 'sb-x-auth-token=1';
+  assert.deepEqual(await loadHomeProfile(), A, 'a save made signed out is not what the next member sees');
+  assert.equal(gets, 2, 'signed in again: asked again');
+});
+
 test('T7-5 searchOnArrival: a search the visitor already asked for stays; else the URL\'s ?q=', () => {
   const asked = { text: 'nurse', n: 1 };
   assert.equal(searchOnArrival(asked, 'tor'), asked, 'a submitted search is not replaced');

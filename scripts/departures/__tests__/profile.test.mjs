@@ -81,7 +81,7 @@ test('saveProfile posts { profile } to /api/user-profile, the key the route read
 
   // What the route does with it: `const { profile } = await request.json()` is the saved profile.
   const route = read('app/api/user-profile/route.js');
-  assert.match(route, /const \{ profile \} = await request\.json\(\)/);
+  assert.match(route, /const profile = body\?\.profile;/);
   assert.match(route, /profile_data: profile\b/);
   const { profile: received } = JSON.parse(init.body);
   assert.deepEqual(received, profile, 'the route upserts the whole profile, not undefined');

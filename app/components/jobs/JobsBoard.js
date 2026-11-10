@@ -48,7 +48,7 @@ import {
 } from '../../../lib/departures/jobRows';
 import { profileQuery } from '../../../lib/departures/profileQuery';
 import { HOME_SEARCH } from '../../../lib/departures/homeSearch';
-import { loadHomeProfile } from '../home/homeProfile';
+import { keepHomeProfile, loadHomeProfile } from '../home/homeProfile';
 import { saveProfile as storeProfile } from '../../../lib/saveProfile';
 import { deviceStorage, readSaved, removeJob, saveJob } from '../../../lib/departures/savedStore';
 import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
@@ -328,6 +328,7 @@ export default function JobsBoard({ initial = null }) {
   const saveProfile = (p) => {
     setProfile(p);
     setEditing(false);
+    keepHomeProfile(p);
     storeProfile(p, { signedIn: SESSION_COOKIE.test(document.cookie) });
   };
 

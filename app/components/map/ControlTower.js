@@ -29,7 +29,7 @@ import { profileQuery } from '../../../lib/departures/profileQuery';
 import { radarChip } from '../../../lib/departures/radarChip';
 import { inputOnArrival, loadVisitorProfile, searchOnArrival } from '../../../lib/departures/visitorProfile';
 import { saveProfile as storeProfile } from '../../../lib/saveProfile';
-import { loadHomeProfile } from '../home/homeProfile';
+import { keepHomeProfile, loadHomeProfile } from '../home/homeProfile';
 import './map.css';
 
 const Radar = dynamic(() => import('../Map'), { ssr: false });
@@ -307,6 +307,7 @@ export default function ControlTower() {
   const saveProfile = (p) => {
     setProfile(p);
     setEditing(false);
+    keepHomeProfile(p);
     storeProfile(p, { signedIn: SESSION_COOKIE.test(document.cookie) });
   };
 
