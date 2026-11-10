@@ -278,7 +278,7 @@
 .iv-skipped { margin: 0 0 4px; font-size: 16px; line-height: 1.5; color: var(--ink-dim); }
 
 /* A scored answer */
-.iv-fb { display: grid; gap: 14px; }
+.iv-fb { display: grid; gap: 14px; overflow-wrap: anywhere; }
 .iv-score { --tone: var(--ok); padding: 14px 16px; border-left: 4px solid var(--tone); border-radius: 10px; background: var(--hall-3); }
 .iv-score[data-tone='amber'] { --tone: var(--amber); }
 .iv-score-n { display: flex; align-items: baseline; gap: 4px; margin: 0; font-family: var(--font-board); }

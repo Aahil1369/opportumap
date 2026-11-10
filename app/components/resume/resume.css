@@ -257,7 +257,7 @@
 .rs-again-k { margin-right: 4px; font: 500 11px/1.4 var(--font-board); letter-spacing: 0.16em; color: var(--ink-sub); }
 .rs-again .rs-btn { flex: none; min-height: 44px; padding: 0 16px; }
 
-.rs-result { display: grid; gap: 14px; }
+.rs-result { display: grid; gap: 14px; overflow-wrap: anywhere; }
 
 /* The verdict plate: CLEARED 81 / BAG CHECK 47. The plate text sizes from the plate's width, so
    the longest verdict (BAG CHECK 100: 12 tiles and a gap) always fits on one line. */

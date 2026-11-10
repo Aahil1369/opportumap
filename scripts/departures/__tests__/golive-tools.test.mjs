@@ -184,3 +184,14 @@ test('R26 text fields and ghost buttons on the tool pages rest on a page-local 3
     assert.ok(ratio >= 3, `${edge} on --${bg}: ${ratio.toFixed(2)}:1`);
   }
 });
+
+// ── tools-s4: a long unbroken URL in an AI answer wraps instead of widening the page ──────────
+
+test('tools-s4 the resume report and the interview feedback wrap long unbroken text', () => {
+  for (const [file, selector] of [
+    [RESUME_CSS, '.rs-result'],
+    [INTERVIEW_CSS, '.iv-fb'],
+  ]) {
+    assert.equal(declarations(ruleBody(file, selector))['overflow-wrap'], 'anywhere', `${selector} in ${file}`);
+  }
+});
