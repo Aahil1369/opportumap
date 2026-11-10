@@ -124,7 +124,7 @@ test('pageCopy.js keeps only the footnotes something reads, and no HERO_COPY (P3
   const others = sources('app/lib/pageCopy.js');
   for (const key of Object.keys(copy.FOOTNOTES)) assert.match(others, new RegExp(String.raw`FOOTNOTES\.${key}\b`), `FOOTNOTES.${key} is read`);
   assert.doesNotMatch(others, /\bHERO_COPY\b/);
-  assert.equal(copy.FOOTNOTES.admin, 'You’re looking at a live snapshot. Metrics reset every midnight UTC.');
+  assert.equal(copy.FOOTNOTES.admin, 'You’re looking at a live snapshot: totals since launch, live users active in the last 5 minutes.');
 });
 
 test('npm test silences MODULE_TYPELESS_PACKAGE_JSON with a node flag, never "type": "module" (P6, Ruling R18)', () => {
