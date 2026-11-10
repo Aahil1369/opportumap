@@ -29,3 +29,14 @@ test('/contact names no Twitter or X handle', () => {
   assert.doesNotMatch(src, /twitter|@opportumap|x\.com/i);
   assert.doesNotMatch(src, /\bX\b/, 'no "X" account row');
 });
+
+// ── /contact: a Send tapped before the JS loads must not put the message in the URL ───────────
+
+test('/contact form is method="post": a native submit never puts name, email and message in the URL', () => {
+  const src = read('app/contact/page.js');
+  const forms = [...src.matchAll(/<form\b([^>]*)>/g)];
+  assert.equal(forms.length, 1, 'one form on the page');
+  assert.match(forms[0][1], /\bmethod="post"/, 'not the default GET');
+  assert.match(forms[0][1], /\bonSubmit=\{handleSubmit\}/, 'the JSON send still handles it once JS is up');
+  assert.doesNotMatch(forms[0][1], /\baction=/, 'no new address: a native POST stays on /contact');
+});

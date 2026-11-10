@@ -81,7 +81,8 @@ export default function ContactPage() {
         ) : (
           <div className="rounded-[14px] border border-rule bg-hall-2 p-5 sm:p-8">
             <p className="font-mono text-[11px] font-medium tracking-[0.22em] text-sign mb-5">DESK OPEN · REPLIES BY EMAIL</p>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {/* method="post": a Send tapped before the JS loads must not put the fields in the URL. */}
+            <form method="post" onSubmit={handleSubmit} className="space-y-5">
               {/* Honeypot: hidden from people, filled only by bots; the API drops those. */}
               <p className="hidden" aria-hidden="true">
                 <label>
