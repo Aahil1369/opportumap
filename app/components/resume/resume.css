@@ -13,6 +13,7 @@
   --rs-film: #08131d;
   --rs-window: #050608;
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* a long file name must not widen the result past the page */
   gap: 14px;
 }
 
