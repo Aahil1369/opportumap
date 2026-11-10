@@ -7,6 +7,7 @@
 
 .cl {
   --airmail: repeating-linear-gradient(135deg, var(--warn) 0 9px, var(--hall-3) 9px 14px, var(--info) 14px 23px, var(--hall-3) 23px 28px);
+  --cl-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); /* text-field and ghost-button edges: 3:1 */
   display: grid;
   gap: 14px;
 }
@@ -52,7 +53,7 @@
   cursor: pointer;
 }
 .cl-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
-.cl-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+.cl-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--cl-field); }
 @media (hover: hover) {
   .cl-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
 }
@@ -109,7 +110,7 @@
   width: 100%;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--cl-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);

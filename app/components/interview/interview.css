@@ -4,7 +4,8 @@
    Motion: transform and opacity (the altimeter arc: a short stroke-dashoffset); reduced motion
    shows every final state at once. */
 
-.iv { display: grid; gap: 14px; }
+/* --iv-field: the edge of text fields and ghost buttons, 3:1 on the cards and on the field fill. */
+.iv { --iv-field: color-mix(in srgb, var(--ink-sub) 60%, var(--hall-2)); display: grid; gap: 14px; }
 .iv [hidden] { display: none !important; }
 .iv-panel { display: grid; gap: 14px; }
 
@@ -59,7 +60,7 @@
 }
 .iv-btn:active { transform: scale(0.98); }
 .iv-btn:focus-visible { outline: 2px solid var(--sign); outline-offset: 3px; }
-.iv-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+.iv-btn-2 { background: var(--hall-3); color: var(--ink); box-shadow: inset 0 0 0 1px var(--iv-field); }
 @media (hover: hover) {
   .iv-btn-2:hover { box-shadow: inset 0 0 0 1px var(--ink-sub); }
 }
@@ -103,7 +104,7 @@
   width: 100%;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid var(--rule);
+  border: 1px solid var(--iv-field);
   border-radius: 10px;
   background: var(--hall-3);
   color: var(--ink);
