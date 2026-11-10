@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* The old plans and specs in docs/ are not the site: their class names must not ship in every page's CSS. */
+@source not "../docs";
 /* The site footer (on every page): bundled into this sheet, not a render-blocking request of its own. */
 @import "./components/footer.css";
 

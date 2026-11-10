@@ -5,6 +5,7 @@
 //   - The 404, a page that throws and a root layout that throws all stay in the dark hall, and
 //     none of them shows the error itself (Ruling R28, platform-7).
 //   - /robots.txt and /sitemap.xml exist and name only the public pages.
+//   - Tailwind does not scan docs/, so the old plans add no dead CSS (platform-10).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
@@ -181,4 +182,13 @@ test('sitemap: exactly the nine public pages, each with a url and nothing invent
     assert.deepEqual(Object.keys(e), ['url'], `${e.url}: no made-up dates or priorities`);
     assert.doesNotMatch(new URL(e.url).pathname, /^\/(?:admin|profile|messages|saved|lab|auth|api)(?:\/|$)/);
   }
+});
+
+// ── The docs folder is not the site (platform-10) ───────────────────────────────────────────
+
+test('globals.css: Tailwind does not scan docs/ for class names', () => {
+  const css = read('app/globals.css');
+  // Right after the Tailwind import, with the comment that says why.
+  assert.match(css, /^@import "tailwindcss";\n\/\*[^*]*\bdocs\/[^*]*\*\/\n@source not "\.\.\/docs";\n/);
+  assert.equal(stripCss(css).match(/@source\b[^;]*;/g)?.length, 1, 'the only @source rule');
 });
