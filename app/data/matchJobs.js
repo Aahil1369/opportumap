@@ -8,8 +8,9 @@ const SKILL_ALIASES = {
 };
 
 function normalize(text) {
-  if (!text) return '';
-  let t = text.toLowerCase();
+  if (text == null || text === '') return '';
+  // A profile saved before /api/resume returned plain text can hold its skills as a list.
+  let t = (Array.isArray(text) ? text.join(', ') : String(text)).toLowerCase();
   for (const [alias, full] of Object.entries(SKILL_ALIASES)) {
     t = t.replace(new RegExp(`\\b${alias}\\b`, 'g'), full);
   }
@@ -27,7 +28,7 @@ export function scoreJob(job, profile) {
   if (!profile) return 0;
 
   // Include description so skills actually match real job text
-  const descText = normalize((job.description || '').replace(/<[^>]+>/g, ' ').slice(0, 800));
+  const descText = normalize(String(job.description || '').replace(/<[^>]+>/g, ' ').slice(0, 800));
   const titleText = normalize(`${job.title} ${job.company} ${job.location}`);
   const fullText = `${titleText} ${descText}`;
   const titleWords = new Set(extractKeywords(titleText));
@@ -82,7 +83,7 @@ export function scoreJob(job, profile) {
     'Research':            ['research', 'scientist', 'phd', 'r&d', 'lab', 'academic'],
     'Finance / Fintech':   ['finance', 'fintech', 'quant', 'trading', 'banking', 'risk', 'analyst'],
   };
-  for (const type of (profile.jobTypes || [])) {
+  for (const type of (Array.isArray(profile.jobTypes) ? profile.jobTypes : [])) {
     const keywords = typeMap[type] || [];
     if (keywords.some((k) => fullText.includes(k))) score += 15;
   }
