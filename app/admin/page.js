@@ -186,7 +186,7 @@ function InboxSection() {
                     )}
                     {m.subject || '(no subject)'}
                   </p>
-                  <p className="text-[15px] text-ink-dim mt-1 break-words">
+                  <p className="text-[16px] text-ink-dim mt-1 break-words">
                     {m.name}
                     {' · '}
                     <a href={mailtoHref(m.email, m.subject)} className="text-sign underline underline-offset-2 break-all">
@@ -208,7 +208,7 @@ function InboxSection() {
               </div>
               <p className="mt-3 text-[16px] text-ink-dim leading-[1.55] whitespace-pre-wrap break-words">{m.message}</p>
               {rowErrors[m.id] && (
-                <p role="alert" className="mt-2 text-[15px] text-warn">{rowErrors[m.id]}</p>
+                <p role="alert" className="mt-2 text-[16px] text-warn">{rowErrors[m.id]}</p>
               )}
             </li>
           ))}
@@ -216,7 +216,7 @@ function InboxSection() {
       )}
 
       {status === 'ready' && messages.length >= INBOX_LIMIT && (
-        <p className="mt-3 text-[15px] text-ink-sub">Showing the newest {INBOX_LIMIT}.</p>
+        <p className="mt-3 text-[16px] text-ink-sub">Showing the newest {INBOX_LIMIT}.</p>
       )}
     </section>
   );
@@ -325,7 +325,7 @@ export default function AdminPage() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-5">
-            <div className={panel}>
+            <div className={`${panel} min-w-0`}>
               <h2 className="font-mono text-[12px] font-medium tracking-[0.22em] uppercase text-sign mb-4">RECENT POSTS</h2>
               <div className="space-y-2">
                 {recentPosts.map((post) => (
@@ -335,7 +335,7 @@ export default function AdminPage() {
                       <p className="font-mono text-[12px] tracking-[0.08em] text-ink-sub mt-0.5">{post.user_name} · {timeAgo(post.created_at)}</p>
                     </div>
                     <span className="font-mono text-[11px] tracking-[0.12em] uppercase px-2 py-0.5 rounded-[4px] border border-rule text-ink-sub flex-shrink-0">
-                      {TYPE_LABELS[post.type] || post.type}
+                      {TYPE_LABELS[post.post_type] || post.post_type}
                     </span>
                   </div>
                 ))}
@@ -343,7 +343,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className={panel}>
+            <div className={`${panel} min-w-0`}>
               <h2 className="font-mono text-[12px] font-medium tracking-[0.22em] uppercase text-sign mb-4">TOP POSTS BY LIKES</h2>
               <div className="space-y-2">
                 {topPosts.map((post, i) => (

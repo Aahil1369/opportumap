@@ -40,3 +40,40 @@ test('/contact form is method="post": a native submit never puts name, email and
   assert.match(forms[0][1], /\bonSubmit=\{handleSubmit\}/, 'the JSON send still handles it once JS is up');
   assert.doesNotMatch(forms[0][1], /\baction=/, 'no new address: a native POST stays on /contact');
 });
+
+// ── /admin: RECENT POSTS reads the real column; the page fits a phone ─────────────────────────
+
+test('admin stats route selects posts.post_type (there is no posts.type column)', () => {
+  const src = read('app/api/admin/stats/route.js');
+  assert.match(src, /\.select\('id, title, user_name, created_at, post_type'\)\.order\('created_at', \{ ascending: false \}\)/);
+  assert.doesNotMatch(src, /\btype\b/, 'never "type" alone: PostgREST refuses the whole query (42703)');
+});
+
+test('/admin reads post.post_type for the RECENT POSTS badge', () => {
+  const src = read('app/admin/page.js');
+  assert.match(src, /\{TYPE_LABELS\[post\.post_type\] \|\| post\.post_type\}/);
+  assert.doesNotMatch(src, /\bpost\.type\b/);
+});
+
+test('/admin: both post panels carry min-w-0, so a long title truncates instead of widening the page', () => {
+  const src = read('app/admin/page.js');
+  const grid = /<div className="grid lg:grid-cols-2 gap-5">([\s\S]*?)<p className="pt-5 border-t/.exec(src)?.[1] ?? '';
+  for (const heading of ['RECENT POSTS', 'TOP POSTS BY LIKES']) {
+    const at = grid.indexOf(`>${heading}</h2>`);
+    assert.ok(at > 0, `${heading} panel is in the two-column grid`);
+    // The panel is the last <div className={…}> opened before its heading.
+    const before = grid.slice(0, at);
+    const opener = `${before.slice(before.lastIndexOf('<div className={')).split('>')[0]}>`;
+    assert.equal(opener, '<div className={`${panel} min-w-0`}>', `${heading} panel`);
+  }
+  assert.doesNotMatch(grid, /<div className=\{panel\}>/, 'no grid item without min-w-0');
+  assert.match(grid, /text-ink truncate">\{post\.title/, 'the titles still truncate');
+});
+
+test('/admin: the three 15px lines are 16px (name and email, row error, "Showing the newest")', () => {
+  const src = read('app/admin/page.js');
+  assert.doesNotMatch(src, /text-\[15px\]/);
+  assert.match(src, /<p className="text-\[16px\] text-ink-dim mt-1 break-words">/, 'name · email line');
+  assert.match(src, /<p role="alert" className="mt-2 text-\[16px\] text-warn">\{rowErrors\[m\.id\]\}<\/p>/, 'row error');
+  assert.match(src, /<p className="mt-3 text-\[16px\] text-ink-sub">Showing the newest \{INBOX_LIMIT\}\.<\/p>/, 'limit line');
+});
