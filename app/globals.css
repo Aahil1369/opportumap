@@ -73,9 +73,13 @@
 
 /* The hall is the page under everything (overscroll, short pages, the night navbar). */
 html {
-  scroll-behavior: smooth;
   background: var(--hall);
   color: var(--ink);
+}
+/* Smooth scrolling, unless the visitor asked for less motion. <html data-scroll-behavior="smooth">
+   (app/layout.js) lets Next switch it off while a route changes, so a new page opens at its top. */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
 }
 
 body {

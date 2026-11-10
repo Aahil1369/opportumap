@@ -46,7 +46,7 @@ export const viewport = { themeColor: '#0a0b0d' };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jbMono.variable} h-full antialiased`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${inter.variable} ${jbMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-hall text-ink">
         <SmoothScroll />
         <PageTransition />
