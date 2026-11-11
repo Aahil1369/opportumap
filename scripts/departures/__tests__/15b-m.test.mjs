@@ -124,6 +124,13 @@ test('jobs-s1 keepHomeProfile: the next loadHomeProfile() answers with the profi
   globalThis.document.cookie = 'sb-x-auth-token=1';
   assert.deepEqual(await loadHomeProfile(), A, 'a save made signed out is not what the next member sees');
   assert.equal(gets, 2, 'signed in again: asked again');
+
+  // Signed out at the save, signed in before the next load, no load in between: the save is not kept.
+  globalThis.document.cookie = '';
+  keepHomeProfile(B);
+  globalThis.document.cookie = 'sb-x-auth-token=1';
+  assert.deepEqual(await loadHomeProfile(), A, 'a save made signed out is not answered with, even when signed in before the load');
+  assert.equal(gets, 3, 'one request');
 });
 
 test('T7-5 searchOnArrival: a search the visitor already asked for stays; else the URL\'s ?q=', () => {

@@ -7,8 +7,12 @@
 //     again next time.
 // This runs the real route and the real groq-sdk with fetch stubbed: no network, no quota. Its own
 // file, so the fake key cannot reach chrome.test.mjs (whose route must fail without a key).
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
+
+// Put back what the other test files in this run see: the key and the fetch as they were.
+const savedKey = process.env.GROQ_API_KEY;
+const savedFetch = globalThis.fetch;
 
 process.env.GROQ_API_KEY = 'test-key-not-real';
 
@@ -35,6 +39,12 @@ globalThis.fetch = async (url, init = {}) => {
   };
   return new Response(JSON.stringify(completion), { status: 200, headers: { 'content-type': 'application/json' } });
 };
+
+after(() => {
+  if (savedKey === undefined) delete process.env.GROQ_API_KEY;
+  else process.env.GROQ_API_KEY = savedKey;
+  globalThis.fetch = savedFetch;
+});
 
 const { POST } = await import(new URL('../../../app/api/predict-salary/route.js', import.meta.url));
 
@@ -94,6 +104,20 @@ test('another location for the same title and country is a new question too', as
   const next = await ask(role('Data Engineer'));
   assert.equal(asked.length, before + 1, 'the Toronto row is still a cache hit');
   assert.deepEqual(next.data, toronto.data);
+});
+
+test('another country for the same title, company and location is a new question too', async () => {
+  const canada = await ask(role('Product Designer'));
+  const before = asked.length;
+  const uk = await ask(role('Product Designer', { country: 'gb' }));
+  assert.equal(asked.length, before + 1, 'the UK row went to the model');
+  assert.match(asked.at(-1), /^Country: gb$/m);
+  assert.notDeepEqual(uk.data, canada.data);
+
+  // The Canadian row afterwards still gets its own answer, from the cache.
+  const next = await ask(role('Product Designer'));
+  assert.equal(asked.length, before + 1, 'the Canadian row is still a cache hit');
+  assert.deepEqual(next.data, canada.data);
 });
 
 test('an answer the board cannot show is a 502 and is never kept', async () => {

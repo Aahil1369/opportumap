@@ -79,7 +79,7 @@ test('saveProfile posts { profile } to /api/user-profile, the key the route read
   assert.deepEqual(Object.keys(body), ['profile'], 'no profile_data');
   assert.deepEqual(body.profile, profile);
 
-  // What the route does with it: `const { profile } = await request.json()` is the saved profile.
+  // What the route does with it: `const profile = body?.profile;` is the saved profile.
   const route = read('app/api/user-profile/route.js');
   assert.match(route, /const profile = body\?\.profile;/);
   assert.match(route, /profile_data: profile\b/);
