@@ -5,7 +5,7 @@
 // The layout's web fonts are not loaded here: the two font variables fall back to system fonts.
 import './globals.css';
 
-export default function GlobalError({ reset }) {
+export default function GlobalError({ retry }) {
   return (
     <html lang="en" className="h-full antialiased [--font-inter:system-ui] [--font-jb-mono:ui-monospace]">
       <body className="min-h-full flex flex-col bg-hall text-ink">
@@ -18,7 +18,7 @@ export default function GlobalError({ reset }) {
             The site hit a problem on our side. Try again, or go back to the board.
           </p>
           <p className="mt-4 flex flex-wrap items-center gap-x-6 text-[16px]">
-            <button type="button" onClick={() => reset()} className="min-h-[44px] cursor-pointer text-sign underline underline-offset-4">
+            <button type="button" onClick={() => retry()} className="min-h-[44px] cursor-pointer text-sign underline underline-offset-4">
               Try again
             </button>
             {/* A plain link, on purpose: the router may be what broke, and a full load starts clean. */}

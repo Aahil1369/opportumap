@@ -116,7 +116,7 @@ test('error.js and global-error.js are client components with a retry and a way 
   const page = read('app/error.js');
   assert.ok(page.startsWith("'use client'"), 'error.js starts with use client');
   assert.match(page, /<PageShell\b/, 'the hall header');
-  assert.match(page, /<button type="button" onClick=\{\(\) => reset\(\)\}[^>]*>Try again<\/button>/);
+  assert.match(page, /<button type="button" onClick=\{\(\) => retry\(\)\}[^>]*>Try again<\/button>/);
   assert.match(page, /<Link href="\/"/);
 
   const root = read('app/global-error.js');
@@ -125,7 +125,7 @@ test('error.js and global-error.js are client components with a retry and a way 
   assert.match(root, /<html lang="en"/);
   assert.match(root, /<body\b[^>]*\bbg-hall\b[^>]*\btext-ink\b/, 'the hall, not a white page');
   assert.match(root, /^import '\.\/globals\.css';$/m);
-  assert.match(root, /<button type="button" onClick=\{\(\) => reset\(\)\}[^>]*>\s*Try again\s*<\/button>/);
+  assert.match(root, /<button type="button" onClick=\{\(\) => retry\(\)\}[^>]*>\s*Try again\s*<\/button>/);
   assert.match(root, /<a href="\/"/, 'a plain link: the router may be what broke');
   assert.doesNotMatch(root, /from 'next\/link'|from '\.\/components\//, 'nothing that could throw again');
   // Phones: 16px text, 44px tap targets.
