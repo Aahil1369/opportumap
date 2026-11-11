@@ -13,7 +13,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PROVIDER = ['g', 'mail'].join('');
-const ADDRESS = new RegExp(`[A-Za-z0-9._%+-]+@${PROVIDER}\\.com`, 'i');
+const PROVIDERS = [PROVIDER, 'googlemail', 'yahoo', 'outlook', 'hotmail', 'live', 'icloud', 'me', 'proton', 'protonmail', 'aol', 'gmx'];
+const ADDRESS = new RegExp(`[A-Za-z0-9._%+-]+@(?:${PROVIDERS.join('|')})\\.[a-z]{2,}`, 'i');
 
 function trackedFiles() {
   const out = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 });
@@ -32,12 +33,16 @@ function textOf(file) {
   return bytes.includes(0) ? null : bytes.toString('utf8');
 }
 
-test('the pattern matches a personal address at the provider, and nothing else', () => {
-  assert.match(`someone.else+tag@${PROVIDER}.com`, ADDRESS);
-  assert.match(`'SOMEONE@${PROVIDER.toUpperCase()}.COM'`, ADDRESS);
+test('the pattern matches a personal address at any listed provider, and nothing else', () => {
+  for (const p of PROVIDERS) {
+    assert.match(`someone.else+tag@${p}.com`, ADDRESS, p);
+    assert.match(`'SOMEONE@${p.toUpperCase()}.COM'`, ADDRESS, p);
+  }
+  assert.match(`someone@${PROVIDERS.at(-2)}.me`, ADDRESS);
   assert.doesNotMatch('<owner email, redacted>', ADDRESS);
   assert.doesNotMatch('noreply@anthropic.com', ADDRESS);
   assert.doesNotMatch(`@${PROVIDER}.com`, ADDRESS);
+  assert.doesNotMatch(`someone@medium.com`, ADDRESS);
 });
 
 test('no tracked text file holds a personal mail address', () => {
