@@ -31,3 +31,7 @@ test('the stand page reads its row once, shared by the title and the page, with 
   assert.match(page, /AbortSignal\.timeout\(READ_LIMIT_MS\)/, 'a slow database cannot hold the page');
   assert.match(page, /if \(!failed && !row\) notFound\(\);/, 'a read that failed is not a missing stand');
 });
+
+test('the framework banner is off: poweredByHeader is the first property of nextConfig', () => {
+  assert.match(read('next.config.mjs'), /const nextConfig = \{\s*poweredByHeader: false,/, 'X-Powered-By is not sent');
+});
