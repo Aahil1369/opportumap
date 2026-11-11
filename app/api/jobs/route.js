@@ -22,7 +22,6 @@ async function lookup(id) {
     query: HOME_SEARCH.query,
     countries: [...HOME_SEARCH.countries],
     timeoutMs: LOOKUP_TIMEOUT_MS,
-    revalidate: 600,
     onFailure: (feed) => failed.add(feed),
   });
   const job = trimJob(findJob(jobs, id));

@@ -1,6 +1,6 @@
 // /jobs: the jobs page is the departures board (spec §7). Server-rendered, like the homepage:
 // the board's rows are the homepage's own search (HOME_SEARCH, one shared data-cache entry, no
-// extra feed calls), fetched at ISR time every 10 minutes and trimmed (boardJobs), so the final
+// extra feed calls), rebuilt at ISR time every 10 minutes (Adzuna's answers are reused for 6 hours) and trimmed (boardJobs), so the final
 // text of every row is in the HTML and a homepage row's link (/jobs?job=<id>) finds its role.
 // JobsBoard layers the motion on after hydration, and re-flaps the rows in place when the
 // visitor's own search arrives (a ?q=, their profile's roles and countries). Feeds down or slow
@@ -24,7 +24,6 @@ async function serverBoard() {
       query: HOME_SEARCH.query,
       countries: [...HOME_SEARCH.countries],
       timeoutMs: FEED_TIMEOUT_MS,
-      revalidate,
     });
     const now = new Date();
     const kept = boardJobs(jobs, { now });

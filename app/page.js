@@ -34,12 +34,11 @@ const FEED_TIMEOUT_MS = 6000;
 
 async function boardRows() {
   try {
-    // The feeds' cache windows match the page's, so the board is rebuilt every 10 minutes.
+    // The page rebuilds every 10 minutes; Adzuna's answers are reused for 6 hours (ADZUNA_REVALIDATE).
     const jobs = await fetchLiveJobs({
       query: HOME_SEARCH.query,
       countries: [...HOME_SEARCH.countries],
       timeoutMs: FEED_TIMEOUT_MS,
-      revalidate,
     });
     return boardRowsFrom(jobs, { now: new Date() });
   } catch {

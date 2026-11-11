@@ -171,7 +171,7 @@ test('timeoutMs: a feed that has not answered in time adds nothing, the others s
   assert.equal(jobs.length, 3);
 });
 
-test('revalidate: the homepage caches every feed for its own 10 minutes; /api/jobs keeps Adzuna at 5', async () => {
+test('revalidate: the homepage caches every feed for its own 10 minutes; Adzuna keeps its 6 hours by default', async () => {
   const inits = [];
   globalThis.fetch = async (url, init) => {
     const u = String(url);
@@ -189,5 +189,5 @@ test('revalidate: the homepage caches every feed for its own 10 minutes; /api/jo
   assert.deepEqual(inits.filter(([, r]) => r !== 600), [], 'every feed request is cached for 600 s');
   inits.length = 0;
   await fetchLiveJobs({ query: 'engineer', countries: ['ca'] });
-  assert.deepEqual(inits.filter(([k]) => k === 'adzuna').map(([, r]) => r), [300], 'the default stays 300 s');
+  assert.deepEqual(inits.filter(([k]) => k === 'adzuna').map(([, r]) => r), [21600], 'the default is 6 h (ADZUNA_REVALIDATE)');
 });
