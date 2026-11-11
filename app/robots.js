@@ -1,5 +1,5 @@
-// /robots.txt. Crawlers get the public pages; the API, the admin room, the auth callback and the
-// lab are not for them. The origin is the one app/layout.js uses for metadataBase.
+// /robots.txt. Crawlers get the public pages; the API, the admin room and the auth callback are not for them. No page lives under /lab any more;
+// the /lab/ entry stays so an old link is not crawled. The origin is the one app/layout.js uses for metadataBase.
 const SITE = 'https://opportumap.netlify.app';
 
 export default function robots() {
