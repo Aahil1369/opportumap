@@ -16,27 +16,34 @@ function getSessionId() {
   }
 }
 
+const REPEAT_MS = 120_000; // "live" on /admin means active in the last 5 minutes
+
 export default function PingTracker() {
   const pathname = usePathname();
 
   useEffect(() => {
     const sessionId = getSessionId();
     if (!sessionId) return;
-    fetch('/api/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, page: pathname }),
-    }).catch(() => {});
-
-    const interval = setInterval(() => {
+    const ping = () => {
       fetch('/api/ping', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, page: pathname }),
       }).catch(() => {});
-    }, 60000);
-
-    return () => clearInterval(interval);
+    };
+    ping();
+    // Repeat only while the tab is on screen: a hidden tab is not a live visitor.
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') ping();
+    }, REPEAT_MS);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') ping();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [pathname]);
 
   return null;
