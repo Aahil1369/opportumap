@@ -17,3 +17,9 @@ test('the error pages recover with retry(), never reset() (Next 16.4.6)', () => 
     assert.match(src, /onClick=\{\(\) => retry\(\)\}/, `${file} the Try again button calls retry()`);
   }
 });
+
+test('the ghost button and the chip change their edge on hover again (--ink-sub, not the field tint)', () => {
+  const css = read('app/components/startups/startups.css');
+  assert.match(css, /\.hg-btn-ghost:hover \{ border-color: var\(--ink-sub\); \}/, 'the ghost button hover edge');
+  assert.match(css, /\.hg-chip:hover \{ color: var\(--ink\); border-color: var\(--ink-sub\); \}/, 'the chip hover edge');
+});

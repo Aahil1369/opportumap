@@ -65,7 +65,7 @@
 .hg-btn-sign { background: var(--sign); color: var(--sign-ink); }
 .hg-btn-ghost { background: transparent; color: var(--ink); border-color: var(--hg-field); }
 @media (hover: hover) {
-  .hg-btn-ghost:hover { border-color: var(--hg-field); }
+  .hg-btn-ghost:hover { border-color: var(--ink-sub); }
 }
 .hg-btn[aria-disabled='true'] { opacity: 0.6; cursor: progress; }
 .hg-btn:focus-visible,
@@ -110,7 +110,7 @@
   cursor: pointer;
 }
 @media (hover: hover) {
-  .hg-chip:hover { color: var(--ink); border-color: var(--hg-field); }
+  .hg-chip:hover { color: var(--ink); border-color: var(--ink-sub); }
 }
 .hg-chip[aria-pressed='true'] { background: var(--sign); border-color: var(--sign); color: var(--sign-ink); }
 .hg-chip-clear { color: var(--ink); }

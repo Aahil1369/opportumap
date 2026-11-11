@@ -367,9 +367,14 @@ test('M3 startups.css: no off-palette greys; field and hover borders are the 3:1
     assert.ok(token.selectors.includes(root), `${root} gets the token (the post dialog renders outside .hg)`);
   }
   assert.match(rules.find((r) => r.selectors.includes('.hg-input')).body, /border:\s*1px solid var\(--hg-field\)/);
-  for (const sel of ['.hg-btn-ghost:hover', '.hg-chip:hover', 'a.hg-card:hover', '.hg-toggle:hover']) {
+  for (const sel of ['a.hg-card:hover', '.hg-toggle:hover']) {
     const r = rules.find((x) => x.selectors.includes(sel) && /border-color/.test(x.body));
     assert.match(r?.body ?? '', /border-color:\s*var\(--hg-field\)/, `${sel} uses the token`);
+  }
+  // The ghost button and the chip: their hover edge is the readable ink-sub, not the faint field tint.
+  for (const sel of ['.hg-btn-ghost:hover', '.hg-chip:hover']) {
+    const r = rules.find((x) => x.selectors.includes(sel) && /border-color/.test(x.body));
+    assert.match(r?.body ?? '', /border-color:\s*var\(--ink-sub\)/, `${sel} uses --ink-sub on hover`);
   }
   // The mix is #636870: 3:1 or better on the input fill and on the panels.
   const field = mix('#9aa0a8', '#111316', 0.6);
