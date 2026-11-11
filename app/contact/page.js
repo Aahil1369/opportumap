@@ -61,14 +61,14 @@ export default function ContactPage() {
         sign={{ letter: 'i', label: 'INFORMATION', gate: false }}
         title="Ask the"
         accent="information desk."
-        sub="A question, an idea, a partnership or a bug: your message goes straight to the founder, and you'll get a reply by email."
+        sub="A question, an idea, a partnership or a bug: your message goes straight to the founder, and you’ll get a reply by email."
       >
         {submitted ? (
           <div className="rounded-[14px] border border-rule bg-hall-2 p-6 sm:p-8 text-center" role="status">
             <p className="font-mono text-[12px] font-medium tracking-[0.22em] text-ok mb-3">MESSAGE SENT ✓</p>
             <h2 className="font-sans text-[26px] font-extrabold leading-[1.15] tracking-[-0.01em] text-ink mb-2">Message sent.</h2>
             <p className="text-[16px] leading-[1.5] text-ink-dim mb-6 max-w-[46ch] mx-auto">
-              Thanks for reaching out. Your message went straight to the founder, and you&apos;ll get a reply by email at the address you gave.
+              Thanks for reaching out. Your message went straight to the founder, and you’ll get a reply by email at the address you gave.
             </p>
             <button
               type="button"
@@ -114,7 +114,7 @@ export default function ContactPage() {
               <div>
                 <label htmlFor="contact-message" className={label}>Message</label>
                 <textarea id="contact-message" name="message" required value={form.message} onChange={(e) => set('message', e.target.value)} rows={6}
-                  placeholder="Tell us what's on your mind..." maxLength={CONTACT_LIMITS.message}
+                  placeholder="Tell us what’s on your mind..." maxLength={CONTACT_LIMITS.message}
                   className={`${field} resize-y`} />
               </div>
               {error && (
