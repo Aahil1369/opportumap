@@ -16,3 +16,14 @@ test('/contact: the visible copy uses typographic apostrophes, not straight ones
   assert.match(src, /you’ll get a reply by email/, 'the sub line says you’ll');
   assert.match(src, /what’s on your mind/, 'the message placeholder says what’s');
 });
+
+test('/api/admin/stats: every query result is checked for an error, and a failure is a friendly 500', () => {
+  const src = read('app/api/admin/stats/route.js');
+  const queries = src.match(/const \[([\s\S]*?)\] = await Promise\.all/);
+  assert.ok(queries, 'the queries are destructured together');
+  const results = queries[1].split('\n').filter((line) => line.includes('{'));
+  assert.equal(results.length, 7, 'seven query results');
+  for (const line of results) assert.match(line, /\berror: \w+/, `checks the error: ${line.trim()}`);
+  assert.match(src, /console\.error\('\[admin\/stats\]', /, 'logs the code or message on the server');
+  assert.match(src, /return Response\.json\(\{ error: 'Could not load the stats' \}, \{ status: 500 \}\);/);
+});

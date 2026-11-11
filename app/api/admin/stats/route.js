@@ -12,13 +12,13 @@ export async function GET() {
   }
 
   const [
-    { count: postCount },
-    { count: likeCount },
-    { count: followCount },
-    { count: commentCount },
-    { data: recentPosts },
-    { data: topPosts },
-    { data: adminStats },
+    { count: postCount, error: postsErr },
+    { count: likeCount, error: likesErr },
+    { count: followCount, error: followsErr },
+    { count: commentCount, error: commentsErr },
+    { data: recentPosts, error: recentErr },
+    { data: topPosts, error: topErr },
+    { data: adminStats, error: adminErr },
   ] = await Promise.all([
     supabase.from('posts').select('*', { count: 'exact', head: true }),
     supabase.from('post_likes').select('*', { count: 'exact', head: true }),
@@ -30,6 +30,12 @@ export async function GET() {
     // no longer callable by the anon role.
     serverSupabase.rpc('get_admin_stats'),
   ]);
+
+  const failure = [postsErr, likesErr, followsErr, commentsErr, recentErr, topErr, adminErr].find(Boolean);
+  if (failure) {
+    console.error('[admin/stats]', failure.code || failure.message);
+    return Response.json({ error: 'Could not load the stats' }, { status: 500 });
+  }
 
   return Response.json({
     stats: {
