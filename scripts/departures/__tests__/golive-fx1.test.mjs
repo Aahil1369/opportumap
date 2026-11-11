@@ -23,3 +23,11 @@ test('the ghost button and the chip change their edge on hover again (--ink-sub,
   assert.match(css, /\.hg-btn-ghost:hover \{ border-color: var\(--ink-sub\); \}/, 'the ghost button hover edge');
   assert.match(css, /\.hg-chip:hover \{ color: var\(--ink\); border-color: var\(--ink-sub\); \}/, 'the chip hover edge');
 });
+
+test('the stand page reads its row once, shared by the title and the page, with a time limit', () => {
+  const page = read('app/startups/[id]/page.js');
+  assert.match(page, /cache\(/, 'one read per request, shared by the title and the page (React cache)');
+  assert.equal((page.match(/\.from\('startups'\)/g) ?? []).length, 1, 'the row is read once, not twice');
+  assert.match(page, /AbortSignal\.timeout\(READ_LIMIT_MS\)/, 'a slow database cannot hold the page');
+  assert.match(page, /if \(!failed && !row\) notFound\(\);/, 'a read that failed is not a missing stand');
+});

@@ -175,7 +175,7 @@ const ROUTES = ['', 'jobs', 'resume', 'cover-letter', 'interview', 'startups', '
 test('every route has its own metadata (in the page, or in a layout beside a client page)', () => {
   const missing = ROUTES.filter((r) => !hasMeta(r)).map((r) => `/${r}`);
   assert.deepEqual(missing, []);
-  assert.match(read('app/startups/[id]/page.js'), /generateMetadata[\s\S]*data\.name/, 'the stand is named after its startup');
+  assert.match(read('app/startups/[id]/page.js'), /generateMetadata[\s\S]*row\.name/, 'the stand is named after its startup');
 });
 
 // /map and /saved: wave 2 metadata tests. Each route exports metadata with a title and description.

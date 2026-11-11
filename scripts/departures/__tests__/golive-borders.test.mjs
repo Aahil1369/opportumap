@@ -195,8 +195,8 @@ test('/startups/[id]: an unknown stand answers a real 404 (notFound), a database
   const body = page.slice(page.indexOf('export default async function StartupStandPage'));
   assert.ok(body.length > 0 && body.length < page.length, 'StartupStandPage is the default export');
   assert.match(body, /if \(!isUuid\(id\)\) notFound\(\);/, 'an id that is not a uuid is a 404');
-  assert.match(body, /supabase\.from\('startups'\)\.select\('id'\)\.eq\('id', id\)\.maybeSingle\(\)/, 'asks the public client for the row');
-  assert.match(body, /if \(!error && !data\) notFound\(\);/, 'no row and no error: a 404');
+  assert.match(page, /supabase\s*\.from\('startups'\)\s*\.select\('id, name, tagline'\)\s*\.eq\('id', id\)\s*\.abortSignal\(AbortSignal\.timeout\(READ_LIMIT_MS\)\)\s*\.maybeSingle\(\)/, 'asks the public client for the row, with a time limit');
+  assert.match(body, /if \(!failed && !row\) notFound\(\);/, 'no row and no failed read: a 404');
   assert.ok(!/if \(!data\) notFound\(\)/.test(body), 'a database error alone never turns into a 404');
   assert.match(body, /<Stand id=\{id\} \/>/, 'a stand that exists still renders the stand');
 });
