@@ -1,5 +1,5 @@
-// /sitemap.xml: the public pages only. Signed-in pages (/profile, /messages, /saved), /admin and the
-// auth callback stay out. No page lives under /lab any more. No dates or priorities: nothing here is made up.
+// /sitemap.xml: the public pages only. Signed-in pages (/profile, /messages, /saved), /admin and
+// the auth callback stay out. No dates or priorities: nothing here is made up.
 // The origin is the one app/layout.js uses for metadataBase.
 const SITE = 'https://opportumap.netlify.app';
 
