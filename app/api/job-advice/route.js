@@ -9,7 +9,7 @@ import { GROQ_FAST_OPTIONS } from '../../../lib/ai.js';
 
 let client = null;
 // Made on first use, so a missing key is one failed request (503), not a route that cannot load.
-const groq = () => (client ??= new Groq({ apiKey: process.env.GROQ_API_KEY }));
+const groq = () => (client ??= new Groq({ apiKey: process.env.GROQ_API_KEY, maxRetries: 0, timeout: 20_000 }));
 
 const VERDICTS = new Set(['apply', 'maybe', 'skip']);
 

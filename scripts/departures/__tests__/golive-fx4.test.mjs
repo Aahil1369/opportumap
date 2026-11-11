@@ -86,3 +86,21 @@ test('an Adzuna 429 logs one warning per country, naming the status and never th
   assert.deepEqual(adzunaWarns, ['[jobsFeed] Adzuna ca answered 429', '[jobsFeed] Adzuna gb answered 429']);
   for (const m of adzunaWarns) assert.doesNotMatch(m, /app_key/);
 });
+
+// A rate limit must reach the visitor at once: the SDK's own retries wait as long as the provider
+// says, up to the platform's limit, so both direct Groq clients turn them off and set a timeout.
+for (const [rel, line] of [
+  ['lib/aiRoute.js', 'new Groq({ apiKey: process.env.GROQ_API_KEY, maxRetries: 0, timeout: 50_000 })'],
+  ['app/api/job-advice/route.js', 'new Groq({ apiKey: process.env.GROQ_API_KEY, maxRetries: 0, timeout: 20_000 })'],
+]) {
+  test(`${rel}: the Groq client makes no SDK retries and has its own timeout`, () => {
+    assert.equal(read(rel).split(line).length - 1, 1, `${rel} makes its one Groq client as: ${line}`);
+  });
+}
+
+test('lib/aiRoute.js says why there are no SDK retries', () => {
+  assert.match(
+    read('lib/aiRoute.js'),
+    /\/\/ No SDK retries: a rate limit must reach the visitor as the friendly answer at once, not after\s*\r?\n\/\/ the provider's retry-after; 50 s stays under the platform's 60 s\./,
+  );
+});
